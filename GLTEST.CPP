@@ -29,11 +29,11 @@ int main(int argc, char **argv) {
     gluPerspective(120.0, (double)640/(double)480, 2.0, 50000.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glTranslatef(0,-500.f,-500.f);
+    gluLookAt(0,600,-100,0,0,0,0,1,0);
     glViewport(0,0,640,480);
     glBegin(GL_QUADS);
-    const int SEGX = 80;
-    const int SEGY = 80;
+    const int SEGX = 40;
+    const int SEGY = 40;
     for (int x = -SEGX; x < SEGX; x++) {
       for (int y = -SEGY; y < SEGY; y++) {
         float xp[4],yp[4],zp[4],cp[4];

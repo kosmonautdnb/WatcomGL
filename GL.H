@@ -575,8 +575,10 @@ GLAPI void APIENTRY glColor3ub (GLubyte red, GLubyte green, GLubyte blue);
 GLAPI void APIENTRY glColor4ubv(const GLubyte *color);
 GLAPI void APIENTRY glColorMaterial(GLenum face, GLenum pname);
 GLAPI void APIENTRY glMateriali(GLenum face, GLenum pname, GLint param);
+GLAPI void APIENTRY glFrustum(float left, float right, float bottom, float top, float znear, float zfar);
 GLAPI void APIENTRY gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane);
 GLAPI void APIENTRY gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz);
+
 
 #ifdef __cplusplus
 }

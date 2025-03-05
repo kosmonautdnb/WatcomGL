@@ -11,9 +11,12 @@ float *glDepthBuffer = NULL;
 
 GLfloat identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
+#define __GL_MAX_LIGHTS__ (2)
+
 class _GLContext {
 public:
   _GLContext() {
+    int i;
     error = 0;
     viewportX0 = 0;
     viewportY0 = 0;
@@ -44,7 +47,7 @@ public:
     matrixModeNr = 0;
     lineStippleFactor = 0;
     lineStipplePattern = 0;
-    lineWidth = 0;
+    lineWidth = 1;
     scissorX0 = 0;
     scissorY0 = 0;
     scissorX1 = 0;
@@ -69,6 +72,56 @@ public:
     vertexZ = 1.f;
     vertexW = 1.f;
     beginMode = 0;
+    colorMaterial = GL_AMBIENT_AND_DIFFUSE;
+
+    // ambient
+    materialRed[0] = 0;
+    materialGreen[0] = 0;
+    materialBlue[0] = 0;
+    materialAlpha[0] = 0;
+    // diffuse
+    materialRed[1] = 1;
+    materialGreen[1] = 1;
+    materialBlue[1] = 1;
+    materialAlpha[1] = 1;
+    // specular
+    materialRed[2] = 0;
+    materialGreen[2] = 0;
+    materialBlue[2] = 0;
+    materialAlpha[2] = 0;
+    // emission
+    materialRed[3] = 0;
+    materialGreen[3] = 0;
+    materialBlue[3] = 0;
+    materialAlpha[3] = 0;
+    // shininess
+    materialRed[4] = 0;
+    materialGreen[4] = 0;
+    materialBlue[4] = 0;
+    materialAlpha[4] = 0;
+
+    for (i = 0;  i < __GL_MAX_LIGHTS__; i++) {
+      // ambient
+      lightRed[0][i] = 0;
+      lightGreen[0][i] = 0;
+      lightBlue[0][i] = 0;
+      lightAlpha[0][i] = 0;
+      // diffuse
+      lightRed[1][i] = 1;
+      lightGreen[1][i] = 1;
+      lightBlue[1][i] = 1;
+      lightAlpha[1][i] = 1;
+      // specular
+      lightRed[2][i] = 0;
+      lightGreen[2][i] = 0;
+      lightBlue[2][i] = 0;
+      lightAlpha[2][i] = 0;
+      // position
+      lightRed[3][i] = 0;
+      lightGreen[3][i] = 0;
+      lightBlue[3][i] = 1;
+      lightAlpha[3][i] = 0;
+    }
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -132,6 +185,15 @@ public:
   GLfloat vertexW;
   GLenum beginMode;
   GLboolean enabledCaps[256];
+  GLfloat lightRed[4][__GL_MAX_LIGHTS__];
+  GLfloat lightGreen[4][__GL_MAX_LIGHTS__];
+  GLfloat lightBlue[4][__GL_MAX_LIGHTS__];
+  GLfloat lightAlpha[4][__GL_MAX_LIGHTS__];
+  GLenum colorMaterial;
+  GLfloat materialRed[5];
+  GLfloat materialGreen[5];
+  GLfloat materialBlue[5];
+  GLfloat materialAlpha[5];
 };
 
 _GLContext glContext;
@@ -204,6 +266,154 @@ int glTransformVertex(_GLContext *context, glVertex *v) {
   return 0;
 }
 
+void glLightVertex(_GLContext *context, glVertex *v) {
+  if (context->isEnabled(GL_LIGHTING)) {
+    float *matrix = context->matrixForMode[GL_MODELVIEW & 1];
+    float x = v->vertexX * matrix[0*4+0] + v->vertexY * matrix[1*4+0] + v->vertexZ * matrix[2*4+0] + v->vertexW * matrix[3*4+0];
+    float y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
+    float z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
+    float w = v->vertexX * matrix[0*4+3] + v->vertexY * matrix[1*4+3] + v->vertexZ * matrix[2*4+3] + v->vertexW * matrix[3*4+3];
+    if (fabs(w) <= 0.0001f) 
+      return;
+    x /= w;
+    y /= w;
+    z /= w;
+    float ambientRed = 0;
+    float ambientGreen = 0;
+    float ambientBlue = 0;
+    float diffuseRed = 0;
+    float diffuseGreen = 0;
+    float diffuseBlue = 0;
+    float specularRed = 0;
+    float specularGreen = 0;
+    float specularBlue = 0;
+
+    float materialAmbientRed = context->materialRed[0];
+    float materialAmbientGreen = context->materialGreen[0];
+    float materialAmbientBlue = context->materialBlue[0];
+    float materialDiffuseRed = context->materialRed[1];
+    float materialDiffuseGreen = context->materialGreen[1];
+    float materialDiffuseBlue = context->materialBlue[1];
+    float materialSpecularRed = context->materialRed[2];
+    float materialSpecularGreen = context->materialGreen[2];
+    float materialSpecularBlue = context->materialBlue[2];
+    float materialEmissionRed = context->materialRed[3];
+    float materialEmissionGreen = context->materialGreen[3];
+    float materialEmissionBlue = context->materialBlue[3];
+    float materialShininessRed = context->materialRed[4];
+    float materialShininessGreen = context->materialGreen[4];
+    float materialShininessBlue = context->materialBlue[4];
+
+
+    if (context->isEnabled(GL_COLOR_MATERIAL)) {
+      switch(glContext.colorMaterial) {
+        case GL_AMBIENT: {
+          materialAmbientRed = v->colorRed;
+          materialAmbientGreen = v->colorGreen;
+          materialAmbientBlue = v->colorBlue;
+        } break;
+        case GL_DIFFUSE: {
+          materialDiffuseRed = v->colorRed;
+          materialDiffuseGreen = v->colorGreen;
+          materialDiffuseBlue = v->colorBlue;
+        } break;
+        case GL_SPECULAR: {
+          materialSpecularRed = v->colorRed;
+          materialSpecularGreen = v->colorGreen;
+          materialSpecularBlue = v->colorBlue;
+        } break;
+        case GL_EMISSION: {
+          materialEmissionRed = v->colorRed;
+          materialEmissionGreen = v->colorGreen;
+          materialEmissionBlue = v->colorBlue;
+        } break;
+        case GL_SHININESS: {
+          materialShininessRed = v->colorRed;
+          materialShininessGreen = v->colorGreen;
+          materialShininessBlue = v->colorBlue;
+        } break;
+        case GL_AMBIENT_AND_DIFFUSE: {
+          materialAmbientRed = v->colorRed;
+          materialAmbientGreen = v->colorGreen;
+          materialAmbientBlue = v->colorBlue;
+          materialDiffuseRed = v->colorRed;
+          materialDiffuseGreen = v->colorGreen;
+          materialDiffuseBlue = v->colorBlue;
+        } break;
+      }
+    }
+
+    float normalX = v->normalX;
+    float normalY = v->normalY;
+    float normalZ = v->normalZ;
+    if (context->isEnabled(GL_NORMALIZE)) {
+      float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
+      if (l>0.f) {
+        normalX/=l;
+        normalY/=l;
+        normalZ/=l;
+      }
+    }
+
+    for (int i = 0; i < __GL_MAX_LIGHTS__; i++) {
+      if (context->isEnabled(GL_LIGHT0+i)) {
+        float lightAmbientRed = context->lightRed[0][i];
+        float lightAmbientGreen = context->lightGreen[0][i];
+        float lightAmbientBlue = context->lightBlue[0][i];
+        float lightDiffuseRed = context->lightRed[1][i];
+        float lightDiffuseGreen = context->lightGreen[1][i];
+        float lightDiffuseBlue = context->lightBlue[1][i];
+        float lightSpecularRed = context->lightRed[2][i];
+        float lightSpecularGreen = context->lightGreen[2][i];
+        float lightSpecularBlue =  context->lightBlue[2][i];
+        float lightPositionX = context->lightRed[3][i];
+        float lightPositionY = context->lightGreen[3][i];
+        float lightPositionZ =  context->lightBlue[3][i];
+        float lightPositionW =  context->lightAlpha[3][i];
+        float lVecX = lightPositionX;
+        float lVecY = lightPositionY;
+        float lVecZ = lightPositionZ;
+        if (fabs(lightPositionW)>0.0) {
+          lVecX-=x;
+          lVecY-=y;
+          lVecZ-=z;
+        }
+        float l = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
+        if (l>0.f) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
+        float diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
+        if (diffuse<0) diffuse = 0;
+        float viewX = x;
+        float viewY = y;
+        float viewZ = z;
+        l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
+        if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
+        float dotNI = viewX*normalX+viewY*normalY+viewZ*normalZ;
+        float reflectionX = viewX - 2.0 * dotNI * normalX;
+        float reflectionY = viewY - 2.0 * dotNI * normalY;
+        float reflectionZ = viewZ - 2.0 * dotNI * normalZ;
+        l = sqrt(reflectionX*reflectionX+reflectionY*reflectionY+reflectionZ*reflectionZ);
+        if (l>0.f) {reflectionX/=l; reflectionY /= l; reflectionZ /= l;}
+        float specular = lVecX * reflectionX + lVecY * reflectionY + lVecZ * reflectionZ;
+        if (specular<0.0) specular = 0.0;
+        ambientRed += materialAmbientRed*lightAmbientRed;
+        ambientGreen += materialAmbientGreen*lightAmbientGreen;
+        ambientBlue += materialAmbientBlue*lightAmbientBlue;
+        diffuseRed += materialDiffuseRed*lightDiffuseRed*diffuse;
+        diffuseGreen += materialDiffuseGreen*lightDiffuseGreen*diffuse;
+        diffuseBlue += materialDiffuseBlue*lightDiffuseBlue*diffuse;
+        float shininess = materialShininessRed;
+        if (shininess < 0.001) shininess = 0.001;
+        specularRed += materialSpecularRed*lightSpecularRed*pow(specular,shininess);
+        specularGreen += materialSpecularGreen*lightSpecularGreen*pow(specular,shininess);
+        specularBlue += materialSpecularBlue*lightSpecularBlue*pow(specular,shininess);
+      }
+    }
+    v->colorRed = materialEmissionRed + ambientRed + diffuseRed + specularRed;
+    v->colorGreen = materialEmissionGreen + ambientGreen + diffuseGreen + specularGreen;
+    v->colorBlue = materialEmissionBlue + ambientBlue + diffuseBlue + specularBlue;
+  }
+}
+
 void glEmitVertex() {
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
@@ -219,20 +429,99 @@ void glEmitVertex() {
   v->vertexZ = w->vertexZ;
   v->vertexW = w->vertexW;
   glCurrentVertexElement++;
-  if (glCurrentVertexElement == 3 && glContext.beginMode == GL_TRIANGLES) {
-    int a = glTransformVertex(&glContext,&glVertices[0]);
-    a |= glTransformVertex(&glContext,&glVertices[1]);
-    a |= glTransformVertex(&glContext,&glVertices[2]);
-    if (a == 0) glDrawTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
-    glCurrentVertexElement = 0;
-  }
-  if (glCurrentVertexElement == 4 && glContext.beginMode == GL_QUADS) {
-    int a = glTransformVertex(&glContext,&glVertices[0]);
-    a |= glTransformVertex(&glContext,&glVertices[1]);
-    a |= glTransformVertex(&glContext,&glVertices[2]);
-    a |= glTransformVertex(&glContext,&glVertices[3]);
-    if (a == 0) glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
-    glCurrentVertexElement = 0;
+  switch(glContext.beginMode) {
+    case GL_LINES: {
+      if (glCurrentVertexElement==2) {
+        int a = glTransformVertex(&glContext,&glVertices[0]);
+        a |= glTransformVertex(&glContext,&glVertices[1]);
+        if (a == 0) {
+          glLightVertex(&glContext,&glVertices[0]);
+          glLightVertex(&glContext,&glVertices[1]);
+          memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
+          memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
+          float dx = glVertices[1].sx-glVertices[0].sx;
+          float dy = glVertices[1].sy-glVertices[0].sy;
+          float l = sqrt(dx*dx+dy*dy);
+          if (l>0.f) {dx/=l;dy/=l;};
+          float nx = dy;
+          float ny = -dx;
+          float d = glContext.lineWidth*0.5;
+          glVertices[0].sx += nx*d;
+          glVertices[0].sy += ny*d;
+          glVertices[1].sx += nx*d;
+          glVertices[1].sy += ny*d;
+          glVertices[2].sx -= nx*d;
+          glVertices[2].sy -= ny*d;
+          glVertices[3].sx -= nx*d;
+          glVertices[3].sy -= ny*d;
+          glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+        }
+        glCurrentVertexElement = 0;
+      }
+    } break;
+    case GL_LINE_STRIP: {
+      if (glCurrentVertexElement==2) {
+        int a = glTransformVertex(&glContext,&glVertices[0]);
+        a |= glTransformVertex(&glContext,&glVertices[1]);
+        if (a == 0) {
+          glLightVertex(&glContext,&glVertices[0]);
+          glLightVertex(&glContext,&glVertices[1]);
+          memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
+          memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
+          float dx = glVertices[1].sx-glVertices[0].sx;
+          float dy = glVertices[1].sy-glVertices[0].sy;
+          float l = sqrt(dx*dx+dy*dy);
+          if (l>0.f) {dx/=l;dy/=l;};
+          float nx = dy;
+          float ny = -dx;
+          float d = glContext.lineWidth*0.5;
+          glVertices[0].sx += nx*d;
+          glVertices[0].sy += ny*d;
+          glVertices[1].sx += nx*d;
+          glVertices[1].sy += ny*d;
+          glVertices[2].sx -= nx*d;
+          glVertices[2].sy -= ny*d;
+          glVertices[3].sx -= nx*d;
+          glVertices[3].sy -= ny*d;
+          glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          glVertices[0]=glVertices[1];
+        }
+        glCurrentVertexElement = 1;
+      }
+    } break;
+    case GL_TRIANGLES: {
+      if (glCurrentVertexElement==3) {
+        int a = glTransformVertex(&glContext,&glVertices[0]);
+        a |= glTransformVertex(&glContext,&glVertices[1]);
+        a |= glTransformVertex(&glContext,&glVertices[2]);
+        if (a == 0) {
+          glLightVertex(&glContext,&glVertices[0]);
+          glLightVertex(&glContext,&glVertices[1]);
+          glLightVertex(&glContext,&glVertices[2]);
+          glDrawTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
+        }
+        glCurrentVertexElement = 0;
+      }
+    } break;
+    case GL_QUADS: {
+      if (glCurrentVertexElement==4) {
+        int a = glTransformVertex(&glContext,&glVertices[0]);
+        a |= glTransformVertex(&glContext,&glVertices[1]);
+        a |= glTransformVertex(&glContext,&glVertices[2]);
+        a |= glTransformVertex(&glContext,&glVertices[3]);
+        if (a == 0) {
+          glLightVertex(&glContext,&glVertices[0]);
+          glLightVertex(&glContext,&glVertices[1]);
+          glLightVertex(&glContext,&glVertices[2]);
+          glLightVertex(&glContext,&glVertices[3]);
+          glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+        }
+        glCurrentVertexElement = 0;
+      }
+    } break;
+    default: {
+        glCurrentVertexElement = 0;
+    } break;
   }
 }
 
@@ -356,6 +645,7 @@ void glColor4ubv(const GLubyte *v) {
 }
 
 void glColorMaterial(GLenum face, GLenum pname) {
+  glContext.colorMaterial = pname;
 }
 
 void glCullFace(GLenum mode) {
@@ -426,6 +716,10 @@ GLboolean glIsEnabled (GLenum cap) {
 }  
 
 void glLightfv (GLenum light, GLenum pname, const GLfloat *params) {
+  glContext.lightRed[pname & 3][light - GL_LIGHT0] = params[0];
+  glContext.lightGreen[pname & 3][light - GL_LIGHT0] = params[1];
+  glContext.lightBlue[pname & 3][light - GL_LIGHT0] = params[2];
+  glContext.lightAlpha[pname & 3][light - GL_LIGHT0] = params[3];
 }
 
 void glLineStipple(GLint factor, GLushort pattern) {
@@ -460,9 +754,45 @@ void glNormal3fv(const GLfloat *n) {
 }
 
 void glMateriali(GLenum face, GLenum pname, GLint param) {
+  glMaterialf(face,pname,param);
+}
+
+void glMaterialf(GLenum face, GLenum pname, GLfloat param) {
+  float p[3];
+  p[0] = param;
+  p[1] = param;
+  p[2] = param;
+  glMaterialfv(face,pname,p);
 }
 
 void glMaterialfv (GLenum face, GLenum pname, const GLfloat *params) {
+  switch(pname) {
+    case GL_AMBIENT: {
+      glContext.materialRed[0] = params[0];
+      glContext.materialGreen[0] = params[1];
+      glContext.materialBlue[0] = params[2];
+    } break;
+    case GL_DIFFUSE: {
+      glContext.materialRed[1] = params[0];
+      glContext.materialGreen[1] = params[1];
+      glContext.materialBlue[1] = params[2];
+    } break;
+    case GL_SPECULAR: {
+      glContext.materialRed[2] = params[0];
+      glContext.materialGreen[2] = params[1];
+      glContext.materialBlue[2] = params[2];
+    } break;
+    case GL_EMISSION: {
+      glContext.materialRed[3] = params[0];
+      glContext.materialGreen[3] = params[1];
+      glContext.materialBlue[3] = params[2];
+    } break;
+    case GL_SHININESS: {
+      glContext.materialRed[4] = params[0];
+      glContext.materialGreen[4] = params[1];
+      glContext.materialBlue[4] = params[2];
+    } break;
+  }
 }
 
 void glMatrixMode (GLenum mode) {
@@ -539,6 +869,7 @@ void glhRotate2f(GLfloat *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
   float *matrix = glContext.matrixForMode[glContext.matrixModeNr];
   glhRotate2f(matrix,angle*2.f*3.1415927f/360.f,x,y,z);
+  glUpdateMatrix();
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
@@ -677,8 +1008,13 @@ void glhPerspectivef2(float *matrix, float fovyInDegrees, float aspectRatio, flo
   glhFrustumf2(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
 }
 
+void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
+  glhFrustumf2(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
+}
+
 void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane) {
   glhPerspectivef2(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
+  glUpdateMatrix();
 }
 
 void NormalizeVector(float *v) {
@@ -726,7 +1062,20 @@ void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *up
 }
 
 void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz) {
-
+  float eye[3];
+  float center[3];
+  float up[3];
+  eye[0] = cx;
+  eye[1] = cy;
+  eye[2] = cz;
+  center[0] = ox;
+  center[1] = oy;
+  center[2] = oz;
+  up[0] = ux;
+  up[1] = uy;
+  up[2] = uz;
+  glhLookAtf2(glContext.matrixForMode[glContext.matrixModeNr],eye,center,up);
+  glUpdateMatrix();
 }
 
 
@@ -959,6 +1308,19 @@ typedef unsigned long uint64_t;
 #include <conio.h>
 #include <stdlib.h>
 #include <stdio.h>
+int glGraphicsModeToRestore=0x02;
+void setBiosGraphicsMode(int mode) {
+    union REGS regs;
+    regs.x.eax = mode;
+    int386(0x10, &regs, &regs);
+}
+
+int getBiosGraphicsMode() {
+    union REGS regs;
+    regs.w.ax = 0x0f00;
+    int386 (0x10, &regs, &regs);
+    return regs.h.al;
+}
 typedef struct {
   short di;
   short si;
@@ -1158,6 +1520,7 @@ void *glVesaPointer(const void *d) {
 // --------------------------------------
 // --------------------------------------
 GLboolean glVesa(int xRes,int yRes, int bPP) {
+  glGraphicsModeToRestore = getBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
   glVbeModeInfo modeInfo;
   RMREGS regs;
@@ -1206,6 +1569,7 @@ void glDone() {
   delete[] glDepthBuffer;
   delete[] glStencilBuffer;
   unmapPhysical((unsigned int)glFrameBufferDedicated);
+  setBiosGraphicsMode(glGraphicsModeToRestore);
 }
 // --------------------------------------
 // --------------------------------------
