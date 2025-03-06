@@ -20,7 +20,7 @@ void pakki(void *udata, Uint8 *stream, int len)
 
 int SDL_GetTicks() {
   static int i = 0; i+=100;
-  counter = i * 44100 / 1000;
+  counter = i * (44100/1000);
   return i;
 }
 
