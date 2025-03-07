@@ -12,6 +12,9 @@ float *glDepthBuffer = NULL;
 GLfloat identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
 #define __GL_MAX_LIGHTS__ (2)
+#define __GL_MAX_TEXTURE_SIZE__ (1024)
+#define GLMAXTEXTURES 1024
+#define GLMAXTEXTUREUNITS 8
 
 class _GLContext {
 public:
@@ -71,6 +74,10 @@ public:
     vertexY = 1.f;
     vertexZ = 1.f;
     vertexW = 1.f;
+    textureX = 0.f;
+    textureY = 0.f;
+    textureZ = 0.f;
+    textureW = 0.f;
     beginMode = 0;
     colorMaterial = GL_AMBIENT_AND_DIFFUSE;
 
@@ -121,6 +128,9 @@ public:
       lightGreen[3][i] = 0;
       lightBlue[3][i] = 1;
       lightAlpha[3][i] = 0;
+    }
+    for (i = 0; i < GLMAXTEXTUREUNITS; i++) {
+      boundTextures[i] = 0;
     }
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
@@ -183,6 +193,10 @@ public:
   GLfloat vertexY;
   GLfloat vertexZ;
   GLfloat vertexW;
+  GLfloat textureX;
+  GLfloat textureY;
+  GLfloat textureZ;
+  GLfloat textureW;
   GLenum beginMode;
   GLboolean enabledCaps[256];
   GLfloat lightRed[4][__GL_MAX_LIGHTS__];
@@ -194,6 +208,7 @@ public:
   GLfloat materialGreen[5];
   GLfloat materialBlue[5];
   GLfloat materialAlpha[5];
+  GLuint boundTextures[GLMAXTEXTUREUNITS];
 };
 
 _GLContext glContext;
@@ -212,11 +227,59 @@ typedef struct glVertex {
   GLfloat vertexY;
   GLfloat vertexZ;
   GLfloat vertexW;
+  GLfloat textureX;
+  GLfloat textureY;
+  GLfloat textureZ;
+  GLfloat textureW;
   float sx,sy,sz;
 } glVertex;
 
 glVertex glVertices[4];
 int glCurrentVertexElement = 0;
+
+void glDrawTriangle(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2);
+void glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
+
+typedef struct glTexture {
+  GLuint name;
+  GLuint width;
+  GLuint height;
+  GLuint *data;
+  GLuint baseLevel;
+  GLuint lodBias;
+  GLuint magFilter;
+  GLuint maxLevel;
+  GLuint maxLod;
+  GLuint minFilter;
+  GLuint minLod;
+  GLuint wrapS;
+  GLuint wrapT;
+  GLuint wrapR;
+} glTexture;
+glTexture glTextures[GLMAXTEXTURES] = {{0}};
+
+GLuint glNewTexture() {
+  for (int i = 1; i < GLMAXTEXTURES; i++) {
+    if (glTextures[i].name == 0x00) {
+      glTextures[i].name = i;
+      glTextures[i].width = 0;
+      glTextures[i].height = 0;
+      glTextures[i].data = NULL;
+      return i;
+    }
+  }
+  return 0;
+}
+
+void glDeleteTexture(GLuint i) {
+  if (i > 0 && glTextures[i].name != 0) {
+    glTextures[i].name = 0;
+    if (glTextures[i].data != NULL) {
+      delete[] glTextures[i].data;
+      glTextures[i].data = NULL;
+    }
+  }
+}
 
 void combineIntoWindow(GLint &x0, GLint &y0, GLint &x1, GLint &y1,GLint nx0, GLint ny0, GLint nx1, GLint ny1) {
   x0 = nx0<x0?x0:nx0;
@@ -242,9 +305,6 @@ void glMatMul(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
 void glUpdateMatrix() {
   glMatMul(glContext.matrixForMode[0],glContext.matrixForMode[1],glContext.matrix);
 }
-
-void glDrawTriangle(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2);
-void glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
 int glTransformVertex(_GLContext *context, glVertex *v) {
   float x = v->vertexX * context->matrix[0*4+0] + v->vertexY * context->matrix[1*4+0] + v->vertexZ * context->matrix[2*4+0] + v->vertexW * context->matrix[3*4+0];
@@ -428,6 +488,10 @@ void glEmitVertex() {
   v->vertexY = w->vertexY;
   v->vertexZ = w->vertexZ;
   v->vertexW = w->vertexW;
+  v->textureX = w->textureX;
+  v->textureY = w->textureY;
+  v->textureZ = w->textureZ;
+  v->textureW = w->textureW;
   glCurrentVertexElement++;
   switch(glContext.beginMode) {
     case GL_LINES: {
@@ -526,7 +590,7 @@ void glEmitVertex() {
 }
 
 void glActiveTexture (GLenum texture) {
-  glContext.activeTexture = texture;
+  glContext.activeTexture = texture - GL_TEXTURE0;
 }
 
 void glAlphaFunc(GLenum func, GLclampf ref) {
@@ -537,6 +601,10 @@ void glAlphaFunc(GLenum func, GLclampf ref) {
 void glBegin(GLenum mode) {
   glContext.beginMode = mode;
   glCurrentVertexElement = 0;
+}
+
+void glBindTexture (GLenum target, GLuint texture) {
+  glContext.boundTextures[glContext.activeTexture] = texture;
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
@@ -652,6 +720,11 @@ void glCullFace(GLenum mode) {
   glContext.cullFaceMode = mode;
 }
 
+void glDeleteTextures (GLsizei n, GLuint *textures) {
+  for (int i = 0; i < n; i++)
+    glDeleteTexture(textures[i]);
+}
+
 void glDepthFunc(GLenum func) {
   glContext.depthFunc = func;
 }
@@ -689,6 +762,12 @@ void glFinish() {
 }
 
 void glFlush() {
+}
+
+void glGenTextures (GLsizei n, GLuint *textures) {
+  for(int i = 0; i <n; i++) {
+    textures[i] = glNewTexture();
+  }
 }
 
 void glGetBooleanv(GLenum pname, GLboolean *params) {
@@ -916,6 +995,71 @@ void glStencilOp(GLenum fail, GLenum zfail, GLenum zpass) {
   glContext.stencilOpZPass = zpass;
 }
 
+void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
+  if (glContext.boundTextures[glContext.activeTexture]==0) 
+    return;
+  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
+  if (t->data != NULL)  {
+    delete[] t->data;
+    t->data = NULL;
+  }
+  t->data = new unsigned int[width*height];
+  t->width = width;
+  t->height = height;
+  int rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
+  switch(format) {
+  case GL_RED:{rIn=0;} break;
+  case GL_RG:{rIn=0;gIn=1;} break;
+  case GL_RGB:{rIn=0;gIn=1;bIn=2;} break;
+  case GL_BGR:{rIn=2;gIn=1;bIn=0;} break;
+  case GL_RGBA:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
+  case GL_BGRA:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
+  case GL_RED_INTEGER:{rIn=0;} break;
+  case GL_RG_INTEGER:{rIn=0;gIn=1;} break;
+  case GL_RGB_INTEGER:{rIn=0;gIn=1;bIn=2;} break;
+  case GL_BGR_INTEGER:{rIn=2;gIn=1;bIn=0;} break;
+  case GL_RGBA_INTEGER:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
+  case GL_BGRA_INTEGER:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
+  case GL_STENCIL_INDEX:{sIn=0;} break;
+  case GL_DEPTH_COMPONENT:{dIn=0;} break;
+  case GL_DEPTH_STENCIL:{dIn=0;sIn=1;} break;
+  }
+  int input[4];
+  for (int i = 0; i < width*height; i++) {
+    unsigned int inputrgba = 0xffffffff;
+    if (pixels != NULL) inputrgba = ((unsigned int*)pixels)[i];
+    input[0] = inputrgba & 255;
+    input[1] = (inputrgba>>8) & 255;
+    input[2] = (inputrgba>>16) & 255;
+    input[3] = (inputrgba>>24) & 255;
+    unsigned int rgba = 0x00000000;
+    if (rIn != -1) rgba |= input[rIn];
+    if (gIn != -1) rgba |= input[gIn]<<8;
+    if (bIn != -1) rgba |= input[bIn]<<16;
+    if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
+    t->data[i] = rgba;
+  }
+}
+
+void glTexParameteri(GLenum target, GLenum pname, GLint param) {
+  if (glContext.boundTextures[glContext.activeTexture]==0) 
+    return;
+  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
+  switch(pname) {
+  case GL_TEXTURE_BASE_LEVEL: {t->baseLevel = param; } break;
+  case GL_TEXTURE_LOD_BIAS: {t->lodBias = param; } break;
+  case GL_TEXTURE_MIN_FILTER: {t->minFilter = param; } break;
+  case GL_TEXTURE_MAG_FILTER: {t->magFilter = param; } break;
+  case GL_TEXTURE_MIN_LOD: {t->minLod = param; } break;
+  case GL_TEXTURE_MAX_LOD: {t->maxLod = param; } break;
+  case GL_TEXTURE_MAX_LEVEL: {t->maxLevel = param; } break;
+  case GL_TEXTURE_WRAP_S: {t->wrapS = param; } break;
+  case GL_TEXTURE_WRAP_T: {t->wrapT = param; } break;
+  case GL_TEXTURE_WRAP_R: {t->wrapR = param; } break;
+  }
+}
+
+
 void glhTranslatef2(GLfloat *matrix, GLfloat x, GLfloat y, GLfloat z) {
   matrix[12]=matrix[0]*x+matrix[4]*y+matrix[8]*z+matrix[12];
   matrix[13]=matrix[1]*x+matrix[5]*y+matrix[9]*z+matrix[13];
@@ -962,6 +1106,60 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
   glContext.viewportY1 = glFrameBufferHeight-y;
 }
 
+void glVertex3d(GLdouble x, GLdouble y, GLdouble z) {
+  glVertex3f(x,y,z);
+}
+
+void glTexCoord1f(GLfloat x) {
+  glContext.textureX = x;
+}
+
+void glTexCoord2f(GLfloat x, GLfloat y) {
+  glContext.textureX = x;
+  glContext.textureY = y;
+}
+
+void glTexCoord3f(GLfloat x, GLfloat y, GLfloat z) {
+  glContext.textureX = x;
+  glContext.textureY = y;
+  glContext.textureZ = z;
+}
+
+void glTexCoord4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
+  glContext.textureX = x;
+  glContext.textureY = y;
+  glContext.textureZ = z;
+  glContext.textureW = w;
+}
+
+void glTexCoord1d(GLdouble x) {
+  glTexCoord1f(x);
+}
+
+void glTexCoord2d(GLdouble x, GLdouble y) {
+  glTexCoord2f(x,y);
+}
+
+void glTexCoord3d(GLdouble x, GLdouble y, GLdouble z) {
+  glTexCoord3f(x,y,z);
+}
+
+void glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w) {
+  glTexCoord4f(x,y,z,w);
+}
+
+void glPushAttrib(GLbitfield mask) {
+}
+
+void glPopAttrib() {
+}
+
+void glFogf(GLenum pname, GLfloat param) {
+}
+
+void glFogfv(GLenum pname, GLfloat *params) {
+}
+
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
@@ -976,6 +1174,21 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 // -----------
 // -----------
 // -----------
+void NormalizeVector(float *v) {
+  float l = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+  if (l>0) {
+    v[0] /= l;
+    v[1] /= l;
+    v[2] /= l;
+  }
+}
+
+void ComputeNormalOfPlane(float *normal, float *pvector1, float *pvector2) {
+  normal[0]=(pvector1[1]*pvector2[2])-(pvector1[2]*pvector2[1]);
+  normal[1]=(pvector1[2]*pvector2[0])-(pvector1[0]*pvector2[2]);
+  normal[2]=(pvector1[0]*pvector2[1])-(pvector1[1]*pvector2[0]);
+}
+
 void glhFrustumf2(float *matrix, float left, float right, float bottom, float top, float znear, float zfar) {
   float temp, temp2, temp3, temp4;
   temp = 2.0 * znear;
@@ -1008,30 +1221,6 @@ void glhPerspectivef2(float *matrix, float fovyInDegrees, float aspectRatio, flo
   glhFrustumf2(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
 }
 
-void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
-  glhFrustumf2(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
-}
-
-void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane) {
-  glhPerspectivef2(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
-  glUpdateMatrix();
-}
-
-void NormalizeVector(float *v) {
-  float l = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-  if (l>0) {
-    v[0] /= l;
-    v[1] /= l;
-    v[2] /= l;
-  }
-}
-
-void ComputeNormalOfPlane(float *normal, float *pvector1, float *pvector2) {
-  normal[0]=(pvector1[1]*pvector2[2])-(pvector1[2]*pvector2[1]);
-  normal[1]=(pvector1[2]*pvector2[0])-(pvector1[0]*pvector2[2]);
-  normal[2]=(pvector1[0]*pvector2[1])-(pvector1[1]*pvector2[0]);
-}
-
 void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *upVector3D) {
   float forward[3], side[3], up[3];
   float matrix2[16], resultMatrix[16];
@@ -1061,6 +1250,45 @@ void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *up
   memcpy(matrix,resultMatrix,16*sizeof(float));
 }
 
+void glOrtho(float left, float right, float bottom, float top, float znear, float zfar) {
+  GLfloat x,y,z;
+  GLfloat tx,ty,tz;
+  GLfloat m[16];
+  x = 2.0 / (right-left);
+  y = 2.0 / (top-bottom);
+  z = -2.0 / (zfar - znear);
+  tx = -(right+left)/(right-left);
+  ty = -(top+bottom)/(top-bottom);
+  tz = -(zfar+znear)/(zfar-znear);
+#define M(row,col) m[col*4+row]  
+  M(0,0)=x; M(0,1)=0; M(0,2) = 0.f; M(0,3) = tx;
+  M(1,0)=0; M(1,1)=y; M(1,2) = 0.f; M(1,3) = ty;
+  M(2,0)=0; M(2,1)=0; M(2,2) = z; M(2,3) = tz;
+  M(3,0)=0; M(3,1)=0; M(3,2) = 0; M(3,3) = 1;
+  glMultMatrixf(m);
+}
+
+void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
+  glhFrustumf2(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
+}
+
+void glFrustumf(float left, float right, float bottom, float top, float znear, float zfar) {
+  glFrustum(left,right,bottom,top,znear,zfar);
+}
+
+void glOrthof(float left, float right, float bottom, float top, float znear, float zfar) {
+  glOrtho(left, right, bottom, top, znear, zfar);
+}
+
+void gluOrtho2D(float left, float right, float bottom, float top) {
+  glOrtho(left, right, bottom, top, -1, 1);
+}
+
+void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane) {
+  glhPerspectivef2(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
+  glUpdateMatrix();
+}
+
 void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz) {
   float eye[3];
   float center[3];
@@ -1077,7 +1305,6 @@ void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz
   glhLookAtf2(glContext.matrixForMode[glContext.matrixModeNr],eye,center,up);
   glUpdateMatrix();
 }
-
 
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
@@ -1201,6 +1428,34 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   float v1z = 1.f/v1->sz;
   float v2z = 1.f/v2->sz;
 
+  glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
+  bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != NULL;
+  bool filtering = (t->magFilter != GL_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_LINEAR);
+  float tx0,ty0,tz0,tw0;
+  float tx1,ty1,tz1,tw1;
+  float tx2,ty2,tz2,tw2;
+  float tx3,ty3,tz3,tw3;
+  unsigned int *tdata0 = NULL;
+  int twidth0;
+  int theight0;
+
+  // texture
+  if (textured) {
+    twidth0 = t->width;
+    theight0 = t->height;
+    tdata0 = t->data;
+
+    tx0 = v0->textureX*v0z*twidth0;
+    ty0 = v0->textureY*v0z*theight0;
+  
+    tx1 = v1->textureX*v1z*twidth0;
+    ty1 = v1->textureY*v1z*theight0;
+  
+    tx2 = v2->textureX*v2z*twidth0;
+    ty2 = v2->textureY*v2z*theight0;
+  }
+
+  // rgba
   float r0 = v0->colorRed;
   float g0 = v0->colorGreen;
   float b0 = v0->colorBlue;
@@ -1268,6 +1523,50 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
           int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iz;
           int g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iz;
           int b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iz;
+          if (textured) {
+            float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iz;
+            float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iz;
+            int tix0 = (int)floor(tx);
+            int tiy0 = (int)floor(ty);
+            tix0 = tix0<0?(twidth0-1-((-tix0)%twidth0)):(tix0%twidth0);
+            tiy0 = tiy0<0?(theight0-1-((-tiy0)%theight0)):(tiy0%theight0);
+            unsigned int rgba = 0xffffffff;
+            if (filtering) {
+              int tix1 = (tix0+1) % twidth0;
+              int tiy1 = (tiy0+1) % theight0;
+              int txf = (int)floor(fmod(tx*256.f,256.f));
+              int tyf = (int)floor(fmod(ty*256.f,256.f));
+              if (txf<0) txf = 256+txf;
+              if (tyf<0) tyf = 256+tyf;
+              int p1v = ((256-txf)*(256-tyf))>>8; 
+              int p2v = ((txf)*(256-tyf))>>8; 
+              int p3v = ((txf)*(tyf))>>8; 
+              int p4v = ((256-txf)*(tyf))>>8;
+              tiy0 *= twidth0;
+              tiy1 *= twidth0;
+              unsigned int rgba00 = tdata0[tix0+tiy0];
+              unsigned int rgba10 = tdata0[tix1+tiy0];
+              unsigned int rgba11 = tdata0[tix1+tiy1];
+              unsigned int rgba01 = tdata0[tix0+tiy1];
+              rgba = (((rgba00 & 0xff00ff00)*p1v)>>8)&0xff00ff00;
+              rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
+              rgba += (((rgba10 & 0xff00ff00)*p2v)>>8)&0xff00ff00;
+              rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
+              rgba += (((rgba11 & 0xff00ff00)*p3v)>>8)&0xff00ff00;
+              rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
+              rgba += (((rgba01 & 0xff00ff00)*p4v)>>8)&0xff00ff00;
+              rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
+            } else {
+              tiy0 *= twidth0;
+              rgba  = tdata0[tix0+tiy0];
+            }
+            r *= rgba & 255;
+            g *= (rgba >> 8) & 255;
+            b *= (rgba >> 16) & 255;
+            r >>= 8;
+            g >>= 8;
+            b >>= 8;
+          }
           *zDest=iz;
           *pDest=r|(g<<8)|(b<<16)|0xff000000;
         }

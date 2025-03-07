@@ -17,6 +17,34 @@ extern "C" {
 #define GLAPI extern
 #endif
 
+
+#define GL_FOG 0 // :mad:
+#define GL_FOG_COLOR 0 // :mad:
+#define GL_FOG_DENSITY 0 // :mad:
+#define GL_RGBA8 0 // :mad:
+#define GL_ALL_ATTRIB_BITS 0 // :mad:
+#define GL_TEXTURE_BASE_LEVEL  0x2804 // :mad:
+#define GL_TEXTURE_WRAP_R  0x2805 // :mad:
+#define GL_TEXTURE_MIN_LOD  0x2806 // :mad:
+#define GL_TEXTURE_MAX_LOD  0x2807 // :mad:
+#define GL_TEXTURE_LOD_BIAS 0x2808 // :mad:
+#define GL_TEXTURE_MAX_LEVEL 0x2809 // :mad:
+#define GL_QUADS 0x0007 // :mad:
+#define GL_RED 0x190b // :mad:
+#define GL_RG 0x190c // :mad:
+#define GL_BGR 0x190d // :mad:
+#define GL_BGRA 0x190e // :mad:
+#define GL_RED_INTEGER 0x190f // :mad:
+#define GL_RG_INTEGER 0x1910 // :mad:
+#define GL_RGB_INTEGER 0x1911 // :mad:
+#define GL_BGR_INTEGER 0x1912 // :mad:
+#define GL_RGBA_INTEGER 0x1913 // :mad:
+#define GL_BGRA_INTEGER 0x1914 // :mad:
+#define GL_STENCIL_INDEX 0x1915 // :mad:
+#define GL_DEPTH_COMPONENT 0x1916 // :mad:
+#define GL_DEPTH_STENCIL 0x1917 // :mad:
+
+
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
 typedef unsigned int GLbitfield;
@@ -28,6 +56,7 @@ typedef short GLshort;
 typedef unsigned short GLushort;
 typedef unsigned int GLuint;
 typedef float GLfloat;
+typedef double GLdouble;
 typedef float GLclampf;
 typedef void GLvoid;
 /* Internal convenience typedefs */
@@ -57,7 +86,6 @@ typedef void (*_GLfuncptr)(void);
 #define GL_TRIANGLES                      0x0004
 #define GL_TRIANGLE_STRIP                 0x0005
 #define GL_TRIANGLE_FAN                   0x0006
-      #define GL_QUADS 0x0007 // :mad: addition
 /* AlphaFunction */
 /* #define GL_LEQUAL                         0x0203 */
 /* #define GL_ALWAYS                         0x0207 */
@@ -569,16 +597,31 @@ GLAPI void APIENTRY glVertex3fv (const GLfloat *v);
 GLAPI void APIENTRY glVertexPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 GLAPI void APIENTRY glViewport (GLint x, GLint y, GLsizei width, GLsizei height);
 
-GLAPI void APIENTRY glColor3f (GLfloat red, GLfloat green, GLfloat blue);
-GLAPI void APIENTRY glColor3fv (const GLfloat *v);
-GLAPI void APIENTRY glColor3ub (GLubyte red, GLubyte green, GLubyte blue);
-GLAPI void APIENTRY glColor4ubv(const GLubyte *color);
-GLAPI void APIENTRY glColorMaterial(GLenum face, GLenum pname);
-GLAPI void APIENTRY glMateriali(GLenum face, GLenum pname, GLint param);
-GLAPI void APIENTRY glFrustum(float left, float right, float bottom, float top, float znear, float zfar);
-GLAPI void APIENTRY gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane);
-GLAPI void APIENTRY gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz);
-
+GLAPI void APIENTRY glColor3f (GLfloat red, GLfloat green, GLfloat blue); // :mad:
+GLAPI void APIENTRY glColor3fv (const GLfloat *v); // :mad:
+GLAPI void APIENTRY glColor3ub (GLubyte red, GLubyte green, GLubyte blue); // :mad:
+GLAPI void APIENTRY glColor4ubv(const GLubyte *color); // :mad:
+GLAPI void APIENTRY glColorMaterial(GLenum face, GLenum pname); // :mad:
+GLAPI void APIENTRY glMateriali(GLenum face, GLenum pname, GLint param); // :mad:
+GLAPI void APIENTRY glFrustum(float left, float right, float bottom, float top, float znear, float zfar); // :mad:
+GLAPI void APIENTRY gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane); // :mad:
+GLAPI void APIENTRY gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz); // :mad:
+GLAPI void APIENTRY glVertex3d(GLdouble x, GLdouble y, GLdouble z); // :mad:
+GLAPI void APIENTRY glTexCoord1d(GLdouble x); // :mad:
+GLAPI void APIENTRY glTexCoord1f(GLfloat x); // :mad:
+GLAPI void APIENTRY glTexCoord2d(GLdouble x, GLdouble y); // :mad:
+GLAPI void APIENTRY glTexCoord2f(GLfloat x, GLfloat y); // :mad:
+GLAPI void APIENTRY glTexCoord3d(GLdouble x, GLdouble y, GLdouble z); // :mad:
+GLAPI void APIENTRY glTexCoord3f(GLfloat x, GLfloat y, GLfloat z); // :mad:
+GLAPI void APIENTRY glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w); // :mad:
+GLAPI void APIENTRY glTexCoord4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w); // :mad:
+GLAPI void APIENTRY glPushAttrib(GLbitfield mask); // :mad:
+GLAPI void APIENTRY glPopAttrib(); // :mad:
+GLAPI void APIENTRY gluOrtho2D(float left, float right, float bottom, float top); // :mad:
+GLAPI void APIENTRY glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar); // :mad:
+GLAPI void APIENTRY glFogf(GLenum pname, GLfloat param); // :mad:
+GLAPI void APIENTRY glFogfv(GLenum pname, GLfloat *params); // :mad:
+GLAPI void APIENTRY glDeleteTextures (GLsizei n, GLuint *textures); // :mad:
 
 #ifdef __cplusplus
 }

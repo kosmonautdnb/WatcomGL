@@ -1,3 +1,2 @@
-GLIMPL.CPP  GLIMPL.OBJ
-osa.c osa.obj
-main.c main.obj
+GLIMPL.CPP GLIMPL.OBJ
+GLTEST.CPP GLTEST.OBJ
