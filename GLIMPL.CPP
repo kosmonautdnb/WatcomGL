@@ -16,6 +16,22 @@ GLfloat identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 #define GLMAXTEXTURES 1024
 #define GLMAXTEXTUREUNITS 8
 
+__inline float glClampf(float a, float n, float x) {
+  return a < n ? n : (a > x ? x : a);
+}
+
+__inline int glClampi(int a, int n, int x) {
+  return a < n ? n : (a > x ? x : a);
+}
+
+__inline int glMini(int a, int n) {
+  return a < n ? a : n;
+}
+
+__inline int glMaxi(int a, int x) {
+  return a > x ? a : x;
+}
+
 class _GLContext {
 public:
   _GLContext() {
@@ -34,11 +50,11 @@ public:
     activeTexture = 0;
     alphaFunc = 0;
     alphaFuncRef = 0;
-    blendFuncSFactor = 0;
-    blendFuncDFactor = 0;
+    blendFuncSFactor = GL_ONE;
+    blendFuncDFactor = GL_ZERO;
     cullFaceMode = 0;
-    depthFunc = 0;
-    depthMask = 0;
+    depthFunc = GL_LESS;
+    depthMask = true;
     depthRangeZNear = 0;
     depthRangeZFar = 0;
     pointSize = 0;
@@ -102,10 +118,10 @@ public:
     materialBlue[3] = 0;
     materialAlpha[3] = 0;
     // shininess
-    materialRed[4] = 0;
-    materialGreen[4] = 0;
-    materialBlue[4] = 0;
-    materialAlpha[4] = 0;
+    materialRed[4] = 1;
+    materialGreen[4] = 1;
+    materialBlue[4] = 1;
+    materialAlpha[4] = 1;
 
     for (i = 0;  i < __GL_MAX_LIGHTS__; i++) {
       // ambient
@@ -132,6 +148,11 @@ public:
     for (i = 0; i < GLMAXTEXTUREUNITS; i++) {
       boundTextures[i] = 0;
     }
+    blendColorRed = 0;
+    blendColorGreen = 0;
+    blendColorBlue = 0;
+    blendColorAlpha = 1;
+    blendEquation = GL_FUNC_ADD;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -209,6 +230,11 @@ public:
   GLfloat materialBlue[5];
   GLfloat materialAlpha[5];
   GLuint boundTextures[GLMAXTEXTUREUNITS];
+  GLfloat blendColorRed;
+  GLfloat blendColorGreen;
+  GLfloat blendColorBlue;
+  GLfloat blendColorAlpha;
+  GLenum blendEquation;
 };
 
 _GLContext glContext;
@@ -255,8 +281,15 @@ typedef struct glTexture {
   GLuint wrapS;
   GLuint wrapT;
   GLuint wrapR;
+  GLfloat borderColorRed;
+  GLfloat borderColorGreen;
+  GLfloat borderColorBlue;
+  GLfloat borderColorAlpha;
+  GLuint texEnvMode;
 } glTexture;
-glTexture glTextures[GLMAXTEXTURES] = {{0}};
+glTexture glTextures[GLMAXTEXTURES] = {
+  {0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}
+};
 
 GLuint glNewTexture() {
   for (int i = 1; i < GLMAXTEXTURES; i++) {
@@ -442,15 +475,15 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         if (l>0.f) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
         float diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
         if (diffuse<0) diffuse = 0;
-        float viewX = x;
-        float viewY = y;
-        float viewZ = z;
+        float viewX = -x;
+        float viewY = -y;
+        float viewZ = -z;
         l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
         if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
-        float dotNI = viewX*normalX+viewY*normalY+viewZ*normalZ;
-        float reflectionX = viewX - 2.0 * dotNI * normalX;
-        float reflectionY = viewY - 2.0 * dotNI * normalY;
-        float reflectionZ = viewZ - 2.0 * dotNI * normalZ;
+        float dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
+        float reflectionX = viewX - dot2NI * normalX;
+        float reflectionY = viewY - dot2NI * normalY;
+        float reflectionZ = viewZ - dot2NI * normalZ;
         l = sqrt(reflectionX*reflectionX+reflectionY*reflectionY+reflectionZ*reflectionZ);
         if (l>0.f) {reflectionX/=l; reflectionY /= l; reflectionZ /= l;}
         float specular = lVecX * reflectionX + lVecY * reflectionY + lVecZ * reflectionZ;
@@ -472,6 +505,14 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     v->colorGreen = materialEmissionGreen + ambientGreen + diffuseGreen + specularGreen;
     v->colorBlue = materialEmissionBlue + ambientBlue + diffuseBlue + specularBlue;
   }
+}
+
+__inline int glClipVertex(_GLContext *context, glVertex *v) {
+  int clipFlags = (v->sx < context->viewportX0) ? 1 : 0;
+  clipFlags |= (v->sy < context->viewportY0) ? 2 : 0;
+  clipFlags |= (v->sx > context->viewportX1) ? 4 : 0;
+  clipFlags |= (v->sy > context->viewportY1) ? 8 : 0;
+  return clipFlags;
 }
 
 void glEmitVertex() {
@@ -499,26 +540,30 @@ void glEmitVertex() {
         int a = glTransformVertex(&glContext,&glVertices[0]);
         a |= glTransformVertex(&glContext,&glVertices[1]);
         if (a == 0) {
-          glLightVertex(&glContext,&glVertices[0]);
-          glLightVertex(&glContext,&glVertices[1]);
-          memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
-          memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
-          float dx = glVertices[1].sx-glVertices[0].sx;
-          float dy = glVertices[1].sy-glVertices[0].sy;
-          float l = sqrt(dx*dx+dy*dy);
-          if (l>0.f) {dx/=l;dy/=l;};
-          float nx = dy;
-          float ny = -dx;
-          float d = glContext.lineWidth*0.5;
-          glVertices[0].sx += nx*d;
-          glVertices[0].sy += ny*d;
-          glVertices[1].sx += nx*d;
-          glVertices[1].sy += ny*d;
-          glVertices[2].sx -= nx*d;
-          glVertices[2].sy -= ny*d;
-          glVertices[3].sx -= nx*d;
-          glVertices[3].sy -= ny*d;
-          glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          int clipFlags = glClipVertex(&glContext,&glVertices[0]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[1]);
+          if (clipFlags == 0) {
+            glLightVertex(&glContext,&glVertices[0]);
+            glLightVertex(&glContext,&glVertices[1]);
+            memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
+            memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
+            float dx = glVertices[1].sx-glVertices[0].sx;
+            float dy = glVertices[1].sy-glVertices[0].sy;
+            float l = sqrt(dx*dx+dy*dy);
+            if (l>0.f) {dx/=l;dy/=l;};
+            float nx = dy;
+            float ny = -dx;
+            float d = glContext.lineWidth*0.5;
+            glVertices[0].sx += nx*d;
+            glVertices[0].sy += ny*d;
+            glVertices[1].sx += nx*d;
+            glVertices[1].sy += ny*d;
+            glVertices[2].sx -= nx*d;
+            glVertices[2].sy -= ny*d;
+            glVertices[3].sx -= nx*d;
+            glVertices[3].sy -= ny*d;
+            glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          }
         }
         glCurrentVertexElement = 0;
       }
@@ -528,27 +573,31 @@ void glEmitVertex() {
         int a = glTransformVertex(&glContext,&glVertices[0]);
         a |= glTransformVertex(&glContext,&glVertices[1]);
         if (a == 0) {
-          glLightVertex(&glContext,&glVertices[0]);
-          glLightVertex(&glContext,&glVertices[1]);
-          memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
-          memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
-          float dx = glVertices[1].sx-glVertices[0].sx;
-          float dy = glVertices[1].sy-glVertices[0].sy;
-          float l = sqrt(dx*dx+dy*dy);
-          if (l>0.f) {dx/=l;dy/=l;};
-          float nx = dy;
-          float ny = -dx;
-          float d = glContext.lineWidth*0.5;
-          glVertices[0].sx += nx*d;
-          glVertices[0].sy += ny*d;
-          glVertices[1].sx += nx*d;
-          glVertices[1].sy += ny*d;
-          glVertices[2].sx -= nx*d;
-          glVertices[2].sy -= ny*d;
-          glVertices[3].sx -= nx*d;
-          glVertices[3].sy -= ny*d;
-          glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
-          glVertices[0]=glVertices[1];
+          int clipFlags = glClipVertex(&glContext,&glVertices[0]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[1]);
+          if (clipFlags == 0) {
+            glLightVertex(&glContext,&glVertices[0]);
+            glLightVertex(&glContext,&glVertices[1]);
+            memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
+            memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
+            float dx = glVertices[1].sx-glVertices[0].sx;
+            float dy = glVertices[1].sy-glVertices[0].sy;
+            float l = sqrt(dx*dx+dy*dy);
+            if (l>0.f) {dx/=l;dy/=l;};
+            float nx = dy;
+            float ny = -dx;
+            float d = glContext.lineWidth*0.5;
+            glVertices[0].sx += nx*d;
+            glVertices[0].sy += ny*d;
+            glVertices[1].sx += nx*d;
+            glVertices[1].sy += ny*d;
+            glVertices[2].sx -= nx*d;
+            glVertices[2].sy -= ny*d;
+            glVertices[3].sx -= nx*d;
+            glVertices[3].sy -= ny*d;
+            glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+            glVertices[0]=glVertices[1];
+          }
         }
         glCurrentVertexElement = 1;
       }
@@ -559,10 +608,15 @@ void glEmitVertex() {
         a |= glTransformVertex(&glContext,&glVertices[1]);
         a |= glTransformVertex(&glContext,&glVertices[2]);
         if (a == 0) {
-          glLightVertex(&glContext,&glVertices[0]);
-          glLightVertex(&glContext,&glVertices[1]);
-          glLightVertex(&glContext,&glVertices[2]);
-          glDrawTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
+          int clipFlags = glClipVertex(&glContext,&glVertices[0]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[1]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[2]);
+          if (clipFlags == 0) {
+            glLightVertex(&glContext,&glVertices[0]);
+            glLightVertex(&glContext,&glVertices[1]);
+            glLightVertex(&glContext,&glVertices[2]);
+            glDrawTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
+          }
         }
         glCurrentVertexElement = 0;
       }
@@ -574,11 +628,17 @@ void glEmitVertex() {
         a |= glTransformVertex(&glContext,&glVertices[2]);
         a |= glTransformVertex(&glContext,&glVertices[3]);
         if (a == 0) {
-          glLightVertex(&glContext,&glVertices[0]);
-          glLightVertex(&glContext,&glVertices[1]);
-          glLightVertex(&glContext,&glVertices[2]);
-          glLightVertex(&glContext,&glVertices[3]);
-          glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          int clipFlags = glClipVertex(&glContext,&glVertices[0]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[1]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[2]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[3]);
+          if (clipFlags == 0) {
+            glLightVertex(&glContext,&glVertices[0]);
+            glLightVertex(&glContext,&glVertices[1]);
+            glLightVertex(&glContext,&glVertices[2]);
+            glLightVertex(&glContext,&glVertices[3]);
+            glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          }
         }
         glCurrentVertexElement = 0;
       }
@@ -765,7 +825,7 @@ void glFlush() {
 }
 
 void glGenTextures (GLsizei n, GLuint *textures) {
-  for(int i = 0; i <n; i++) {
+  for(int i = 0; i < n; i++) {
     textures[i] = glNewTexture();
   }
 }
@@ -995,6 +1055,21 @@ void glStencilOp(GLenum fail, GLenum zfail, GLenum zpass) {
   glContext.stencilOpZPass = zpass;
 }
 
+void glTexEnvfv (GLenum target, GLenum pname, const GLfloat *params) {
+
+}
+
+void glTexEnvi (GLenum target, GLenum pname, GLint param) {
+  if (glContext.boundTextures[glContext.activeTexture]==0) 
+    return;
+  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
+  switch(pname) {
+    case GL_TEXTURE_ENV_MODE: {
+      t->texEnvMode = param;
+    } break;
+  }
+}
+
 void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
   if (glContext.boundTextures[glContext.activeTexture]==0) 
     return;
@@ -1056,6 +1131,51 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
   case GL_TEXTURE_WRAP_S: {t->wrapS = param; } break;
   case GL_TEXTURE_WRAP_T: {t->wrapT = param; } break;
   case GL_TEXTURE_WRAP_R: {t->wrapR = param; } break;
+  }
+}
+
+void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
+  if (glContext.boundTextures[glContext.activeTexture]==0) 
+    return;
+  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
+  if (t->data == NULL) return;
+  int rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
+  switch(format) {
+  case GL_RED:{rIn=0;} break;
+  case GL_RG:{rIn=0;gIn=1;} break;
+  case GL_RGB:{rIn=0;gIn=1;bIn=2;} break;
+  case GL_BGR:{rIn=2;gIn=1;bIn=0;} break;
+  case GL_RGBA:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
+  case GL_BGRA:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
+  case GL_RED_INTEGER:{rIn=0;} break;
+  case GL_RG_INTEGER:{rIn=0;gIn=1;} break;
+  case GL_RGB_INTEGER:{rIn=0;gIn=1;bIn=2;} break;
+  case GL_BGR_INTEGER:{rIn=2;gIn=1;bIn=0;} break;
+  case GL_RGBA_INTEGER:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
+  case GL_BGRA_INTEGER:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
+  case GL_STENCIL_INDEX:{sIn=0;} break;
+  case GL_DEPTH_COMPONENT:{dIn=0;} break;
+  case GL_DEPTH_STENCIL:{dIn=0;sIn=1;} break;
+  }
+  int input[4];
+  for (int i = 0; i < width*height; i++) {
+    unsigned int inputrgba = 0xffffffff;
+    if (pixels != NULL) inputrgba = ((unsigned int*)pixels)[i];
+    input[0] = inputrgba & 255;
+    input[1] = (inputrgba>>8) & 255;
+    input[2] = (inputrgba>>16) & 255;
+    input[3] = (inputrgba>>24) & 255;
+    unsigned int rgba = 0x00000000;
+    if (rIn != -1) rgba |= input[rIn];
+    if (gIn != -1) rgba |= input[gIn]<<8;
+    if (bIn != -1) rgba |= input[bIn]<<16;
+    if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
+    int x = i % width;
+    int y = i / width;
+    x += xoffset;
+    y += yoffset;
+    if (x >= 0 && y >= 0 && x < t->width && y < t->height)
+      t->data[x+y*t->width] = rgba;
   }
 }
 
@@ -1158,6 +1278,31 @@ void glFogf(GLenum pname, GLfloat param) {
 }
 
 void glFogfv(GLenum pname, GLfloat *params) {
+}
+
+void glTexParameterfv (GLenum target, GLenum pname, GLfloat *param) {
+  if (glContext.boundTextures[glContext.activeTexture]==0) 
+    return;
+  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
+  switch(pname) {
+    case GL_TEXTURE_BORDER_COLOR: {
+      t->borderColorRed = param[0];
+      t->borderColorGreen = param[1];
+      t->borderColorBlue = param[2];
+      t->borderColorAlpha = param[3];
+    } break;
+  }
+}
+
+GLAPI void APIENTRY glBlendCOlor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
+  glContext.blendColorRed = red;
+  glContext.blendColorGreen = green;
+  glContext.blendColorBlue = blue;
+  glContext.blendColorAlpha = alpha;
+}
+
+GLAPI void APIENTRY glBlendEquation(GLenum mode) {
+  glContext.blendEquation = mode;
 }
 
 // ------------------------------------------------------------------------
@@ -1326,14 +1471,14 @@ float getBary(int x, int y, const glVertex *v0, const glVertex *v1, const glVert
   float dy = v2->sy - v1->sy;
   float nx = dy;
   float ny = -dx;
-  float nl = sqrt(nx*nx+ny*ny);
+  /*float nl = nx*nx+ny*ny; // the sqrt is not needed here
   if (nl > 0) {
     nx /= nl;
     ny /= nl;
-  }
+  }*/
   float l = (v0->sx-v1->sx)*nx + (v0->sy-v1->sy)*ny;
   float p = (x-v1->sx)*nx + (y-v1->sy)*ny;
-  return p/l;
+  return (p/l);
 }
 
 #define __POLYMINMAX__\
@@ -1375,8 +1520,8 @@ float getBary(int x, int y, const glVertex *v0, const glVertex *v1, const glVert
 #define __PAINTPOLYQUAD_INITBARYFORX__\
   bary0 = getBary(pminx,y,v0,v1,v2);\
   bary1 = getBary(pminx,y,v1,v2,v0);\
-  baryAdd0 = (getBary(pmaxx,y,v0,v1,v2)-bary0)/(pmaxx-pminx);\
-  baryAdd1 = (getBary(pmaxx,y,v1,v2,v0)-bary1)/(pmaxx-pminx);
+  baryAdd0 = getBary(pminx+1,y,v0,v1,v2)-bary0;\
+  baryAdd1 = getBary(pminx+1,y,v1,v2,v0)-bary1;
   
 #define __PAINTPOLYQUAD_BEGINX__\
   pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
@@ -1398,8 +1543,278 @@ bool glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   return (dx0*dy1 - dy0*dx1)>=0;
 }
 
-__inline bool glCheckDepthFunction(_GLContext *context, float depthBufferValue, float newValue) {
-  return newValue <= depthBufferValue;
+__inline bool glCheckDepthFunction(float depthBufferValue, float newValue, int depthFunction) {
+  switch(depthFunction) {
+  case GL_NEVER: {return false;} break;
+  case GL_LESS: {return newValue < depthBufferValue;} break;
+  case GL_EQUAL: {return newValue == depthBufferValue;} break;
+  case GL_LEQUAL: {return newValue <= depthBufferValue;} break;
+  case GL_GREATER: {return newValue > depthBufferValue;} break;
+  case GL_NOTEQUAL: {return newValue != depthBufferValue;} break;
+  case GL_GEQUAL: {return newValue >= depthBufferValue;} break;
+  case GL_ALWAYS: {return true;} break;
+  }
+  return true;
+}
+
+
+__inline int textureWrap(float tx, int siz, GLenum filterMode) {
+  int t = (int)floor(tx);
+  switch(filterMode) {
+  case GL_MIRRORED_REPEAT: {
+      t = t<0?(siz*2-1-((-t)%(siz*2))):(t%(siz*2));
+      if (t < siz) return t;
+      return siz - 1 - (t - siz);
+    } break;
+  case GL_CLAMP_TO_EDGE: {
+      return t<0?0:(t>siz-1?siz-1:t);
+    } break;
+  case GL_CLAMP_TO_BORDER: {
+      return t<0?-1:(t>siz-1?-1:t);
+    } break;
+  }
+  return t<0?(siz-1-((-t)%siz)):(t%siz); // GL_REPEAT
+}
+
+__inline unsigned int doBlend(unsigned int dest, unsigned int source, int sourceFunc, int destFunc, unsigned int constantColor, int blendEquation) {
+  int Sr = source & 255;
+  int Sg = (source>>8) & 255;
+  int Sb = (source>>16) & 255;
+  int Sa = (source>>24) & 255;
+
+  int Dr = dest & 255;
+  int Dg = (dest>>8) & 255;
+  int Db = (dest>>16) & 255;
+  int Da = (dest>>24) & 255;
+
+  int Cr = constantColor & 255;
+  int Cg = (constantColor>>8) & 255;
+  int Cb = (constantColor>>16) & 255;
+  int Ca = (constantColor>>24) & 255;
+
+  int sr=0,sg=0,sb=0,sa=0;
+  int dr=0,dg=0,db=0,da=0;
+
+  switch(sourceFunc) {
+    case GL_ZERO: {
+      sr = 0;
+      sg = 0;
+      sb = 0;
+      sa = 0;
+    } break;
+    case GL_ONE: {
+      sr = 255;
+      sg = 255;
+      sb = 255;
+      sa = 255;
+    } break;
+    case GL_SRC_COLOR: {
+      sr = Sr;
+      sg = Sg;
+      sb = Sb;
+      sa = Sa;
+    } break;
+    case GL_ONE_MINUS_SRC_COLOR: {
+      sr = 255-Sr;
+      sg = 255-Sg;
+      sb = 255-Sb;
+      sa = 255-Sa;
+    } break;
+    case GL_DST_COLOR: {
+      sr = Dr;
+      sg = Dg;
+      sb = Db;
+      sa = Da;
+    } break;
+    case GL_ONE_MINUS_DST_COLOR: {
+      sr = 255-Dr;
+      sg = 255-Dg;
+      sb = 255-Db;
+      sa = 255-Da;
+    } break;
+    case GL_SRC_ALPHA: {
+      sr = Sa;
+      sg = Sa;
+      sb = Sa;
+      sa = Sa;
+    } break;
+    case GL_ONE_MINUS_SRC_ALPHA: {
+      sr = 255-Sa;
+      sg = 255-Sa;
+      sb = 255-Sa;
+      sa = 255-Sa;
+    } break;
+    case GL_DST_ALPHA: {
+      sr = Da;
+      sg = Da;
+      sb = Da;
+      sa = Da;
+    } break;
+    case GL_ONE_MINUS_DST_ALPHA: {
+      sr = 255-Da;
+      sg = 255-Da;
+      sb = 255-Da;
+      sa = 255-Da;
+    } break;
+    case GL_CONSTANT_COLOR: {
+      sr = Cr;
+      sg = Cg;
+      sb = Cb;
+      sa = Ca;
+    } break;
+    case GL_ONE_MINUS_CONSTANT_COLOR: {
+      sr = 255-Cr;
+      sg = 255-Cg;
+      sb = 255-Cb;
+      sa = 255-Ca;
+    } break;
+    case GL_CONSTANT_ALPHA: {
+      sr = Ca;
+      sg = Ca;
+      sb = Ca;
+      sa = Ca;
+    } break;
+    case GL_ONE_MINUS_CONSTANT_ALPHA: {
+      sr = 255-Ca;
+      sg = 255-Ca;
+      sb = 255-Ca;
+      sa = 255-Ca;
+    } break;
+  }
+
+  switch(destFunc) {
+    case GL_ZERO: {
+      dr = 0;
+      dg = 0;
+      db = 0;
+      da = 0;
+    } break;
+    case GL_ONE: {
+      dr = 255;
+      dg = 255;
+      db = 255;
+      da = 255;
+    } break;
+    case GL_SRC_COLOR: {
+      dr = Sr;
+      dg = Sg;
+      db = Sb;
+      da = Sa;
+    } break;
+    case GL_ONE_MINUS_SRC_COLOR: {
+      dr = 255-Sr;
+      dg = 255-Sg;
+      db = 255-Sb;
+      da = 255-Sa;
+    } break;
+    case GL_DST_COLOR: {
+      dr = Dr;
+      dg = Dg;
+      db = Db;
+      da = Da;
+    } break;
+    case GL_ONE_MINUS_DST_COLOR: {
+      dr = 255-Dr;
+      dg = 255-Dg;
+      db = 255-Db;
+      da = 255-Da;
+    } break;
+    case GL_SRC_ALPHA: {
+      dr = Sa;
+      dg = Sa;
+      db = Sa;
+      da = Sa;
+    } break;
+    case GL_ONE_MINUS_SRC_ALPHA: {
+      dr = 255-Sa;
+      dg = 255-Sa;
+      db = 255-Sa;
+      da = 255-Sa;
+    } break;
+    case GL_DST_ALPHA: {
+      dr = Da;
+      dg = Da;
+      db = Da;
+      da = Da;
+    } break;
+    case GL_ONE_MINUS_DST_ALPHA: {
+      dr = 255-Da;
+      dg = 255-Da;
+      db = 255-Da;
+      da = 255-Da;
+    } break;
+    case GL_CONSTANT_COLOR: {
+      dr = Cr;
+      dg = Cg;
+      db = Cb;
+      da = Ca;
+    } break;
+    case GL_ONE_MINUS_CONSTANT_COLOR: {
+      dr = 255-Cr;
+      dg = 255-Cg;
+      db = 255-Cb;
+      da = 255-Ca;
+    } break;
+    case GL_CONSTANT_ALPHA: {
+      dr = Ca;
+      dg = Ca;
+      db = Ca;
+      da = Ca;
+    } break;
+    case GL_ONE_MINUS_CONSTANT_ALPHA: {
+      dr = 255-Ca;
+      dg = 255-Ca;
+      db = 255-Ca;
+      da = 255-Ca;
+    } break;
+  }
+
+  Sr = (Sr*sr)/255;
+  Sg = (Sg*sg)/255;
+  Sb = (Sb*sb)/255;
+  Sa = (Sa*sa)/255;
+  Dr = (Dr*dr)/255;
+  Dg = (Dg*dg)/255;
+  Db = (Db*db)/255;
+  Da = (Da*da)/255;
+
+  switch(blendEquation) {
+  case GL_FUNC_ADD: {
+    Sr += Dr;
+    Sg += Dg;
+    Sb += Db;
+    Sa += Da;
+    } break;
+  case GL_FUNC_SUBTRACT: {
+    Sr -= Dr;
+    Sg -= Dg;
+    Sb -= Db;
+    Sa -= Da;
+    } break;
+  case GL_FUNC_REVERSE_SUBTRACT: {
+    Sr = Dr - Sr;
+    Sg = Dg - Sg;
+    Sb = Db - Sb;
+    Sa = Da - Sa;
+    } break;
+  case GL_MIN: {
+    Sr = glMini(Dr,Sr);
+    Sg = glMini(Dg,Sg);
+    Sb = glMini(Db,Sb);
+    Sa = glMini(Da,Sa);
+    } break;
+  case GL_MAX: {
+    Sr = glMaxi(Dr,Sr);
+    Sg = glMaxi(Dg,Sg);
+    Sb = glMaxi(Db,Sb);
+    Sa = glMaxi(Da,Sa);
+    } break;
+  }
+  Sr = glClampi(Sr,0,255);
+  Sg = glClampi(Sg,0,255);
+  Sb = glClampi(Sb,0,255);
+  Sa = glClampi(Sa,0,255);
+  return Sr|(Sg<<8)|(Sb<<16)|(Sa<<24);
 }
 
 void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
@@ -1423,27 +1838,30 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     return;
 
   bool stencil = context->isEnabled(GL_STENCIL_TEST);
+  bool blending = context->isEnabled(GL_BLEND);
 
   float v0z = 1.f/v0->sz;
   float v1z = 1.f/v1->sz;
   float v2z = 1.f/v2->sz;
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
-  bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != NULL;
+  bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
   bool filtering = (t->magFilter != GL_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_LINEAR);
   float tx0,ty0,tz0,tw0;
   float tx1,ty1,tz1,tw1;
   float tx2,ty2,tz2,tw2;
   float tx3,ty3,tz3,tw3;
   unsigned int *tdata0 = NULL;
+  unsigned int borderColor = 0xff000000;
   int twidth0;
   int theight0;
-
+  int texEnvMode;
   // texture
   if (textured) {
     twidth0 = t->width;
     theight0 = t->height;
     tdata0 = t->data;
+    texEnvMode = t->texEnvMode;
 
     tx0 = v0->textureX*v0z*twidth0;
     ty0 = v0->textureY*v0z*theight0;
@@ -1453,7 +1871,22 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   
     tx2 = v2->textureX*v2z*twidth0;
     ty2 = v2->textureY*v2z*theight0;
+
+    borderColor = ((int)floor(glClampf(t->borderColorRed*255.f,0.f,255.f)));
+    borderColor |= ((int)floor(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
+    borderColor |= ((int)floor(glClampf(t->borderColorBlue*255.f,0.f,255.f)))<<16;
+    borderColor |= ((int)floor(glClampf(t->borderColorAlpha*255.f,0.f,255.f)))<<24;
   }
+  int blendFuncS = context->blendFuncSFactor;
+  int blendFuncD = context->blendFuncDFactor;
+  int blendEquation = context->blendEquation;
+  unsigned int constantColor = ((int)floor(glClampf(context->blendColorRed*255.f,0.f,255.f)));
+  constantColor |= ((int)floor(glClampf(context->blendColorGreen*255.f,0.f,255.f)))<<8;
+  constantColor |= ((int)floor(glClampf(context->blendColorBlue*255.f,0.f,255.f)))<<16;
+  constantColor |= ((int)floor(glClampf(context->blendColorAlpha*255.f,0.f,255.f)))<<24;
+  bool writeDepth = context->depthMask;  
+  int depthFunction = context->depthFunc;
+  bool depthTest = context->isEnabled(GL_DEPTH_TEST);
 
   // rgba
   float r0 = v0->colorRed;
@@ -1519,21 +1952,20 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   __PAINTPOLYQUAD_BEGINX__
       if (bary0>=0.f&&bary1>=0.f&&(bary0+bary1)<1.f) {
         float iz = 1.f/(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
-        if (glCheckDepthFunction(context,*zDest,iz)) {
+        if ((!depthTest)||glCheckDepthFunction(*zDest,iz,depthFunction)) {
           int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iz;
           int g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iz;
           int b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iz;
+          int a = (__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iz;
           if (textured) {
             float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iz;
             float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iz;
-            int tix0 = (int)floor(tx);
-            int tiy0 = (int)floor(ty);
-            tix0 = tix0<0?(twidth0-1-((-tix0)%twidth0)):(tix0%twidth0);
-            tiy0 = tiy0<0?(theight0-1-((-tiy0)%theight0)):(tiy0%theight0);
+            int tix0 = textureWrap(tx, twidth0, t->wrapS);
+            int tiy0 = textureWrap(ty, theight0, t->wrapT);
             unsigned int rgba = 0xffffffff;
             if (filtering) {
-              int tix1 = (tix0+1) % twidth0;
-              int tiy1 = (tiy0+1) % theight0;
+              int tix1 = textureWrap(tx+1, twidth0, t->wrapS);
+              int tiy1 = textureWrap(ty+1, theight0, t->wrapT);
               int txf = (int)floor(fmod(tx*256.f,256.f));
               int tyf = (int)floor(fmod(ty*256.f,256.f));
               if (txf<0) txf = 256+txf;
@@ -1544,31 +1976,70 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
               int p4v = ((256-txf)*(tyf))>>8;
               tiy0 *= twidth0;
               tiy1 *= twidth0;
-              unsigned int rgba00 = tdata0[tix0+tiy0];
-              unsigned int rgba10 = tdata0[tix1+tiy0];
-              unsigned int rgba11 = tdata0[tix1+tiy1];
-              unsigned int rgba01 = tdata0[tix0+tiy1];
-              rgba = (((rgba00 & 0xff00ff00)*p1v)>>8)&0xff00ff00;
+              unsigned int rgba00 = tix0>=0&&tiy0>=0?tdata0[tix0+tiy0]:borderColor;
+              unsigned int rgba10 = tix1>=0&&tiy0>=0?tdata0[tix1+tiy0]:borderColor;
+              unsigned int rgba11 = tix1>=0&&tiy1>=0?tdata0[tix1+tiy1]:borderColor;
+              unsigned int rgba01 = tix0>=0&&tiy1>=0?tdata0[tix0+tiy1]:borderColor;
+              rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
+              rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
+              rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
+              rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
               rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
-              rgba += (((rgba10 & 0xff00ff00)*p2v)>>8)&0xff00ff00;
               rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
-              rgba += (((rgba11 & 0xff00ff00)*p3v)>>8)&0xff00ff00;
               rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
-              rgba += (((rgba01 & 0xff00ff00)*p4v)>>8)&0xff00ff00;
               rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
             } else {
-              tiy0 *= twidth0;
-              rgba  = tdata0[tix0+tiy0];
+              if (tix0>=0&&tiy0>=0) {
+                tiy0 *= twidth0;
+                rgba  = tdata0[tix0+tiy0];
+              } else {
+                rgba = borderColor;
+              }
             }
-            r *= rgba & 255;
-            g *= (rgba >> 8) & 255;
-            b *= (rgba >> 16) & 255;
-            r >>= 8;
-            g >>= 8;
-            b >>= 8;
+            switch(texEnvMode) {
+              case GL_REPLACE: {
+                r = rgba & 255;
+                g = (rgba >> 8) & 255;
+                b = (rgba >> 16) & 255;
+              } break;
+              case GL_DECAL: {
+                const int as = ((rgba >> 24)&255);
+                r = r*(255-as)+(rgba & 255)*as;
+                g = g*(255-as)+((rgba>>8) & 255)*as;
+                b = b*(255-as)+((rgba>>16) & 255)*as;
+                r /= 255;
+                g /= 255;
+                b /= 255;
+              } break;
+              case GL_ADD: {
+                const int as = ((rgba >> 24)&255);
+                r += rgba & 255;
+                g += (rgba >> 8) & 255;
+                b += (rgba >> 16) & 255;
+                a = (a*as)>>8;
+                if (r > 255) r = 255;
+                if (g > 255) g = 255;
+                if (b > 255) b = 255;
+              } break;
+              default: {//case GL_MODULATE: {
+                r *= rgba & 255;
+                g *= (rgba >> 8) & 255;
+                b *= (rgba >> 16) & 255;
+                a *= (rgba >> 24) & 255;
+                r /= 255;
+                g /= 255;
+                b /= 255;
+                a /= 255;
+              } break;
+            }
           }
-          *zDest=iz;
-          *pDest=r|(g<<8)|(b<<16)|0xff000000;
+          if (writeDepth) 
+            *zDest=iz;
+          if (!blending)
+            *pDest=r|(g<<8)|(b<<16)|(a<<24);
+          else {
+            *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+          }
         }
       }
       pDest++;

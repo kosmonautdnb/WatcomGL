@@ -29,6 +29,7 @@ extern "C" {
 #define GL_TEXTURE_MAX_LOD  0x2807 // :mad:
 #define GL_TEXTURE_LOD_BIAS 0x2808 // :mad:
 #define GL_TEXTURE_MAX_LEVEL 0x2809 // :mad:
+#define GL_TEXTURE_BORDER_COLOR 0x280a // :mad:
 #define GL_QUADS 0x0007 // :mad:
 #define GL_RED 0x190b // :mad:
 #define GL_RG 0x190c // :mad:
@@ -43,7 +44,25 @@ extern "C" {
 #define GL_STENCIL_INDEX 0x1915 // :mad:
 #define GL_DEPTH_COMPONENT 0x1916 // :mad:
 #define GL_DEPTH_STENCIL 0x1917 // :mad:
-
+#define GL_MIRRORED_REPEAT 0x2902 // :mad:
+#define GL_CLAMP_TO_BORDER 0x2903 // :mad:
+#define GL_SRC_COLOR 0x330 // :mad:
+#define GL_ONE_MINUS_SRC_COLOR 0x331 // :mad:
+#define GL_DST_COLOR 0x332 // :mad:
+#define GL_ONE_MINUS_DST_COLOR 0x333 // :mad:
+//#define GL_SRC_ALPHA 0x334 // :mad:
+//#define GL_ONE_MINUS_SRC_ALPHA 0x335 // :mad:
+#define GL_DST_ALPHA 0x336 // :mad:
+#define GL_ONE_MINUS_DST_ALPHA 0x337 // :mad:
+#define GL_CONSTANT_ALPHA 0x338 // :mad:
+#define GL_ONE_MINUS_CONSTANT_ALPHA 0x339 // :mad:
+#define GL_CONSTANT_COLOR 0x33a // :mad:
+#define GL_ONE_MINUS_CONSTANT_COLOR 0x33b // :mad:
+#define GL_FUNC_ADD 0x105 // :mad:
+#define GL_FUNC_SUBTRACT 0x106 // :mad:
+#define GL_FUNC_REVERSE_SUBTRACT 0x107 // :mad:
+#define GL_MIN 0x108 // :mad:
+#define GL_MAX 0x109 // :mad:
 
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
@@ -622,6 +641,9 @@ GLAPI void APIENTRY glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat
 GLAPI void APIENTRY glFogf(GLenum pname, GLfloat param); // :mad:
 GLAPI void APIENTRY glFogfv(GLenum pname, GLfloat *params); // :mad:
 GLAPI void APIENTRY glDeleteTextures (GLsizei n, GLuint *textures); // :mad:
+GLAPI void APIENTRY glTexParameterfv (GLenum target, GLenum pname, GLfloat *param); // :mad:
+GLAPI void APIENTRY glBlendCOlor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad:
+GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad:
 
 #ifdef __cplusplus
 }
