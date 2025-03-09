@@ -7,8 +7,8 @@
 #include "png\png.h"
 #include <time.h>
 
-#define XRES 320
-#define YRES 200
+#define XRES 640
+#define YRES 480
 #define NEARPLANE 1.f
 #define FARPLANE 10000.f
 #define FOV 90.f
@@ -170,8 +170,8 @@ void drawSky_CloudLayer(float h) {
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, cloudTexture);
   glBegin(GL_QUADS);
-  float xSteps = 0.2f;
-  float ySteps = 0.2f;
+  float xSteps = 0.5f;
+  float ySteps = 0.5f;
   float cloudY = 200.f+h*200.f;
   float cloudLayerSize = 1500.f;
   for (float y = -1.f; y < 1.f; y += ySteps) {
@@ -213,6 +213,7 @@ float sign(float v) {
 void drawGround(int pass) {
   if (pass == 0) {
     glDisable(GL_BLEND);
+    glBlendFunc(GL_ONE,GL_ONE);
     glBindTexture(GL_TEXTURE_2D, groundTexture);
   } else {
     glEnable(GL_BLEND);
@@ -221,7 +222,7 @@ void drawGround(int pass) {
     glColor3f(1,1,1);
   }
   glEnable(GL_TEXTURE_2D);
-  glBegin(GL_QUADS);
+  glBegin(GL_LINE_STRIP);
   float xSteps = 0.02f;
   float ySteps = 0.02f;
   float groundLayerSize = 4000.f;

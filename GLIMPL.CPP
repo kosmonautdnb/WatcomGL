@@ -563,11 +563,9 @@ void glEmitVertex() {
             glVertices[3].sx -= nx*d;
             glVertices[3].sy -= ny*d;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
-          } else {
-            if (a != 3) {
-
-
-            }
+          }
+        } else {
+          if (a != 3) {
           }
         }
         glCurrentVertexElement = 0;
@@ -602,12 +600,12 @@ void glEmitVertex() {
             glVertices[3].sx -= nx*d;
             glVertices[3].sy -= ny*d;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
-            glVertices[0]=glVertices[1];
           }
         } else {
           if (a != 3) {
           }
         }
+        glVertices[0]=glVertices[1];
         glCurrentVertexElement = 1;
       }
     } break;
@@ -1701,18 +1699,11 @@ GLint gluUnProject(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLf
 // -----------
 // -----------
 #include <stdlib.h>
-float getBary(int x, int y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
-  float dx = v2->sx - v1->sx;
-  float dy = v2->sy - v1->sy;
-  float nx = dy;
-  float ny = -dx;
-  /*float nl = nx*nx+ny*ny; // the sqrt is not needed here
-  if (nl > 0) {
-    nx /= nl;
-    ny /= nl;
-  }*/
-  float l = (v0->sx-v1->sx)*nx + (v0->sy-v1->sy)*ny;
-  float p = (x-v1->sx)*nx + (y-v1->sy)*ny;
+double getBary(double x, double y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
+  double nx = v2->sy - v1->sy;
+  double ny = -(v2->sx - v1->sx);
+  double l = (v0->sx-v1->sx)*nx + (v0->sy-v1->sy)*ny;
+  double p = (x-v1->sx)*nx + (y-v1->sy)*ny;
   return (p/l);
 }
 
@@ -1746,8 +1737,8 @@ float getBary(int x, int y, const glVertex *v0, const glVertex *v1, const glVert
 
 #define __PAINTPOLYQUAD_BEGINY__\
   int x,y;\
-  float bary0,bary1;\
-  float baryAdd0,baryAdd1;\
+  double bary0,bary1,bary2;\
+  double baryAdd0,baryAdd1,baryAdd2;\
   unsigned int*pDest;\
   float *zDest;\
   for (y = pminy;y<pmaxy;y++) {
@@ -1755,8 +1746,10 @@ float getBary(int x, int y, const glVertex *v0, const glVertex *v1, const glVert
 #define __PAINTPOLYQUAD_INITBARYFORX__\
   bary0 = getBary(pminx,y,v0,v1,v2);\
   bary1 = getBary(pminx,y,v1,v2,v0);\
-  baryAdd0 = getBary(pminx+1,y,v0,v1,v2)-bary0;\
-  baryAdd1 = getBary(pminx+1,y,v1,v2,v0)-bary1;
+  bary2 = getBary(pminx,y,v2,v0,v1);\
+  baryAdd0 = (getBary(pmaxx,y,v0,v1,v2)-bary0)/(pmaxx-pminx);\
+  baryAdd1 = (getBary(pmaxx,y,v1,v2,v0)-bary1)/(pmaxx-pminx);\
+  baryAdd2 = (getBary(pmaxx,y,v2,v0,v1)-bary2)/(pmaxx-pminx);
   
 #define __PAINTPOLYQUAD_BEGINX__\
   pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
@@ -1768,7 +1761,7 @@ float getBary(int x, int y, const glVertex *v0, const glVertex *v1, const glVert
 
 #define __BARY0__(__v__) ((__v__)*bary0)
 #define __BARY1__(__v__) ((__v__)*bary1)
-#define __BARY2__(__v__) ((__v__)*(1.f-bary0-bary1))
+#define __BARY2__(__v__) ((__v__)*bary2)
 
 bool glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   const float dx0 = v1->sx - v0->sx;
@@ -2206,7 +2199,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
   __PAINTPOLYQUAD_BEGINX__
-      if (bary0>=0.f&&bary1>=0.f&&(bary0+bary1)<=1.f) {
+      if (bary0>=0&&bary1>=0&&bary2>=0) {
         float iz = 1.f/(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
         if ((!depthTest)||glCheckDepthFunction(*zDest,iz,depthFunction)) {
           int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iz;
@@ -2302,6 +2295,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
       zDest++;
       bary0+=baryAdd0;
       bary1+=baryAdd1;
+      bary2+=baryAdd2;
     }
   }
 }
