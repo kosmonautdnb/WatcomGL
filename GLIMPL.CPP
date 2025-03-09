@@ -158,8 +158,6 @@ public:
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
   void enableClientState(GLenum prop, bool enable) {;}
   GLboolean getBoolean(GLenum prop) {return true;}
-  GLfloat getFloat(GLenum prop) {return 0.f;}
-  GLint getInteger(GLenum prop) {return 0;}
   GLubyte *getString(GLenum prop) {return "";}
   GLenum error;
   GLint viewportX0;
@@ -327,7 +325,7 @@ void glMatMul(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
     for (int j = 0; j < 4; j++) {
       float a = 0.f;
       for (int k = 0; k < 4; k++) {
-        a += mb[i+k*4] * ma[j*4+k];
+        a += ma[i+k*4] * mb[j*4+k];
       }
       result[i+j*4] = a;
     }
@@ -336,7 +334,7 @@ void glMatMul(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
 }
 
 void glUpdateMatrix() {
-  glMatMul(glContext.matrixForMode[0],glContext.matrixForMode[1],glContext.matrix);
+  glMatMul(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
 }
 
 int glTransformVertex(_GLContext *context, glVertex *v) {
@@ -345,8 +343,9 @@ int glTransformVertex(_GLContext *context, glVertex *v) {
   float z = v->vertexX * context->matrix[0*4+2] + v->vertexY * context->matrix[1*4+2] + v->vertexZ * context->matrix[2*4+2] + v->vertexW * context->matrix[3*4+2];
   float w = v->vertexX * context->matrix[0*4+3] + v->vertexY * context->matrix[1*4+3] + v->vertexZ * context->matrix[2*4+3] + v->vertexW * context->matrix[3*4+3];
 
-  if (w <= 0.0001f) 
+  if (w <= 0.0001f) {
     return 1;
+  }
      
   v->sx = x/w;
   v->sy = y/w;
@@ -538,6 +537,7 @@ void glEmitVertex() {
     case GL_LINES: {
       if (glCurrentVertexElement==2) {
         int a = glTransformVertex(&glContext,&glVertices[0]);
+        a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1]);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
@@ -563,6 +563,11 @@ void glEmitVertex() {
             glVertices[3].sx -= nx*d;
             glVertices[3].sy -= ny*d;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          } else {
+            if (a != 3) {
+
+
+            }
           }
         }
         glCurrentVertexElement = 0;
@@ -571,6 +576,7 @@ void glEmitVertex() {
     case GL_LINE_STRIP: {
       if (glCurrentVertexElement==2) {
         int a = glTransformVertex(&glContext,&glVertices[0]);
+        a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1]);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
@@ -598,6 +604,9 @@ void glEmitVertex() {
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
             glVertices[0]=glVertices[1];
           }
+        } else {
+          if (a != 3) {
+          }
         }
         glCurrentVertexElement = 1;
       }
@@ -605,7 +614,9 @@ void glEmitVertex() {
     case GL_TRIANGLES: {
       if (glCurrentVertexElement==3) {
         int a = glTransformVertex(&glContext,&glVertices[0]);
+        a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1]);
+        a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[2]);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
@@ -617,6 +628,10 @@ void glEmitVertex() {
             glLightVertex(&glContext,&glVertices[2]);
             glDrawTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
           }
+        } else {
+          if (a != 7) {
+
+          }
         }
         glCurrentVertexElement = 0;
       }
@@ -624,8 +639,11 @@ void glEmitVertex() {
     case GL_QUADS: {
       if (glCurrentVertexElement==4) {
         int a = glTransformVertex(&glContext,&glVertices[0]);
+        a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1]);
+        a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[2]);
+        a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[3]);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
@@ -638,6 +656,10 @@ void glEmitVertex() {
             glLightVertex(&glContext,&glVertices[2]);
             glLightVertex(&glContext,&glVertices[3]);
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          }
+        } else {
+          if (a != 15) {
+
           }
         }
         glCurrentVertexElement = 0;
@@ -835,11 +857,20 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 }
 
 void glGetFloatv (GLenum pname, GLfloat *params) {
-  *params = glContext.getFloat(pname);
+  int i;
+  switch(pname) {
+    case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
+    case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
+    case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
+    case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
+  }
 }
 
 void glGetIntegerv (GLenum pname, GLint *params) {
-  *params = glContext.getInteger(pname);
+  int i;
+  switch(pname) {
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  }
 }
 
 GLenum glGetError() {
@@ -1395,6 +1426,191 @@ void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *up
   memcpy(matrix,resultMatrix,16*sizeof(float));
 }
 
+
+int glhInvertMatrix(float *m, float *dest) {
+  float inv[16], det;    
+  int i;    
+
+  inv[0] = m[5]  * m[10] * m[15] -
+  m[5]  * m[11] * m[14] -
+  m[9]  * m[6]  * m[15] +              
+  m[9]  * m[7]  * m[14] +             
+  m[13] * m[6]  * m[11] -             
+  m[13] * m[7]  * m[10];    
+
+  inv[4] = -m[4]  * m[10] * m[15] +               
+  m[4]  * m[11] * m[14] +               
+  m[8]  * m[6]  * m[15] -               
+  m[8]  * m[7]  * m[14] -               
+  m[12] * m[6]  * m[11] +               
+  m[12] * m[7]  * m[10];    
+  
+  inv[8] = m[4]  * m[9] * m[15] -              
+  m[4]  * m[11] * m[13] -              
+  m[8]  * m[5] * m[15] +              
+  m[8]  * m[7] * m[13] +              
+  m[12] * m[5] * m[11] -              
+  m[12] * m[7] * m[9];    
+  
+  inv[12] = -m[4]  * m[9] * m[14] +                
+  m[4]  * m[10] * m[13] +               
+  m[8]  * m[5] * m[14] -                
+  m[8]  * m[6] * m[13] -                
+  m[12] * m[5] * m[10] +                
+  m[12] * m[6] * m[9];    
+  
+  inv[1] = -m[1]  * m[10] * m[15] +              
+  m[1]  * m[11] * m[14] +               
+  m[9]  * m[2] * m[15] -               
+  m[9]  * m[3] * m[14] -               
+  m[13] * m[2] * m[11] +               
+  m[13] * m[3] * m[10];    
+  
+  inv[5] = m[0]  * m[10] * m[15] -              
+  m[0]  * m[11] * m[14] -              
+  m[8]  * m[2] * m[15] +              
+  m[8]  * m[3] * m[14] +              
+  m[12] * m[2] * m[11] -              
+  m[12] * m[3] * m[10];    
+  
+  inv[9] = -m[0]  * m[9] * m[15] +               
+  m[0]  * m[11] * m[13] +               
+  m[8]  * m[1] * m[15] -                 
+  m[8]  * m[3] * m[13] -               
+  m[12] * m[1] * m[11] +               
+  m[12] * m[3] * m[9];    
+  
+  inv[13] = m[0]  * m[9] * m[14] -               
+  m[0]  * m[10] * m[13] -               
+  m[8]  * m[1] * m[14] +               
+  m[8]  * m[2] * m[13] +               
+  m[12] * m[1] * m[10] -               
+  m[12] * m[2] * m[9];    
+  
+  inv[2] = m[1]  * m[6] * m[15] -              
+  m[1]  * m[7] * m[14] -              
+  m[5]  * m[2] * m[15] +              
+  m[5]  * m[3] * m[14] +              
+  m[13] * m[2] * m[7] -              
+  m[13] * m[3] * m[6];    
+  
+  inv[6] = -m[0]  * m[6] * m[15] +               
+  m[0]  * m[7] * m[14] +               
+  m[4]  * m[2] * m[15] -               
+  m[4]  * m[3] * m[14] -               
+  m[12] * m[2] * m[7] +               
+  m[12] * m[3] * m[6];    
+  
+  inv[10] = m[0]  * m[5] * m[15] -               
+  m[0]  * m[7] * m[13] -               
+  m[4]  * m[1] * m[15] +               
+  m[4]  * m[3] * m[13] +               
+  m[12] * m[1] * m[7] -               
+  m[12] * m[3] * m[5];    
+  
+  inv[14] = -m[0]  * m[5] * m[14] +                
+  m[0]  * m[6] * m[13] +                
+  m[4]  * m[1] * m[14] -                
+  m[4]  * m[2] * m[13] -                
+  m[12] * m[1] * m[6] +                
+  m[12] * m[2] * m[5];    
+  
+  inv[3] = -m[1] * m[6] * m[11] +               
+  m[1] * m[7] * m[10] +               
+  m[5] * m[2] * m[11] -               
+  m[5] * m[3] * m[10] -               
+  m[9] * m[2] * m[7] +               
+  m[9] * m[3] * m[6];    
+  
+  inv[7] = m[0] * m[6] * m[11] -              
+  m[0] * m[7] * m[10] -              
+  m[4] * m[2] * m[11] +              
+  m[4] * m[3] * m[10] +              
+  m[8] * m[2] * m[7] -              
+  m[8] * m[3] * m[6];    
+  
+  inv[11] = -m[0] * m[5] * m[11] +                
+  m[0] * m[7] * m[9] +                
+  m[4] * m[1] * m[11] -                
+  m[4] * m[3] * m[9] -                
+  m[8] * m[1] * m[7] +                
+  m[8] * m[3] * m[5];    
+  
+  inv[15] = m[0] * m[5] * m[10] -               
+  m[0] * m[6] * m[9] -               
+  m[4] * m[1] * m[10] +               
+  m[4] * m[2] * m[9] +               
+  m[8] * m[1] * m[6] -               
+  m[8] * m[2] * m[5];    
+
+  det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];    
+  if (det == 0)        
+    return 0;    
+  
+  det = 1.f / det;    
+  for (i = 0; i < 16; i++)        
+    dest[i] = inv[i] * det;
+  
+  return 1;
+}
+
+void MultiplyMatrixByVector4By4OpenGL_FLOAT(float *dest, float *m, float *v) {
+  float x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
+  float y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
+  float z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
+  float w = v[0] * m[0*4+3] + v[1] * m[1*4+3] + v[2] * m[2*4+3] + v[3] * m[3*4+3];
+  dest[0] = x;
+  dest[1] = y;
+  dest[2] = z;
+  dest[3] = w;
+}
+
+void MultiplyMatrices4by4OpenGL_FLOAT(float *dest, float *m1, float *m2) {
+  glMatMul(m1,m2,dest);
+}
+
+int glhProjectf(float objx, float objy, float objz, float *modelView, float *projection, int *viewport, float *windowCoordinate) {
+  float fTempo[8];
+  fTempo[0] = modelView[0]*objx+modelView[4]*objy+modelView[8]*objz+modelView[12];
+  fTempo[1] = modelView[1]*objx+modelView[5]*objy+modelView[9]*objz+modelView[13];
+  fTempo[2] = modelView[2]*objx+modelView[6]*objy+modelView[10]*objz+modelView[14];
+  fTempo[3] = modelView[3]*objx+modelView[7]*objy+modelView[11]*objz+modelView[15];
+  fTempo[4] = projection[0]*fTempo[0]+projection[4]*fTempo[1]+projection[8]*fTempo[2]+projection[12]*fTempo[3];
+  fTempo[5] = projection[1]*fTempo[0]+projection[5]*fTempo[1]+projection[9]*fTempo[2]+projection[13]*fTempo[3];
+  fTempo[6] = projection[2]*fTempo[0]+projection[6]*fTempo[1]+projection[10]*fTempo[2]+projection[14]*fTempo[3];
+  fTempo[7] = -fTempo[2];
+  if (fTempo[7]==0.0)
+    return 0;
+  fTempo[7]=1.0/fTempo[7];
+  fTempo[4]*=fTempo[7];
+  fTempo[5]*=fTempo[7];
+  fTempo[6]*=fTempo[7];
+  windowCoordinate[0]=(fTempo[4]*0.5+0.5)*viewport[2]+viewport[0];
+  windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
+  windowCoordinate[2]=(1.0+fTempo[6])*0.5;
+  return 1;
+}
+
+int glhUnProjectf(float winx, float winy, float winz, float *modelView, float *projection, int *viewport, float *objectCoordinate) {
+  float m[16],A[16];
+  float in[4],out[4];
+  MultiplyMatrices4by4OpenGL_FLOAT(A,projection,modelView);
+  if (glhInvertMatrix(A,m)==0)
+    return 0;
+  in[0] = (winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0;
+  in[1] = (winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
+  in[2] = 2.0*winz-1.0;
+  in[3] = 1.0;
+  MultiplyMatrixByVector4By4OpenGL_FLOAT(out,m,in);
+  if (out[3]==0.0)
+    return 0;
+  out[3]=1.0/out[3];
+  objectCoordinate[0]=out[0]*out[3];
+  objectCoordinate[1]=out[1]*out[3];
+  objectCoordinate[2]=out[2]*out[3];
+  return 1;
+}
+
 void glOrtho(float left, float right, float bottom, float top, float znear, float zfar) {
   GLfloat x,y,z;
   GLfloat tx,ty,tz;
@@ -1450,6 +1666,25 @@ void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz
   glhLookAtf2(glContext.matrixForMode[glContext.matrixModeNr],eye,center,up);
   glUpdateMatrix();
 }
+
+GLint gluProject(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
+  float d[3];
+  const GLint r = glhProjectf(objX, objY, objZ, model, projection, view, d);
+  *winX = d[0];
+  *winY = d[1];
+  *winZ = d[2];
+  return r;
+}
+
+GLint gluUnProject(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ) {
+  float d[3];
+  const GLint r = glhUnProjectf(winX, winY, winZ, model, projection, view, d);
+  *objX = d[0];
+  *objY = d[1];
+  *objZ = d[2];
+  return r;
+}
+
 
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
@@ -1577,6 +1812,7 @@ __inline int textureWrap(float tx, int siz, GLenum filterMode) {
 }
 
 __inline unsigned int doBlend(unsigned int dest, unsigned int source, int sourceFunc, int destFunc, unsigned int constantColor, int blendEquation) {
+
   int Sr = source & 255;
   int Sg = (source>>8) & 255;
   int Sb = (source>>16) & 255;
@@ -1595,6 +1831,7 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
   int sr=0,sg=0,sb=0,sa=0;
   int dr=0,dg=0,db=0,da=0;
 
+  bool fullS = false;
   switch(sourceFunc) {
     case GL_ZERO: {
       sr = 0;
@@ -1607,6 +1844,7 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
       sg = 255;
       sb = 255;
       sa = 255;
+      fullS = true;
     } break;
     case GL_SRC_COLOR: {
       sr = Sr;
@@ -1637,24 +1875,28 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
       sg = Sa;
       sb = Sa;
       sa = Sa;
+      if (Sa == 255) fullS = true;
     } break;
     case GL_ONE_MINUS_SRC_ALPHA: {
       sr = 255-Sa;
       sg = 255-Sa;
       sb = 255-Sa;
       sa = 255-Sa;
+      if (Sa == 0) fullS = true;
     } break;
     case GL_DST_ALPHA: {
       sr = Da;
       sg = Da;
       sb = Da;
       sa = Da;
+      if (Da == 255) fullS = true;
     } break;
     case GL_ONE_MINUS_DST_ALPHA: {
       sr = 255-Da;
       sg = 255-Da;
       sb = 255-Da;
       sa = 255-Da;
+      if (Da == 0) fullS = true;
     } break;
     case GL_CONSTANT_COLOR: {
       sr = Cr;
@@ -1673,15 +1915,18 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
       sg = Ca;
       sb = Ca;
       sa = Ca;
+      if (Ca == 255) fullS = true;
     } break;
     case GL_ONE_MINUS_CONSTANT_ALPHA: {
       sr = 255-Ca;
       sg = 255-Ca;
       sb = 255-Ca;
       sa = 255-Ca;
+      if (Ca == 0) fullS = true;
     } break;
   }
 
+  bool fullD = false;
   switch(destFunc) {
     case GL_ZERO: {
       dr = 0;
@@ -1694,6 +1939,7 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
       dg = 255;
       db = 255;
       da = 255;
+      fullD = true;
     } break;
     case GL_SRC_COLOR: {
       dr = Sr;
@@ -1724,24 +1970,28 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
       dg = Sa;
       db = Sa;
       da = Sa;
+      if (Sa == 255) fullD = true;
     } break;
     case GL_ONE_MINUS_SRC_ALPHA: {
       dr = 255-Sa;
       dg = 255-Sa;
       db = 255-Sa;
       da = 255-Sa;
+      if (Sa == 0) fullD = true;
     } break;
     case GL_DST_ALPHA: {
       dr = Da;
       dg = Da;
       db = Da;
       da = Da;
+      if (Da == 255) fullD = true;
     } break;
     case GL_ONE_MINUS_DST_ALPHA: {
       dr = 255-Da;
       dg = 255-Da;
       db = 255-Da;
       da = 255-Da;
+      if (Da == 0) fullD = true;
     } break;
     case GL_CONSTANT_COLOR: {
       dr = Cr;
@@ -1760,23 +2010,29 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
       dg = Ca;
       db = Ca;
       da = Ca;
+      if (Ca == 255) fullD = true;
     } break;
     case GL_ONE_MINUS_CONSTANT_ALPHA: {
       dr = 255-Ca;
       dg = 255-Ca;
       db = 255-Ca;
       da = 255-Ca;
+      if (Ca == 0) fullD = true;
     } break;
   }
 
-  Sr = (Sr*sr)/255;
-  Sg = (Sg*sg)/255;
-  Sb = (Sb*sb)/255;
-  Sa = (Sa*sa)/255;
-  Dr = (Dr*dr)/255;
-  Dg = (Dg*dg)/255;
-  Db = (Db*db)/255;
-  Da = (Da*da)/255;
+  if (!fullS) {
+    Sr = (Sr*sr)/255;
+    Sg = (Sg*sg)/255;
+    Sb = (Sb*sb)/255;
+    Sa = (Sa*sa)/255;
+  }
+  if (!fullD) {
+    Dr = (Dr*dr)/255;
+    Dg = (Dg*dg)/255;
+    Db = (Db*db)/255;
+    Da = (Da*da)/255;
+  }
 
   switch(blendEquation) {
   case GL_FUNC_ADD: {
@@ -1950,7 +2206,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
   __PAINTPOLYQUAD_BEGINX__
-      if (bary0>=0.f&&bary1>=0.f&&(bary0+bary1)<1.f) {
+      if (bary0>=0.f&&bary1>=0.f&&(bary0+bary1)<=1.f) {
         float iz = 1.f/(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
         if ((!depthTest)||glCheckDepthFunction(*zDest,iz,depthFunction)) {
           int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iz;

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "png\png.h"
+#include <time.h>
 
 typedef struct ImageLayer {
         int width, height;
@@ -386,6 +387,7 @@ int main(int argc, char **argv) {
   glDepthFunc(GL_LEQUAL);
   do
   {		
+    tme = (float)clock() / CLOCKS_PER_SEC * 0.25;
     glClearColor(0.2f,0.4f,0.6f,1.f);
     glClear(GL_COLOR_BUFFER_BIT|GL_STENCIL_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_PROJECTION);
@@ -448,7 +450,6 @@ int main(int argc, char **argv) {
     }
     glEnd();      
     */
-    tme += 0.05f;
     glRefresh();
   } while((inp(0x60)&0x80)==0x80);
   glDone();

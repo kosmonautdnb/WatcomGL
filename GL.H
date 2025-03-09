@@ -63,6 +63,9 @@ extern "C" {
 #define GL_FUNC_REVERSE_SUBTRACT 0x107 // :mad:
 #define GL_MIN 0x108 // :mad:
 #define GL_MAX 0x109 // :mad:
+#define GL_TRANSPOSE_MODELVIEW_MATRIX               0x0BA8 // :mad:
+#define GL_TRANSPOSE_PROJECTION_MATRIX              0x0BA9 // :mad:
+
 
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
@@ -625,6 +628,8 @@ GLAPI void APIENTRY glMateriali(GLenum face, GLenum pname, GLint param); // :mad
 GLAPI void APIENTRY glFrustum(float left, float right, float bottom, float top, float znear, float zfar); // :mad:
 GLAPI void APIENTRY gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane); // :mad:
 GLAPI void APIENTRY gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz); // :mad:
+GLAPI GLint APIENTRY gluProject(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ);
+GLAPI GLint APIENTRY gluUnProject(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ);
 GLAPI void APIENTRY glVertex3d(GLdouble x, GLdouble y, GLdouble z); // :mad:
 GLAPI void APIENTRY glTexCoord1d(GLdouble x); // :mad:
 GLAPI void APIENTRY glTexCoord1f(GLfloat x); // :mad:
