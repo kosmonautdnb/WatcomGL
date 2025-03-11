@@ -46,14 +46,14 @@ public:
     clearGreen = 0;
     clearBlue = 0;
     clearAlpha = 0;
-    clearDepth = 1.f;
+    clearDepth = 2.f; // actually 1 is default.
     clearStencil = 0;
     activeTexture = 0;
     alphaFunc = 0;
     alphaFuncRef = 0;
     blendFuncSFactor = GL_ONE;
     blendFuncDFactor = GL_ZERO;
-    cullFaceMode = 0;
+    cullFaceMode = GL_BACK;
     depthFunc = GL_LESS;
     depthMask = true;
     depthRangeZNear = 0;
@@ -1124,14 +1124,14 @@ void glPolygonOffset (GLfloat factor, GLfloat units) {
 }
 
 void glPopMatrix() {
-  memcpy(glMatrixStack[glMatrixStackPos], glContext.matrixForMode[glContext.matrixModeNr], 4*4*sizeof(GLfloat));
-  glMatrixStackPos++;
+  glMatrixStackPos--;
+  memcpy(glContext.matrixForMode[glContext.matrixModeNr], glMatrixStack[glMatrixStackPos], 4*4*sizeof(GLfloat));
   glUpdateMatrix();
 }
 
 void glPushMatrix() {
-  glMatrixStackPos--;
-  memcpy(glContext.matrixForMode[glContext.matrixModeNr], glMatrixStack[glMatrixStackPos], 4*4*sizeof(GLfloat));
+  memcpy(glMatrixStack[glMatrixStackPos], glContext.matrixForMode[glContext.matrixModeNr], 4*4*sizeof(GLfloat));
+  glMatrixStackPos++;
 }
 
 void glhRotate2f(GLfloat *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, GLfloat z) {
@@ -1253,13 +1253,14 @@ void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei wid
   t->width = width;
   t->height = height;
   int rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
+  int formatStride = 4;
   switch(format) {
-  case GL_RED:{rIn=0;} break;
-  case GL_RG:{rIn=0;gIn=1;} break;
-  case GL_RGB:{rIn=0;gIn=1;bIn=2;} break;
-  case GL_BGR:{rIn=2;gIn=1;bIn=0;} break;
-  case GL_RGBA:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
-  case GL_BGRA:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
+  case GL_RED:{rIn=0;formatStride = 1;} break;
+  case GL_RG:{rIn=0;gIn=1;formatStride = 2;} break;
+  case GL_RGB:{rIn=0;gIn=1;bIn=2;formatStride = 3;} break;
+  case GL_BGR:{rIn=2;gIn=1;bIn=0;formatStride = 3;} break;
+  case GL_RGBA:{rIn=0;gIn=1;bIn=2;aIn=3;formatStride = 4;} break;
+  case GL_BGRA:{rIn=2;gIn=1;bIn=0;aIn=3;formatStride = 4;} break;
   case GL_RED_INTEGER:{rIn=0;} break;
   case GL_RG_INTEGER:{rIn=0;gIn=1;} break;
   case GL_RGB_INTEGER:{rIn=0;gIn=1;bIn=2;} break;
@@ -1271,13 +1272,20 @@ void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei wid
   case GL_DEPTH_STENCIL:{dIn=0;sIn=1;} break;
   }
   int input[4];
+  input[0]=0xff;
+  input[1]=0xff;
+  input[2]=0xff;
+  input[3]=0xff;
   for (int i = 0; i < width*height; i++) {
-    unsigned int inputrgba = 0xffffffff;
-    if (pixels != NULL) inputrgba = ((unsigned int*)pixels)[i];
-    input[0] = inputrgba & 255;
-    input[1] = (inputrgba>>8) & 255;
-    input[2] = (inputrgba>>16) & 255;
-    input[3] = (inputrgba>>24) & 255;
+    if (pixels != NULL) {
+      input[0] = ((unsigned char*)pixels)[i*formatStride];
+      if (formatStride>=2)
+        input[1] = ((unsigned char*)pixels)[i*formatStride+1];
+      if (formatStride>=3)
+        input[2] = ((unsigned char*)pixels)[i*formatStride+2];
+      if (formatStride>=4)
+        input[3] = ((unsigned char*)pixels)[i*formatStride+3];
+    }
     unsigned int rgba = 0x00000000;
     if (rIn != -1) rgba |= input[rIn];
     if (gIn != -1) rgba |= input[gIn]<<8;
@@ -1311,13 +1319,14 @@ void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, 
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
   if (t->data == NULL) return;
   int rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
+  int formatStride = 4;
   switch(format) {
-  case GL_RED:{rIn=0;} break;
-  case GL_RG:{rIn=0;gIn=1;} break;
-  case GL_RGB:{rIn=0;gIn=1;bIn=2;} break;
-  case GL_BGR:{rIn=2;gIn=1;bIn=0;} break;
-  case GL_RGBA:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
-  case GL_BGRA:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
+  case GL_RED:{rIn=0;formatStride = 1;} break;
+  case GL_RG:{rIn=0;gIn=1;formatStride = 2;} break;
+  case GL_RGB:{rIn=0;gIn=1;bIn=2;formatStride = 3;} break;
+  case GL_BGR:{rIn=2;gIn=1;bIn=0;formatStride = 3;} break;
+  case GL_RGBA:{rIn=0;gIn=1;bIn=2;aIn=3;formatStride = 4;} break;
+  case GL_BGRA:{rIn=2;gIn=1;bIn=0;aIn=3;formatStride = 4;} break;
   case GL_RED_INTEGER:{rIn=0;} break;
   case GL_RG_INTEGER:{rIn=0;gIn=1;} break;
   case GL_RGB_INTEGER:{rIn=0;gIn=1;bIn=2;} break;
@@ -1329,13 +1338,20 @@ void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, 
   case GL_DEPTH_STENCIL:{dIn=0;sIn=1;} break;
   }
   int input[4];
+  input[0]=0xff;
+  input[1]=0xff;
+  input[2]=0xff;
+  input[3]=0xff;
   for (int i = 0; i < width*height; i++) {
-    unsigned int inputrgba = 0xffffffff;
-    if (pixels != NULL) inputrgba = ((unsigned int*)pixels)[i];
-    input[0] = inputrgba & 255;
-    input[1] = (inputrgba>>8) & 255;
-    input[2] = (inputrgba>>16) & 255;
-    input[3] = (inputrgba>>24) & 255;
+    if (pixels != NULL) {
+      input[0] = ((unsigned char*)pixels)[i*formatStride];
+      if (formatStride>=2)
+        input[1] = ((unsigned char*)pixels)[i*formatStride+1];
+      if (formatStride>=3)
+        input[2] = ((unsigned char*)pixels)[i*formatStride+2];
+      if (formatStride>=4)
+        input[3] = ((unsigned char*)pixels)[i*formatStride+3];
+    }
     unsigned int rgba = 0x00000000;
     if (rIn != -1) rgba |= input[rIn];
     if (gIn != -1) rgba |= input[gIn]<<8;

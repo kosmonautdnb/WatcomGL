@@ -30,6 +30,13 @@ extern "C" {
 #define GL_TEXTURE_LOD_BIAS 0x2808 // :mad:
 #define GL_TEXTURE_MAX_LEVEL 0x2809 // :mad:
 #define GL_TEXTURE_BORDER_COLOR 0x280a // :mad:
+#define GL_TEXTURE_CUBE_MAP       0x0DE2 // :mad:
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_X 0x8515 // gl3.h
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_X 0x8516 //gl3.h
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_Y 0x8517 // gl3.h
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Y 0x8518 //gl3.h
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_Z 0x8519 // gl3.h
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z 0x851a //gl3.h
 #define GL_QUADS 0x0007 // :mad:
 #define GL_RED 0x190b // :mad:
 #define GL_RG 0x190c // :mad:
