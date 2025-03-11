@@ -7,9 +7,9 @@
 #include "png\png.h"
 #include <time.h>
 
-#define XRES 640
-#define YRES 480
-#define NEARPLANE 1.f
+#define XRES 320
+#define YRES 200
+#define NEARPLANE 40.f
 #define FARPLANE 10000.f
 #define FOV 90.f
 
@@ -222,7 +222,7 @@ void drawGround(int pass) {
     glColor3f(1,1,1);
   }
   glEnable(GL_TEXTURE_2D);
-  glBegin(GL_LINE_STRIP);
+  glBegin(GL_QUADS);
   float xSteps = 0.02f;
   float ySteps = 0.02f;
   float groundLayerSize = 4000.f;

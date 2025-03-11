@@ -392,7 +392,7 @@ int main(int argc, char **argv) {
     glClear(GL_COLOR_BUFFER_BIT|GL_STENCIL_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90.0, (double)640/(double)480, 2.0, 50000.0);
+    gluPerspective(90.0, (double)640/(double)480, 0.01, 1000.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(sin(tme),1.+sin(tme*0.3),-cos(tme),0,1.,0,0,1,0);

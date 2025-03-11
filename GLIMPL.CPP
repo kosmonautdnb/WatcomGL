@@ -1,6 +1,7 @@
 #include "gl.h"
 #include <string.h>
 #include <math.h>
+#include <stdio.h> //!
 
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
@@ -255,7 +256,7 @@ typedef struct glVertex {
   GLfloat textureY;
   GLfloat textureZ;
   GLfloat textureW;
-  float sx,sy,sz;
+  float sx,sy,sz,sw;
 } glVertex;
 
 glVertex glVertices[4];
@@ -337,19 +338,24 @@ void glUpdateMatrix() {
   glMatMul(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
 }
 
-int glTransformVertex(_GLContext *context, glVertex *v) {
+int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   float x = v->vertexX * context->matrix[0*4+0] + v->vertexY * context->matrix[1*4+0] + v->vertexZ * context->matrix[2*4+0] + v->vertexW * context->matrix[3*4+0];
   float y = v->vertexX * context->matrix[0*4+1] + v->vertexY * context->matrix[1*4+1] + v->vertexZ * context->matrix[2*4+1] + v->vertexW * context->matrix[3*4+1];
   float z = v->vertexX * context->matrix[0*4+2] + v->vertexY * context->matrix[1*4+2] + v->vertexZ * context->matrix[2*4+2] + v->vertexW * context->matrix[3*4+2];
   float w = v->vertexX * context->matrix[0*4+3] + v->vertexY * context->matrix[1*4+3] + v->vertexZ * context->matrix[2*4+3] + v->vertexW * context->matrix[3*4+3];
 
-  if (w <= 0.0001f) {
-    return 1;
+  if (clip) {
+    if (w == 0) 
+      return 1; // should never happen
+    if (z < -w) {
+      return 1;
+    }
   }
      
   v->sx = x/w;
   v->sy = y/w;
   v->sz = z/w;
+  v->sw = w;
 
   v->sx *= (context->viewportX1-context->viewportX0)*0.5;
   v->sy *= (context->viewportY1-context->viewportY0)*-0.5;
@@ -365,8 +371,6 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     float y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
     float z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
     float w = v->vertexX * matrix[0*4+3] + v->vertexY * matrix[1*4+3] + v->vertexZ * matrix[2*4+3] + v->vertexW * matrix[3*4+3];
-    if (fabs(w) <= 0.0001f) 
-      return;
     x /= w;
     y /= w;
     z /= w;
@@ -514,6 +518,90 @@ __inline int glClipVertex(_GLContext *context, glVertex *v) {
   return clipFlags;
 }
 
+void interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, float f) {
+  dest->colorRed = v0->colorRed + f * (v1->colorRed-v0->colorRed);
+  dest->colorGreen = v0->colorGreen + f * (v1->colorGreen-v0->colorGreen);
+  dest->colorBlue = v0->colorBlue + f * (v1->colorBlue-v0->colorBlue);
+  dest->colorAlpha = v0->colorAlpha + f * (v1->colorAlpha-v0->colorAlpha);
+
+  dest->normalX = v0->normalX + f * (v1->normalX-v0->normalX);
+  dest->normalY = v0->normalY + f * (v1->normalY-v0->normalY);
+  dest->normalZ = v0->normalZ + f * (v1->normalZ-v0->normalZ);
+
+  dest->vertexX = v0->vertexX + f * (v1->vertexX-v0->vertexX);
+  dest->vertexY = v0->vertexY + f * (v1->vertexY-v0->vertexY);
+  dest->vertexZ = v0->vertexZ + f * (v1->vertexZ-v0->vertexZ);
+  dest->vertexW = v0->vertexW + f * (v1->vertexW-v0->vertexW);
+
+  dest->textureX = v0->textureX + f * (v1->textureX-v0->textureX);
+  dest->textureY = v0->textureY + f * (v1->textureY-v0->textureY);
+  dest->textureZ = v0->textureZ + f * (v1->textureZ-v0->textureZ);
+  dest->textureW = v0->textureW + f * (v1->textureW-v0->textureW);
+}
+
+void drawClippedNgon(_GLContext *context, glVertex *vertices[], int vertexCount) {
+  float *matrix = context->matrix;
+  glVertex poly[8];
+  int count = 0;
+  int clipFlags = 1|2|4|8;
+  for(int i = 0; i < vertexCount; i++) {
+    glVertex *v0 = vertices[i];
+    glVertex *v1 = vertices[(i+1) % vertexCount];
+    float z0 = v0->vertexX * matrix[0*4+2] + v0->vertexY * matrix[1*4+2] + v0->vertexZ * matrix[2*4+2] + v0->vertexW * matrix[3*4+2];
+    float w0 = v0->vertexX * matrix[0*4+3] + v0->vertexY * matrix[1*4+3] + v0->vertexZ * matrix[2*4+3] + v0->vertexW * matrix[3*4+3];
+    float z1 = v1->vertexX * matrix[0*4+2] + v1->vertexY * matrix[1*4+2] + v1->vertexZ * matrix[2*4+2] + v1->vertexW * matrix[3*4+2];
+    float w1 = v1->vertexX * matrix[0*4+3] + v1->vertexY * matrix[1*4+3] + v1->vertexZ * matrix[2*4+3] + v1->vertexW * matrix[3*4+3];
+    bool currentInside = z0 >= -w0;
+    bool nextInside = z1 >= -w1;
+    if (currentInside&&nextInside) {
+      poly[count]=*v0;
+      glTransformVertex(context,&poly[count],false);
+      glLightVertex(context,&poly[count]);
+      clipFlags &= glClipVertex(&glContext,&poly[count]);
+      count++;
+    } else
+    if(currentInside && (!nextInside)) {
+      poly[count]=*v0;
+      glTransformVertex(context,&poly[count],false);
+      glLightVertex(context,&poly[count]);
+      clipFlags &= glClipVertex(&glContext,&poly[count]);
+      count++;
+      float f = (w0+z0) / ((z0-z1)+(w0-w1));
+      interpolateVertex(&poly[count],v0,v1,f);
+      glTransformVertex(context,&poly[count],false);
+      glLightVertex(context,&poly[count]);
+      clipFlags &= glClipVertex(&glContext,&poly[count]);
+      count++;
+    } else 
+    if((!currentInside) && nextInside) {
+      float f = (w0+z0) / ((z0-z1)+(w0-w1));
+      interpolateVertex(&poly[count],v0,v1,f);
+      glTransformVertex(context,&poly[count],false);
+      glLightVertex(context,&poly[count]);
+      clipFlags &= glClipVertex(&glContext,&poly[count]);
+      count++;
+    }
+  }
+  if (clipFlags == 0) for(int j = 1; j < count-1; j++) glDrawTriangle(context, &poly[0],&poly[j],&poly[j+1]);
+}
+
+void drawClippedQuad(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2, glVertex *v3) {
+  glVertex *vertices[4];
+  vertices[0] = v0;
+  vertices[1] = v1;
+  vertices[2] = v2;
+  vertices[3] = v3;
+  drawClippedNgon(context, vertices, 4);
+}
+
+void drawClippedTriangle(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2) {
+  glVertex *vertices[3];
+  vertices[0] = v0;
+  vertices[1] = v1;
+  vertices[2] = v2;
+  drawClippedNgon(context, vertices, 3);
+}
+
 void glEmitVertex() {
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
@@ -536,9 +624,9 @@ void glEmitVertex() {
   switch(glContext.beginMode) {
     case GL_LINES: {
       if (glCurrentVertexElement==2) {
-        int a = glTransformVertex(&glContext,&glVertices[0]);
+        int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
-        a |= glTransformVertex(&glContext,&glVertices[1]);
+        a |= glTransformVertex(&glContext,&glVertices[1],true);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
           clipFlags &= glClipVertex(&glContext,&glVertices[1]);
@@ -566,6 +654,7 @@ void glEmitVertex() {
           }
         } else {
           if (a != 3) {
+            //drawClippedLine(&glContext,&glVertices[0],&glVertices[1]); missing yet
           }
         }
         glCurrentVertexElement = 0;
@@ -573,9 +662,9 @@ void glEmitVertex() {
     } break;
     case GL_LINE_STRIP: {
       if (glCurrentVertexElement==2) {
-        int a = glTransformVertex(&glContext,&glVertices[0]);
+        int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
-        a |= glTransformVertex(&glContext,&glVertices[1]);
+        a |= glTransformVertex(&glContext,&glVertices[1],true);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
           clipFlags &= glClipVertex(&glContext,&glVertices[1]);
@@ -603,6 +692,7 @@ void glEmitVertex() {
           }
         } else {
           if (a != 3) {
+            //drawClippedLine(&glContext,&glVertices[0],&glVertices[1]); missing yet
           }
         }
         glVertices[0]=glVertices[1];
@@ -611,11 +701,11 @@ void glEmitVertex() {
     } break;
     case GL_TRIANGLES: {
       if (glCurrentVertexElement==3) {
-        int a = glTransformVertex(&glContext,&glVertices[0]);
+        int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
-        a |= glTransformVertex(&glContext,&glVertices[1]);
+        a |= glTransformVertex(&glContext,&glVertices[1],true);
         a *= 2;
-        a |= glTransformVertex(&glContext,&glVertices[2]);
+        a |= glTransformVertex(&glContext,&glVertices[2],true);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
           clipFlags &= glClipVertex(&glContext,&glVertices[1]);
@@ -628,7 +718,7 @@ void glEmitVertex() {
           }
         } else {
           if (a != 7) {
-
+            drawClippedTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
           }
         }
         glCurrentVertexElement = 0;
@@ -636,13 +726,13 @@ void glEmitVertex() {
     } break;
     case GL_QUADS: {
       if (glCurrentVertexElement==4) {
-        int a = glTransformVertex(&glContext,&glVertices[0]);
+        int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
-        a |= glTransformVertex(&glContext,&glVertices[1]);
+        a |= glTransformVertex(&glContext,&glVertices[1],true);
         a *= 2;
-        a |= glTransformVertex(&glContext,&glVertices[2]);
+        a |= glTransformVertex(&glContext,&glVertices[2],true);
         a *= 2;
-        a |= glTransformVertex(&glContext,&glVertices[3]);
+        a |= glTransformVertex(&glContext,&glVertices[3],true);
         if (a == 0) {
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
           clipFlags &= glClipVertex(&glContext,&glVertices[1]);
@@ -657,7 +747,7 @@ void glEmitVertex() {
           }
         } else {
           if (a != 15) {
-
+            drawClippedQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
           }
         }
         glCurrentVertexElement = 0;
@@ -1699,12 +1789,15 @@ GLint gluUnProject(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLf
 // -----------
 // -----------
 #include <stdlib.h>
+float glSign(float v) {
+  return v < 0 ? -1 : (v > 0 ? 1 : 0);
+}
 double getBary(double x, double y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   double nx = v2->sy - v1->sy;
   double ny = -(v2->sx - v1->sx);
   double l = (v0->sx-v1->sx)*nx + (v0->sy-v1->sy)*ny;
   double p = (x-v1->sx)*nx + (y-v1->sy)*ny;
-  return (p/l);
+  return (p/l); // actually it must have been g/l and nx and ny been normalized
 }
 
 #define __POLYMINMAX__\
@@ -2089,9 +2182,12 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   bool stencil = context->isEnabled(GL_STENCIL_TEST);
   bool blending = context->isEnabled(GL_BLEND);
 
-  float v0z = 1.f/v0->sz;
-  float v1z = 1.f/v1->sz;
-  float v2z = 1.f/v2->sz;
+  double v0w = 1.0/(v0->sw);
+  double v1w = 1.0/(v1->sw);
+  double v2w = 1.0/(v2->sw);
+  double v0z = 1.0/(v0->sz);
+  double v1z = 1.0/(v1->sz);
+  double v2z = 1.0/(v2->sz);
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
@@ -2112,14 +2208,14 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     tdata0 = t->data;
     texEnvMode = t->texEnvMode;
 
-    tx0 = v0->textureX*v0z*twidth0;
-    ty0 = v0->textureY*v0z*theight0;
+    tx0 = v0->textureX*v0w*twidth0;
+    ty0 = v0->textureY*v0w*theight0;
   
-    tx1 = v1->textureX*v1z*twidth0;
-    ty1 = v1->textureY*v1z*theight0;
+    tx1 = v1->textureX*v1w*twidth0;
+    ty1 = v1->textureY*v1w*theight0;
   
-    tx2 = v2->textureX*v2z*twidth0;
-    ty2 = v2->textureY*v2z*theight0;
+    tx2 = v2->textureX*v2w*twidth0;
+    ty2 = v2->textureY*v2w*theight0;
 
     borderColor = ((int)floor(glClampf(t->borderColorRed*255.f,0.f,255.f)));
     borderColor |= ((int)floor(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
@@ -2138,20 +2234,20 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   bool depthTest = context->isEnabled(GL_DEPTH_TEST);
 
   // rgba
-  float r0 = v0->colorRed;
-  float g0 = v0->colorGreen;
-  float b0 = v0->colorBlue;
-  float a0 = v0->colorAlpha;
+  double r0 = v0->colorRed;
+  double g0 = v0->colorGreen;
+  double b0 = v0->colorBlue;
+  double a0 = v0->colorAlpha;
 
-  float r1 = v1->colorRed;
-  float g1 = v1->colorGreen;
-  float b1 = v1->colorBlue;
-  float a1 = v1->colorAlpha;
+  double r1 = v1->colorRed;
+  double g1 = v1->colorGreen;
+  double b1 = v1->colorBlue;
+  double a1 = v1->colorAlpha;
 
-  float r2 = v2->colorRed;
-  float g2 = v2->colorGreen;
-  float b2 = v2->colorBlue;
-  float a2 = v2->colorAlpha;
+  double r2 = v2->colorRed;
+  double g2 = v2->colorGreen;
+  double b2 = v2->colorBlue;
+  double a2 = v2->colorAlpha;
 
   if (r0 < 0) r0 = 0;
   if (g0 < 0) g0 = 0;
@@ -2180,35 +2276,35 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   if (b2 > 1) b2 = 1;
   if (a2 > 1) a2 = 1;
    
-  r0 = r0*255.f*v0z;
-  g0 = g0*255.f*v0z;
-  b0 = b0*255.f*v0z;
-  a0 = a0*255.f*v0z;
+  r0 = r0*255.0*v0w;
+  g0 = g0*255.0*v0w;
+  b0 = b0*255.0*v0w;
+  a0 = a0*255.0*v0w;
 
-  r1 = r1*255.f*v1z;
-  g1 = g1*255.f*v1z;
-  b1 = b1*255.f*v1z;
-  a1 = a1*255.f*v1z;
+  r1 = r1*255.0*v1w;
+  g1 = g1*255.0*v1w;
+  b1 = b1*255.0*v1w;
+  a1 = a1*255.0*v1w;
 
-  r2 = r2*255.f*v2z;
-  g2 = g2*255.f*v2z;
-  b2 = b2*255.f*v2z;
-  a2 = a2*255.f*v2z;
-
+  r2 = r2*255.0*v2w;
+  g2 = g2*255.0*v2w;
+  b2 = b2*255.0*v2w;
+  a2 = a2*255.0*v2w;
 
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0>=0&&bary1>=0&&bary2>=0) {
-        float iz = 1.f/(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
+        double iz = 1.0/(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
         if ((!depthTest)||glCheckDepthFunction(*zDest,iz,depthFunction)) {
-          int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iz;
-          int g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iz;
-          int b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iz;
-          int a = (__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iz;
+          double iw = 1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w));
+          int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw;
+          int g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw;
+          int b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iw;
+          int a = (__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iw;
           if (textured) {
-            float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iz;
-            float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iz;
+            float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw;
+            float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw;
             int tix0 = textureWrap(tx, twidth0, t->wrapS);
             int tiy0 = textureWrap(ty, theight0, t->wrapT);
             unsigned int rgba = 0xffffffff;
