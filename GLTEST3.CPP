@@ -9,7 +9,7 @@
 
 #define XRES 640
 #define YRES 480
-#define NEARPLANE 0.1f
+#define NEARPLANE 15.f
 #define FARPLANE 1000.f
 #define FOV 90.f
 
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
-    glBegin(GL_QUADS);
+    glBegin(GL_LINE_STRIP);
     glColor3f(1,0,0);
     glVertex3f(-10.5f,10.5f,-20.f);
     glColor3f(0,1,0);
@@ -52,6 +52,8 @@ int main(int argc, char **argv) {
     glVertex3f(10.5,-10.5,-20.f);
     glColor3f(0,1,1);
     glVertex3f(-10.5f,-10.5,-10.f+globalTime);
+    glColor3f(1,0,0);
+    glVertex3f(-10.5f,10.5f,-20.f);
     glEnd();
 
     glRefresh();

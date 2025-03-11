@@ -345,12 +345,12 @@ int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   float w = v->vertexX * context->matrix[0*4+3] + v->vertexY * context->matrix[1*4+3] + v->vertexZ * context->matrix[2*4+3] + v->vertexW * context->matrix[3*4+3];
 
   if (clip) {
-    if (w == 0) 
-      return 1; // should never happen
     if (z < -w) {
       return 1;
     }
   }
+  if (w == 0) 
+    return 1; // should never happen
      
   v->sx = x/w;
   v->sy = y/w;
@@ -371,9 +371,11 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     float y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
     float z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
     float w = v->vertexX * matrix[0*4+3] + v->vertexY * matrix[1*4+3] + v->vertexZ * matrix[2*4+3] + v->vertexW * matrix[3*4+3];
-    x /= w;
-    y /= w;
-    z /= w;
+    if (w != 0) { // should never happen
+      x /= w;
+      y /= w;
+      z /= w;
+    }
     float ambientRed = 0;
     float ambientGreen = 0;
     float ambientBlue = 0;
@@ -602,6 +604,56 @@ void drawClippedTriangle(_GLContext *context, glVertex *v0, glVertex *v1, glVert
   drawClippedNgon(context, vertices, 3);
 }
 
+void drawClippedLine(_GLContext *context, glVertex *v0a, glVertex *v1a)  {
+  glVertex vertices[4];
+  vertices[0] = *v0a;
+  vertices[1] = *v1a;
+
+  float *matrix = context->matrix;
+  glVertex *v0 = &vertices[0];
+  glVertex *v1 = &vertices[1];
+  float z0 = v0->vertexX * matrix[0*4+2] + v0->vertexY * matrix[1*4+2] + v0->vertexZ * matrix[2*4+2] + v0->vertexW * matrix[3*4+2];
+  float w0 = v0->vertexX * matrix[0*4+3] + v0->vertexY * matrix[1*4+3] + v0->vertexZ * matrix[2*4+3] + v0->vertexW * matrix[3*4+3];
+  float z1 = v1->vertexX * matrix[0*4+2] + v1->vertexY * matrix[1*4+2] + v1->vertexZ * matrix[2*4+2] + v1->vertexW * matrix[3*4+2];
+  float w1 = v1->vertexX * matrix[0*4+3] + v1->vertexY * matrix[1*4+3] + v1->vertexZ * matrix[2*4+3] + v1->vertexW * matrix[3*4+3];
+  bool currentInside = z0 >= -w0;
+  bool nextInside = z1 >= -w1;
+  if ((!currentInside)&&(!nextInside))
+    return;
+  if ((!currentInside)||(!nextInside)) {
+    float f = (w0+z0) / ((z0-z1)+(w0-w1));
+    if (!currentInside)
+      interpolateVertex(&vertices[0],v0,v1,f);
+    else
+      interpolateVertex(&vertices[1],v0,v1,f);
+  }
+  glTransformVertex(context,&vertices[0],false);
+  glTransformVertex(context,&vertices[1],false);
+  glLightVertex(context,&vertices[0]);
+  glLightVertex(context,&vertices[1]);
+  memcpy(&vertices[2],&vertices[1],sizeof(glVertex));
+  memcpy(&vertices[3],&vertices[0],sizeof(glVertex));
+  float dx = vertices[1].sx-vertices[0].sx;
+  float dy = vertices[1].sy-vertices[0].sy;
+  float l = sqrt(dx*dx+dy*dy);
+  if (l>0.f) {dx/=l;dy/=l;};
+  float nx = dy;
+  float ny = -dx;
+  float d = context->lineWidth*0.5;
+  vertices[0].sx += nx*d;
+  vertices[0].sy += ny*d;
+  vertices[1].sx += nx*d;
+  vertices[1].sy += ny*d;
+  vertices[2].sx -= nx*d;
+  vertices[2].sy -= ny*d;
+  vertices[3].sx -= nx*d;
+  vertices[3].sy -= ny*d;
+  int clipFlags = glClipVertex(&glContext,&vertices[0]);
+  clipFlags &= glClipVertex(&glContext,&vertices[1]);
+  if (clipFlags == 0)
+    glDrawQuad(context,&vertices[0],&vertices[1],&vertices[2],&vertices[3]);
+}
+
 void glEmitVertex() {
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
@@ -654,7 +706,7 @@ void glEmitVertex() {
           }
         } else {
           if (a != 3) {
-            //drawClippedLine(&glContext,&glVertices[0],&glVertices[1]); missing yet
+            drawClippedLine(&glContext,&glVertices[0],&glVertices[1]);
           }
         }
         glCurrentVertexElement = 0;
@@ -692,7 +744,7 @@ void glEmitVertex() {
           }
         } else {
           if (a != 3) {
-            //drawClippedLine(&glContext,&glVertices[0],&glVertices[1]); missing yet
+            drawClippedLine(&glContext,&glVertices[0],&glVertices[1]);
           }
         }
         glVertices[0]=glVertices[1];
