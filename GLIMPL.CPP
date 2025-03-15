@@ -46,7 +46,7 @@ public:
     clearGreen = 0;
     clearBlue = 0;
     clearAlpha = 0;
-    clearDepth = 2.f; // actually 1 is default.
+    clearDepth = 1.f;
     clearStencil = 0;
     activeTexture = 0;
     alphaFunc = 0;
@@ -1710,6 +1710,10 @@ int glhInvertMatrix(float *m, float *dest) {
   return 1;
 }
 
+int gluInvertMatrix(float *m, float *dest) {
+  return glhInvertMatrix(m,dest);
+}
+
 void MultiplyMatrixByVector4By4OpenGL_FLOAT(float *dest, float *m, float *v) {
   float x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
   float y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
@@ -2253,9 +2257,9 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   double v0w = 1.0/(v0->sw);
   double v1w = 1.0/(v1->sw);
   double v2w = 1.0/(v2->sw);
-  double v0z = 1.0/(v0->sz);
-  double v1z = 1.0/(v1->sz);
-  double v2z = 1.0/(v2->sz);
+  double v0z = 1.0/(v0->sz*0.25+0.5); // this is wrong currently.. 0.5 is not possible due to div by zero so 0.25
+  double v1z = 1.0/(v1->sz*0.25+0.5);
+  double v2z = 1.0/(v2->sz*0.25+0.5);
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;

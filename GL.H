@@ -637,6 +637,7 @@ GLAPI void APIENTRY gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlan
 GLAPI void APIENTRY gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz); // :mad:
 GLAPI GLint APIENTRY gluProject(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ);
 GLAPI GLint APIENTRY gluUnProject(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ);
+GLAPI GLint APIENTRY gluInvertMatrix(float *m, float *dest);
 GLAPI void APIENTRY glVertex3d(GLdouble x, GLdouble y, GLdouble z); // :mad:
 GLAPI void APIENTRY glTexCoord1d(GLdouble x); // :mad:
 GLAPI void APIENTRY glTexCoord1f(GLfloat x); // :mad:
