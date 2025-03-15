@@ -128,67 +128,50 @@ void glLoadSkyBox(const char *maskString, const char *left,const char *right,con
   }
 }
 
+void randomColor() {
+  float w = (float)rand() / RAND_MAX;
+  w = w * 0.2 + 0.8;
+  glColor3f(w,w,w);
+}
+
 void cube(float x, float y, float z, float sx, float sy, float sz) {
   glBegin(GL_QUADS);
   glNormal3f(0,0,1);
-  glTexCoord2f(0,1);
-  glVertex3f(x-sx,y+sy,z+sz);
-  glTexCoord2f(1,1);
-  glVertex3f(x+sx,y+sy,z+sz);
-  glTexCoord2f(1,0);
-  glVertex3f(x+sx,y-sy,z+sz);
-  glTexCoord2f(0,0);
-  glVertex3f(x-sx,y-sy,z+sz);
-
+  randomColor();
+  glTexCoord2f(0,1);  glVertex3f(x-sx,y+sy,z+sz);
+  glTexCoord2f(1,1);  glVertex3f(x+sx,y+sy,z+sz);
+  glTexCoord2f(1,0);  glVertex3f(x+sx,y-sy,z+sz);
+  glTexCoord2f(0,0); glVertex3f(x-sx,y-sy,z+sz);
   glNormal3f(0,1,0);
-  glTexCoord2f(0,0);
-  glVertex3f(x-sx,y+sy,z-sz);
-  glTexCoord2f(0,1);
-  glVertex3f(x+sx,y+sy,z-sz);
-  glTexCoord2f(1,1);
-  glVertex3f(x+sx,y+sy,z+sz);
-  glTexCoord2f(1,0);
-  glVertex3f(x-sx,y+sy,z+sz);
-
+  randomColor();
+  glTexCoord2f(0,0);  glVertex3f(x-sx,y+sy,z-sz);
+  glTexCoord2f(0,1);  glVertex3f(x+sx,y+sy,z-sz);
+  glTexCoord2f(1,1);  glVertex3f(x+sx,y+sy,z+sz);
+  glTexCoord2f(1,0);  glVertex3f(x-sx,y+sy,z+sz);
   glNormal3f(1,0,0);
-  glTexCoord2f(0,0);
-  glVertex3f(x+sx,x-sx,z+sz);
-  glTexCoord2f(0,1);
-  glVertex3f(x+sx,x+sx,z+sz);
-  glTexCoord2f(1,1);
-  glVertex3f(x+sx,x+sx,z-sz);
-  glTexCoord2f(1,0);
-  glVertex3f(x+sx,x-sx,z-sz);
-
+  randomColor();
+  glTexCoord2f(0,0);  glVertex3f(x+sx,y-sy,z+sz);
+  glTexCoord2f(0,1);   glVertex3f(x+sx,y+sy,z+sz);
+  glTexCoord2f(1,1);    glVertex3f(x+sx,y+sy,z-sz);
+  glTexCoord2f(1,0);   glVertex3f(x+sx,y-sy,z-sz);
   glNormal3f(0,0,-1);
-  glTexCoord2f(1,0);
-  glVertex3f(x-sx,y-sy,z-sz);
-  glTexCoord2f(0,0);
-  glVertex3f(x+sx,y-sy,z-sz);
-  glTexCoord2f(0,1);
-  glVertex3f(x+sx,y+sy,z-sz);
-  glTexCoord2f(1,1);
-  glVertex3f(x-sx,y+sy,z-sz);
-
+  randomColor();
+  glTexCoord2f(1,0);   glVertex3f(x-sx,y-sy,z-sz);
+  glTexCoord2f(0,0);  glVertex3f(x+sx,y-sy,z-sz);
+  glTexCoord2f(0,1);   glVertex3f(x+sx,y+sy,z-sz);
+  glTexCoord2f(1,1);    glVertex3f(x-sx,y+sy,z-sz);
   glNormal3f(0,-1,0);
-  glTexCoord2f(1,1);
-  glVertex3f(x-sx,y-sy,z+sz);
-  glTexCoord2f(1,0);
-  glVertex3f(x+sx,y-sy,z+sz);
-  glTexCoord2f(0,0);
-  glVertex3f(x+sx,y-sy,z-sz);
-  glTexCoord2f(0,1);
-  glVertex3f(x-sx,y-sy,z-sz);
-
+  randomColor();
+  glTexCoord2f(1,1);  glVertex3f(x-sx,y-sy,z+sz);
+  glTexCoord2f(1,0);  glVertex3f(x+sx,y-sy,z+sz);
+  glTexCoord2f(0,0);  glVertex3f(x+sx,y-sy,z-sz);
+  glTexCoord2f(0,1);  glVertex3f(x-sx,y-sy,z-sz);
   glNormal3f(-1,0,0);
-  glTexCoord2f(0,0);
-  glVertex3f(x-sx,x-sx,z-sz);
-  glTexCoord2f(0,1);
-  glVertex3f(x-sx,x+sx,z-sz);
-  glTexCoord2f(1,1);
-  glVertex3f(x-sx,x+sx,z+sz);
-  glTexCoord2f(1,0);
-  glVertex3f(x-sx,x-sx,z+sz);
+  randomColor();
+  glTexCoord2f(0,0);  glVertex3f(x-sx,y-sy,z-sz);
+  glTexCoord2f(0,1);  glVertex3f(x-sx,y+sy,z-sz);
+  glTexCoord2f(1,1);   glVertex3f(x-sx,y+sy,z+sz);
+  glTexCoord2f(1,0);   glVertex3f(x-sx,y-sy,z+sz);
   glEnd();
 }
 
@@ -272,12 +255,12 @@ void buildTrack() {
     glGetFloatv(GL_MODELVIEW_MATRIX, segments[i].matrix);
     glTranslatef(0,0,-TRACKSCALE/2);
     glRotatef(1*sin(fi*1.7+sin(fi*5.3)),0,0,1);
-    glRotatef(2*sin(fi*3.5+sin(fi*12.6)+sin(fi*9.0)),1,0,0);
+    glRotatef(1*sin(fi*3.5+sin(fi*12.6)+0.5f*sin(fi*9.0)),1,0,0);
     glRotatef(1*sin(fi*3.3),0,1,0);
   }
 }
 
-void trackVector(float trackSegment, float x, float y) {
+void trackVectorf(float *f,float trackSegment, float x, float y) {
   x *= TRACKSCALE;
   y *= TRACKSCALE;
   float *matrix1 = segments[(int)(floor(trackSegment)) % TRACKSEGMENTS].matrix;
@@ -289,10 +272,15 @@ void trackVector(float trackSegment, float x, float y) {
   float x2 = matrix2[0+4*0]*x+matrix2[0+4*1]*y+matrix2[0+4*2]*z+matrix2[0+4*3];
   float y2 = matrix2[1+4*0]*x+matrix2[1+4*1]*y+matrix2[1+4*2]*z+matrix2[1+4*3];
   float z2 = matrix2[2+4*0]*x+matrix2[2+4*1]*y+matrix2[2+4*2]*z+matrix2[2+4*3];
-  float x0 = (x2 - x1) * iz + x1;
-  float y0 = (y2 - y1) * iz + y1;
-  float z0 = (z2 - z1) * iz + z1;
-  glVertex3f(x0,y0,z0);
+  f[0] = (x2 - x1) * iz + x1;
+  f[1] = (y2 - y1) * iz + y1;
+  f[2] = (z2 - z1) * iz + z1;
+}
+
+void trackVector(float trackSegment, float x, float y) {
+  float f[3];
+  trackVectorf(f, trackSegment, x, y);
+  glVertex3f(f[0],f[1],f[2]);
 }
 
 void getInterpolatedTrackMatrix(float *m, float step) {
@@ -305,6 +293,16 @@ void getInterpolatedTrackMatrix(float *m, float step) {
 void randomColor(float f) {
   float k = sin(f*10.0f)*0.1+0.9;
   glColor3f(k,k,k);
+}
+
+void drawHouse(float step, float x, float y) {
+  float f[3];
+  trackVectorf(f, step, x, y);
+  glDisable(GL_TEXTURE_2D);
+  glColor3f(1.f,1.f,1.f);
+  for (int i = -8; i < 40; i++) {
+    cube( f[0],f[1]+i*5,f[2], 25,1,25);
+  }
 }
 
 GLuint street[10];
@@ -395,10 +393,11 @@ int main(int argc, char **argv) {
     glMultMatrixf(m);
 
     glCullFace(GL_FRONT);
-    skyCube(m[3*4+0],m[3*4+1],m[3*4+2],FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f));
+    skyCube(-m[3*4+0],-m[3*4+1],-m[3*4+2],FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f));
     glCullFace(GL_BACK);
 
-    for (int i = 0; i < TRACKSEGMENTS/TRACKSCALE-1; i++) {
+    int i;
+    for (i = 0; i < TRACKSEGMENTS/TRACKSCALE-1; i++) {
       glBegin(GL_QUADS);
       glColor3f(1,1,1);
 
@@ -448,22 +447,32 @@ int main(int argc, char **argv) {
 
       glBindTexture(GL_TEXTURE_2D, street[1]);
 
-      float th20 = (sin(i)*sin(i*0.1)*0.5+0.5)*10.f+th;
-      float th21 = (sin(i+1)*sin((i+1)*0.1)*0.5+0.5)*10.f+th;
+      float th20 = pow(sin(i)*sin(i*0.1)*0.5+0.5,10.f)*20.f+th;
+      float th21 = pow(sin(i+1)*sin((i+1)*0.1)*0.5+0.5,10.f)*20.f+th;
       randomColor(i+700);
       glTexCoord2f(0,1); trackVector(i1,1+tr+tr,th);
-      glTexCoord2f(1,1); trackVector(i1,1+tr+tr+5,th21);
-      glTexCoord2f(1,0); trackVector(i0,1+tr+tr+5,th20);
+      glTexCoord2f(1,1); trackVector(i1,1+tr+tr+125,th21);
+      glTexCoord2f(1,0); trackVector(i0,1+tr+tr+125,th20);
       glTexCoord2f(0,0); trackVector(i0,1+tr+tr,th);
 
       randomColor(i+800);
-      glTexCoord2f(0,1); trackVector(i1,-1-tr-tr-5,th21);
+      glTexCoord2f(0,1); trackVector(i1,-1-tr-tr-125,th21);
       glTexCoord2f(1,1); trackVector(i1,-1-tr-tr,th);
       glTexCoord2f(1,0); trackVector(i0,-1-tr-tr,th);
-      glTexCoord2f(0,0); trackVector(i0,-1-tr-tr-5,th20);
+      glTexCoord2f(0,0); trackVector(i0,-1-tr-tr-125,th20);
 
       glEnd();
     }
+
+    glDisable(GL_TEXTURE_2D);
+    srand(0);
+    for (i = 0; i < 1000; i++) {
+      float z = rand() % TRACKSEGMENTS;
+      float f[3];
+      trackVectorf(f, (rand() % (TRACKSEGMENTS*100))/100.f, (rand()%50)-25, (rand()%50)-25);
+      cube( f[0],f[1],f[2], 5,1,5);
+    }
+
 
     glRefresh();
   } while(!keyPressed());

@@ -823,6 +823,22 @@ void glAlphaFunc(GLenum func, GLclampf ref) {
 void glBegin(GLenum mode) {
   glContext.beginMode = mode;
   glCurrentVertexElement = 0;
+  glContext.colorRed = 1;
+  glContext.colorGreen = 1;
+  glContext.colorBlue = 1;
+  glContext.colorAlpha = 1;
+  glContext.normalX = 0;
+  glContext.normalY = 0;
+  glContext.normalZ = 1;
+  glContext.vertexX = 0;
+  glContext.vertexY = 0;
+  glContext.vertexZ = 0;
+  glContext.vertexW = 1;
+  glContext.textureX = 0;
+  glContext.textureY = 0;
+  glContext.textureZ = 0;
+  glContext.textureW = 1;
+
 }
 
 void glBindTexture (GLenum target, GLuint texture) {
