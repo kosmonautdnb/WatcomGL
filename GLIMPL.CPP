@@ -349,8 +349,9 @@ int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
       return 1;
     }
   }
-  if (w == 0) 
+  if (w == 0) {
     return 1; // should never happen
+  }
      
   v->sx = x/w;
   v->sy = y/w;
@@ -1939,12 +1940,12 @@ bool glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
 __inline bool glCheckDepthFunction(float depthBufferValue, float newValue, int depthFunction) {
   switch(depthFunction) {
   case GL_NEVER: {return false;} break;
-  case GL_LESS: {return newValue < depthBufferValue;} break;
+  case GL_LESS: {return newValue >= depthBufferValue;} break;
   case GL_EQUAL: {return newValue == depthBufferValue;} break;
-  case GL_LEQUAL: {return newValue <= depthBufferValue;} break;
-  case GL_GREATER: {return newValue > depthBufferValue;} break;
+  case GL_LEQUAL: {return newValue > depthBufferValue;} break;
+  case GL_GREATER: {return newValue <= depthBufferValue;} break;
   case GL_NOTEQUAL: {return newValue != depthBufferValue;} break;
-  case GL_GEQUAL: {return newValue >= depthBufferValue;} break;
+  case GL_GEQUAL: {return newValue < depthBufferValue;} break;
   case GL_ALWAYS: {return true;} break;
   }
   return true;
@@ -2257,9 +2258,9 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   double v0w = 1.0/(v0->sw);
   double v1w = 1.0/(v1->sw);
   double v2w = 1.0/(v2->sw);
-  double v0z = 1.0/(v0->sz*0.25+0.5); // this is wrong currently.. 0.5 is not possible due to div by zero so 0.25
-  double v1z = 1.0/(v1->sz*0.25+0.5);
-  double v2z = 1.0/(v2->sz*0.25+0.5);
+  double v0z = (v0->sz*0.5+0.5);
+  double v1z = (v1->sz*0.5+0.5);
+  double v2z = (v2->sz*0.5+0.5);
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
