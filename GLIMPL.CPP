@@ -154,6 +154,7 @@ public:
     blendColorBlue = 0;
     blendColorAlpha = 1;
     blendEquation = GL_FUNC_ADD;
+    frontFace = GL_CW;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -234,6 +235,7 @@ public:
   GLfloat blendColorBlue;
   GLfloat blendColorAlpha;
   GLenum blendEquation;
+  GLenum frontFace;
 };
 
 _GLContext glContext;
@@ -1790,6 +1792,10 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
   glMultMatrixf(m);
 }
 
+void glFrontFace(GLenum mode) {
+  glContext.frontFace = mode;
+}
+
 void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
   glhFrustumf2(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
 }
@@ -2235,6 +2241,7 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
 void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   if (context->isEnabled(GL_CULL_FACE)) {
     bool backFacing = glCCW(v0,v1,v2);
+    if (context->frontFace == GL_CCW) backFacing = !backFacing;
     if (context->cullFaceMode == GL_FRONT && backFacing) return;
     if (context->cullFaceMode == GL_BACK && (!backFacing)) return;
     if (context->cullFaceMode == GL_FRONT_AND_BACK) return;
@@ -2839,6 +2846,9 @@ void glSetupMouse() {
     regs.x.ecx = 0;
     regs.x.edx = glFrameBufferHeight-1;
     int386(0x33, &regs, &regs);
+    glMouseX = glFrameBufferWidth/2;
+    glMouseY = glFrameBufferHeight/2;
+    glSetMousePos(glMouseX, glMouseY);
 }
 
 void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey) {
