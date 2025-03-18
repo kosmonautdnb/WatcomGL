@@ -1,7 +1,7 @@
 #include "gl.h"
 #include <string.h>
 #include <math.h>
-#include <stdio.h> //!
+#include <time.h>
 
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
@@ -1583,7 +1583,7 @@ void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *up
 }
 
 
-int glhInvertMatrix(float *m, float *dest) {
+int glhInvertMatrix(const float *m, float *dest) {
   float inv[16], det;    
   int i;    
 
@@ -1710,7 +1710,7 @@ int glhInvertMatrix(float *m, float *dest) {
   return 1;
 }
 
-int gluInvertMatrix(float *m, float *dest) {
+int gluInvertMatrix(const float *m, float *dest) {
   return glhInvertMatrix(m,dest);
 }
 
@@ -2707,6 +2707,9 @@ void *glVesaPointer(const void *d) {
 // --------------------------------------
 // --------------------------------------
 // --------------------------------------
+void glSetupMouse();
+double glStartClock;
+
 GLboolean glVesa(int xRes,int yRes, int bPP) {
   glGraphicsModeToRestore = getBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
@@ -2738,6 +2741,8 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+      glSetupMouse();
+      glStartClock = clock();
       return true;
     }
     v++;
@@ -2759,6 +2764,93 @@ void glDone() {
   unmapPhysical((unsigned int)glFrameBufferDedicated);
   setBiosGraphicsMode(glGraphicsModeToRestore);
 }
+
+// --------------------------------------
+
+
+int glKey = 0;
+
+unsigned short glNextKey() {
+  union REGS regs;
+  regs.x.eax = 0x0600;
+  regs.x.edx = 0xff;
+  int386(0x21, &regs, &regs);
+  glKey = regs.x.eax & 0xff;
+  if (glKey == 0) {
+    regs.x.eax = 0x0600;
+    regs.x.edx = 0xff;
+    int386(0x21, &regs, &regs);
+    glKey += (regs.x.eax & 0xff)<<8;
+  }
+  return glKey;
+}
+
+int glLastMouseX = 0;
+int glLastMouseY = 0;
+int glLastMouseB = 0;
+int glMouseX = 0;
+int glMouseY = 0;
+int glMouseB = 0;
+
+void glSetMousePos(int x, int y) {
+  union REGS regs;
+  regs.x.eax = 0x04;
+  regs.x.ecx = x;
+  regs.x.edx = y;
+  int386(0x33, &regs, &regs);
+}
+
+void glNextMouseDelta(double *mouseX, double *mouseY) {
+  union REGS regs;
+  regs.x.eax = 0x03;
+  int386(0x33, &regs, &regs);
+  glLastMouseX = glMouseX;
+  glLastMouseY = glMouseY;
+  glMouseX = regs.x.ecx & 0xffff;
+  glMouseY = regs.x.edx & 0xffff;
+  *mouseX = glMouseX - glLastMouseX;
+  *mouseY = glMouseY - glLastMouseY;
+  if (true) {
+    glSetMousePos(glFrameBufferWidth/2, glFrameBufferHeight/2);
+    // update lastMouseX this way
+    glMouseX = glFrameBufferWidth/2;
+    glMouseY = glFrameBufferHeight/2;
+  }
+}
+
+
+char glMouseButtons() {
+  union REGS regs;
+  regs.x.eax = 0x03;
+  int386(0x33, &regs, &regs);
+  glLastMouseB = glMouseB;
+  glMouseB = regs.x.ebx & 0xffff;
+  return glMouseB & 0xff;
+}
+
+void glSetupMouse() {
+    union REGS regs;
+    regs.x.eax = 0x07;
+    regs.x.ecx = 0;
+    regs.x.edx = glFrameBufferWidth-1;
+    int386(0x33, &regs, &regs);
+    regs.x.eax = 0x08;
+    regs.x.ecx = 0;
+    regs.x.edx = glFrameBufferHeight-1;
+    int386(0x33, &regs, &regs);
+}
+
+void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey) {
+  int keyState = *((char *)0x417);
+  *shiftKey = (keyState & 0x03) != 0;
+  *ctrlKey = (keyState & 0x04) != 0;
+  *altKey = (keyState & 0x08) != 0;
+}
+
+double glSeconds() {
+  return (double)(clock() - glStartClock) / CLOCKS_PER_SEC;
+}
+
 // --------------------------------------
 // --------------------------------------
 // --------------------------------------

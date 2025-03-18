@@ -637,7 +637,7 @@ GLAPI void APIENTRY gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlan
 GLAPI void APIENTRY gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz); // :mad:
 GLAPI GLint APIENTRY gluProject(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ);
 GLAPI GLint APIENTRY gluUnProject(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ);
-GLAPI GLint APIENTRY gluInvertMatrix(float *m, float *dest);
+GLAPI GLint APIENTRY gluInvertMatrix(const float *m, float *dest);
 GLAPI void APIENTRY glVertex3d(GLdouble x, GLdouble y, GLdouble z); // :mad:
 GLAPI void APIENTRY glTexCoord1d(GLdouble x); // :mad:
 GLAPI void APIENTRY glTexCoord1f(GLfloat x); // :mad:
@@ -658,13 +658,100 @@ GLAPI void APIENTRY glTexParameterfv (GLenum target, GLenum pname, GLfloat *para
 GLAPI void APIENTRY glBlendCOlor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad:
 GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad:
 
+
 #ifdef __cplusplus
 }
 #endif
 
+// ADDITIONS BY ME
+
+                          // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors
 GLboolean glVesa(int xRes,int yRes, int bPP);
+                          // to be called in a loop, copies the frameBuffer to the screen and updates per frame stuff
 void glRefresh();
+                          // can be called to close the vesa mode and clean up opengl again
 void glDone();
+
+#define GL_VK_NONE 0
+#define GL_VK_ESCAPE 27
+#define GL_VK_ENTER 13
+#define GL_VK_UP (72*256)
+#define GL_VK_PAGEUP (73*256)
+#define GL_VK_LEFT (75*256)
+#define GL_VK_RIGHT (77*256)
+#define GL_VK_LEFT_CTRL (115*256)
+#define GL_VK_RIGHT_CTRL (116*256)
+#define GL_VK_DOWN (80*256)
+#define GL_VK_PAGEDOWN (81*256)
+#define GL_VK_POS1 (71*256)
+#define GL_VK_END (79*256)
+#define GL_VK_F1 (59*256)
+#define GL_VK_F2 (60*256)
+#define GL_VK_F3 (61*256)
+#define GL_VK_F4 (62*256)
+#define GL_VK_F5 (63*256)
+#define GL_VK_F6 (64*256)
+#define GL_VK_F7 (65*256)
+#define GL_VK_F8 (66*256)
+#define GL_VK_F9 (67*256)
+#define GL_VK_F10 (68*256)
+#define GL_VK_F1_CTRL (94*256)
+#define GL_VK_F2_CTRL (95*256)
+#define GL_VK_F3_CTRL (96*256)
+#define GL_VK_F4_CTRL (97*256)
+#define GL_VK_F5_CTRL (98*256)
+#define GL_VK_F6_CTRL (99*256)
+#define GL_VK_F7_CTRL (100*256)
+#define GL_VK_F8_CTRL (101*256)
+#define GL_VK_F9_CTRL (102*256)
+#define GL_VK_F10_CTRL (103*256)
+#define GL_VK_F1_SHIFT (84*256)
+#define GL_VK_F2_SHIFT (85*256)
+#define GL_VK_F3_SHIFT (86*256)
+#define GL_VK_F4_SHIFT (87*256)
+#define GL_VK_F5_SHIFT (88*256)
+#define GL_VK_F6_SHIFT (89*256)
+#define GL_VK_F7_SHIFT (90*256)
+#define GL_VK_F8_SHIFT (91*256)
+#define GL_VK_F9_SHIFT (92*256)
+#define GL_VK_F10_SHIFT (93*256)
+#define GL_VK_A_ALT (30*256)
+#define GL_VK_B_ALT (48*256)
+#define GL_VK_C_ALT (46*256)
+#define GL_VK_D_ALT (32*256)
+#define GL_VK_E_ALT (18*256)
+#define GL_VK_F_ALT (33*256)
+#define GL_VK_G_ALT (34*256)
+#define GL_VK_H_ALT (35*256)
+#define GL_VK_TAB 9
+#define GL_VK_TAB_SHIFT (15*256)
+#define GL_VK_ENTF (83*256)
+#define GL_VK_INSERT (82*256)
+#define GL_VK_DELETE 8
+#define GL_VK_C_CTRL 3
+#define GL_VK_P_CTRL 16
+#define GL_VK_V_CTRL 22
+#define GL_VK_S_CTRL 19
+#define GL_VK_L_CTRL 12
+#define GL_VK_F_CTRL 6
+#define GL_VK_G_CTRL 7
+#define GL_VK_U_CTRL 21
+#define GL_VK_X_CTRL 24
+#define GL_VK_PLUS_CTRL 29
+
+#define GL_MOUSE_BUTTON_LEFT 1
+#define GL_MOUSE_BUTTON_RIGHT 2
+
+                           // gets the next pressed key from the keyboard buffer (GL_VK_xxxx)
+unsigned short glNextKey();
+                           // gets the current mouse delta and prepares for a new mouse delta (mousePos+=delta)
+void glNextMouseDelta(double *deltaX, double *deltaY);
+                           // gets the current mouseButtons (& GL_MOUSE_BUTTON_xxxx)
+char glMouseButtons();
+                           // gets the currently pressed special keys
+void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey);
+                           // tells the seconds ellapsed since the start of OpenGL (glVesa())
+double glSeconds();
 
 #endif /* __gl_h_ */
 
