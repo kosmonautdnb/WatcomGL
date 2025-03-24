@@ -174,7 +174,7 @@ public:
   GLint clearStencil;
   GLenum activeTexture;
   GLenum alphaFunc;
-  GLenum alphaFuncRef;
+  GLfloat alphaFuncRef;
   GLenum blendFuncSFactor;
   GLenum blendFuncDFactor;
   GLenum cullFaceMode;
@@ -1946,12 +1946,12 @@ bool glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
 __inline bool glCheckDepthFunction(float depthBufferValue, float newValue, int depthFunction) {
   switch(depthFunction) {
   case GL_NEVER: {return false;} break;
-  case GL_LESS: {return newValue >= depthBufferValue;} break;
+  case GL_LESS: {return newValue < depthBufferValue;} break;
   case GL_EQUAL: {return newValue == depthBufferValue;} break;
-  case GL_LEQUAL: {return newValue > depthBufferValue;} break;
-  case GL_GREATER: {return newValue <= depthBufferValue;} break;
+  case GL_LEQUAL: {return newValue <= depthBufferValue;} break;
+  case GL_GREATER: {return newValue > depthBufferValue;} break;
   case GL_NOTEQUAL: {return newValue != depthBufferValue;} break;
-  case GL_GEQUAL: {return newValue < depthBufferValue;} break;
+  case GL_GEQUAL: {return newValue >= depthBufferValue;} break;
   case GL_ALWAYS: {return true;} break;
   }
   return true;
@@ -2312,6 +2312,9 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   bool writeDepth = context->depthMask;  
   int depthFunction = context->depthFunc;
   bool depthTest = context->isEnabled(GL_DEPTH_TEST);
+  int alphaFunction = context->alphaFunc;
+  float alphaRef = context->alphaFuncRef;
+  bool alphaTest = context->isEnabled(GL_ALPHA_TEST);
 
   // rgba
   double r0 = v0->colorRed;
@@ -2375,8 +2378,8 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   __PAINTPOLYQUAD_INITBARYFORX__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0>=0&&bary1>=0&&bary2>=0) {
-        double iz = 1.0/(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
-        if ((!depthTest)||glCheckDepthFunction(*zDest,iz,depthFunction)) {
+        double zp = __BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z);
+        if ((!depthTest)||glCheckDepthFunction(*zDest,zp,depthFunction)) {
           double iw = 1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w));
           int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw;
           int g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw;
@@ -2458,12 +2461,28 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
               } break;
             }
           }
-          if (writeDepth) 
-            *zDest=iz;
-          if (!blending)
-            *pDest=r|(g<<8)|(b<<16)|(a<<24);
-          else {
-            *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+          bool writePixel = true;
+          if (alphaTest) {
+            float alpha = (float)a / 255.f;
+            switch(alphaFunction) {
+            case GL_NEVER: {writePixel = false;} break;
+            case GL_LESS: {writePixel = alpha<alphaRef;} break;
+            case GL_EQUAL: {writePixel = alpha==alphaRef;} break;
+            case GL_LEQUAL: {writePixel = alpha<=alphaRef;} break;
+            case GL_GREATER: {writePixel = alpha>alphaRef;} break;
+            case GL_NOTEQUAL: {writePixel = alpha!=alphaRef;} break;
+            case GL_GEQUAL: {writePixel = alpha>=alphaRef;} break;
+            case GL_ALWAYS: {writePixel = true;} break;
+            }
+          }
+          if (writePixel) {
+            if (writeDepth) 
+              *zDest=zp;
+            if (!blending)
+              *pDest=r|(g<<8)|(b<<16)|(a<<24);
+            else {
+              *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+            }
           }
         }
       }
