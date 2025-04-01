@@ -808,6 +808,46 @@ void glEmitVertex() {
         glCurrentVertexElement = 0;
       }
     } break;
+    case GL_POINTS: {
+      if (glCurrentVertexElement==1) {
+        int a = glTransformVertex(&glContext,&glVertices[0],true);
+        if (a == 0) {
+          glVertices[1] = glVertices[0];
+          glVertices[2] = glVertices[0];
+          glVertices[3] = glVertices[0];
+          float pointSizeX = glContext.pointSize;
+          float pointSizeY = glContext.pointSize;
+          glVertices[0].textureX = 0;
+          glVertices[0].textureY = 0;
+          glVertices[0].sx -= pointSizeX;
+          glVertices[0].sy -= pointSizeY;
+          glVertices[1].textureX = 1;
+          glVertices[1].textureY = 0;
+          glVertices[1].sx += pointSizeX;
+          glVertices[1].sy -= pointSizeY;
+          glVertices[2].textureX = 1;
+          glVertices[2].textureY = 1;
+          glVertices[2].sx += pointSizeX;
+          glVertices[2].sy += pointSizeY;
+          glVertices[3].textureX = 0;
+          glVertices[3].textureY = 1;
+          glVertices[3].sx -= pointSizeX;
+          glVertices[3].sy += pointSizeY;
+          int clipFlags = glClipVertex(&glContext,&glVertices[0]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[1]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[2]);
+          clipFlags &= glClipVertex(&glContext,&glVertices[3]);
+          if (clipFlags == 0) {
+            glLightVertex(&glContext,&glVertices[0]);
+            glLightVertex(&glContext,&glVertices[1]);
+            glLightVertex(&glContext,&glVertices[2]);
+            glLightVertex(&glContext,&glVertices[3]);
+            glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          }
+        }
+        glCurrentVertexElement = 0;
+      }
+    } break;
     default: {
         glCurrentVertexElement = 0;
     } break;
@@ -1969,6 +2009,7 @@ double getBary(double x, double y, const glVertex *v0, const glVertex *v1, const
   double nx = v2->sy - v1->sy;
   double ny = -(v2->sx - v1->sx);
   double l = (v0->sx-v1->sx)*nx + (v0->sy-v1->sy)*ny;
+  if (fabs(l)<0.001) l = 0.001;
   double p = (x-v1->sx)*nx + (y-v1->sy)*ny;
   return (p/l); // actually it must have been g/l and nx and ny been normalized
 }
