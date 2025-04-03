@@ -672,7 +672,7 @@ void glRefresh();
                           // can be called to close the vesa mode and clean up opengl again
 void glDone();
 
-void glSetMonitorAspectRatio(float aspect); // e.g. 16.0/9.0*YRES/XRES (for 16:9), default 1.0
+void glSetMonitorAspectRatio(float aspect); // e.g. 16.0/9.0, default 1.0, call glVesa before
 
 #define GL_VK_NONE 0
 #define GL_VK_ESCAPE 27

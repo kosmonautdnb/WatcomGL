@@ -3,6 +3,9 @@
 #include <string.h>
 #include <conio.h>
 
+#define XRES 640
+#define YRES 480
+
 typedef unsigned char Uint8;
 
 int counter;
@@ -26,8 +29,10 @@ int SDL_GetTicks() {
 
 int main(int argc,char *argv[])
 {    
-  glVesa(640,480,32);
-  glViewport(0,0,640,480);
+  glVesa(XRES,YRES,32);
+  glViewport(0,0,XRES,YRES);
+  glSetMonitorAspectRatio(16.0/9.0);
+
   
   int orig=SDL_GetTicks();
   

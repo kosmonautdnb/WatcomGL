@@ -816,8 +816,8 @@ void glEmitVertex() {
           glVertices[1] = glVertices[0];
           glVertices[2] = glVertices[0];
           glVertices[3] = glVertices[0];
-          float pointSizeX = glContext.pointSize*glMonitorAspectRatio;
-          float pointSizeY = glContext.pointSize;
+          float pointSizeX = glContext.pointSize*0.5f*glMonitorAspectRatio;
+          float pointSizeY = glContext.pointSize*0.5f;
           glVertices[0].textureX = 0;
           glVertices[0].textureY = 0;
           glVertices[0].sx -= pointSizeX;
@@ -1820,32 +1820,32 @@ int glhUnProjectf(float winx, float winy, float winz,
 	     int *viewport,
 	     float *objectCoordinate)
 {
-	//Transformation matrices
-	float m[16], A[16];
-	float in[4], out[4];
-
-	//Calculation for inverting a matrix, compute projection x modelview
-	//and store in A[16]
-	MultiplyMatrices4by4OpenGL_FLOAT(A, projection, modelview);
-	//Now compute the inverse of matrix A
-	if(glhInvertMatrix(A, m)==0)
-		return 0;
-
-	//Transformation of normalized coordinates between -1 and 1
-	in[0]=(winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0;
-	in[1]=(winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
-	in[2]=2.0*winz-1.0;
-	in[3]=1.0;
-	
-	//Objects coordinates
-	MultiplyMatrixByVector4by4OpenGL_FLOAT(out, m, in);
-	if(out[3]==0.0)
-		return 0;
-	out[3]=1.0/out[3];
-	objectCoordinate[0]=out[0]*out[3];
-	objectCoordinate[1]=out[1]*out[3];
-	objectCoordinate[2]=out[2]*out[3];
-	return 1;
+  	//Transformation matrices
+  	float m[16], A[16];
+  	float in[4], out[4];
+  
+  	//Calculation for inverting a matrix, compute projection x modelview
+  	//and store in A[16]
+  	MultiplyMatrices4by4OpenGL_FLOAT(A, projection, modelview);
+  	//Now compute the inverse of matrix A
+  	if(glhInvertMatrix(A, m)==0)
+  		return 0;
+  
+  	//Transformation of normalized coordinates between -1 and 1
+  	in[0]=((winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
+  	in[1]=(winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
+  	in[2]=2.0*winz-1.0;
+  	in[3]=1.0;
+  	
+  	//Objects coordinates
+  	MultiplyMatrixByVector4by4OpenGL_FLOAT(out, m, in);
+  	if(out[3]==0.0)
+  		return 0;
+  	out[3]=1.0/out[3];
+  	objectCoordinate[0]=out[0]*out[3];
+  	objectCoordinate[1]=out[1]*out[3];
+  	objectCoordinate[2]=out[2]*out[3];
+  	return 1;
 }
 
 int glhProjectf(float objx, float objy, float objz,
@@ -1853,60 +1853,60 @@ int glhProjectf(float objx, float objy, float objz,
 				 int *viewport,
 				 float *windowCoordinate)
 {
-	//Transformation vectors
-	float fTempo[8];
-	//Modelview transform
-	fTempo[0]=modelview[0]*objx+
-		modelview[4]*objy+
-		modelview[8]*objz+
-		modelview[12];		//w is always 1
-	fTempo[1]=modelview[1]*objx+
-		modelview[5]*objy+
-		modelview[9]*objz+
-		modelview[13];
-	fTempo[2]=modelview[2]*objx+
-		modelview[6]*objy+
-		modelview[10]*objz+
-		modelview[14];
-	fTempo[3]=modelview[3]*objx+
-		modelview[7]*objy+
-		modelview[11]*objz+
-		modelview[15];
-	//Projection transform, the final row of projection matrix is always [0 0 -1 0]
-	//so we optimize for that.
-	fTempo[4]=projection[0]*fTempo[0]+	
-		projection[4]*fTempo[1]+
-		projection[8]*fTempo[2]+
-		projection[12]*fTempo[3];
-	fTempo[5]=projection[1]*fTempo[0]+	
-		projection[5]*fTempo[1]+
-		projection[9]*fTempo[2]+
-		projection[13]*fTempo[3];
-	fTempo[6]=projection[2]*fTempo[0]+	
-		projection[6]*fTempo[1]+
-		projection[10]*fTempo[2]+
-		projection[14]*fTempo[3];
-	fTempo[7]=-fTempo[2];
-
-	//The result normalizes between -1 and 1
-	if(fTempo[7]==0.0)	//The w value
-		return 0;
-
-	fTempo[7]=1.0/fTempo[7];
-
-	//Perspective division
-	fTempo[4]*=fTempo[7];
-	fTempo[5]*=fTempo[7];
-	fTempo[6]*=fTempo[7];
-
-	//Window coordinates
-	//Map x, y to range 0-1
-	windowCoordinate[0]=(fTempo[4]*0.5+0.5)*viewport[2]+viewport[0];
-	windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
-
-	//This is only correct when glDepthRange(0.0, 1.0)
-	windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
-	return 1;
+  	//Transformation vectors
+  	float fTempo[8];
+  	//Modelview transform
+  	fTempo[0]=modelview[0]*objx+
+  		modelview[4]*objy+
+  		modelview[8]*objz+
+  		modelview[12];		//w is always 1
+  	fTempo[1]=modelview[1]*objx+
+  		modelview[5]*objy+
+  		modelview[9]*objz+
+  		modelview[13];
+  	fTempo[2]=modelview[2]*objx+
+  		modelview[6]*objy+
+  		modelview[10]*objz+
+  		modelview[14];
+  	fTempo[3]=modelview[3]*objx+
+  		modelview[7]*objy+
+  		modelview[11]*objz+
+  		modelview[15];
+  	//Projection transform, the final row of projection matrix is always [0 0 -1 0]
+  	//so we optimize for that.
+  	fTempo[4]=projection[0]*fTempo[0]+	
+  		projection[4]*fTempo[1]+
+  		projection[8]*fTempo[2]+
+  		projection[12]*fTempo[3];
+  	fTempo[5]=projection[1]*fTempo[0]+	
+  		projection[5]*fTempo[1]+
+  		projection[9]*fTempo[2]+
+  		projection[13]*fTempo[3];
+  	fTempo[6]=projection[2]*fTempo[0]+	
+  		projection[6]*fTempo[1]+
+  		projection[10]*fTempo[2]+
+  		projection[14]*fTempo[3];
+  	fTempo[7]=-fTempo[2];
+  
+  	//The result normalizes between -1 and 1
+  	if(fTempo[7]==0.0)	//The w value
+  		return 0;
+  
+  	fTempo[7]=1.0/fTempo[7];
+  
+  	//Perspective division
+  	fTempo[4]*=fTempo[7];
+  	fTempo[5]*=fTempo[7];
+  	fTempo[6]*=fTempo[7];
+  
+  	//Window coordinates
+  	//Map x, y to range 0-1
+  	windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
+  	windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
+  
+  	//This is only correct when glDepthRange(0.0, 1.0)
+  	windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
+  	return 1;
 }
 
 void glOrtho(float left, float right, float bottom, float top, float znear, float zfar) {
@@ -2943,7 +2943,7 @@ void glDone() {
 }
 
 void glSetMonitorAspectRatio(float aspect) {
-  glMonitorAspectRatio = 1.0/aspect;
+  glMonitorAspectRatio = 1.0/(aspect*glFrameBufferHeight/glFrameBufferWidth);
 }
 
 // --------------------------------------
