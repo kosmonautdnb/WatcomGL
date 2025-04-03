@@ -6,9 +6,10 @@
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
 unsigned int *glFrameBuffer = NULL;
-unsigned int *glFrameBufferDedicated = NULL;
+unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 int *glStencilBuffer = NULL;
 float *glDepthBuffer = NULL;
+float glMonitorAspectRatio = 1.0;
 
 GLfloat identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
@@ -360,7 +361,7 @@ int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   v->sz = z/w;
   v->sw = w;
 
-  v->sx *= (context->viewportX1-context->viewportX0)*0.5;
+  v->sx *= (context->viewportX1-context->viewportX0)*0.5*glMonitorAspectRatio;
   v->sy *= (context->viewportY1-context->viewportY0)*-0.5;
   v->sx += (context->viewportX0+context->viewportX1)*0.5;
   v->sy += (context->viewportY0+context->viewportY1)*0.5;
@@ -694,7 +695,7 @@ void glEmitVertex() {
             float dy = glVertices[1].sy-glVertices[0].sy;
             float l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            float nx = dy;
+            float nx = dy * glMonitorAspectRatio;
             float ny = -dx;
             float d = glContext.lineWidth*0.5;
             glVertices[0].sx += nx*d;
@@ -732,7 +733,7 @@ void glEmitVertex() {
             float dy = glVertices[1].sy-glVertices[0].sy;
             float l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            float nx = dy;
+            float nx = dy*glMonitorAspectRatio;
             float ny = -dx;
             float d = glContext.lineWidth*0.5;
             glVertices[0].sx += nx*d;
@@ -815,7 +816,7 @@ void glEmitVertex() {
           glVertices[1] = glVertices[0];
           glVertices[2] = glVertices[0];
           glVertices[3] = glVertices[0];
-          float pointSizeX = glContext.pointSize;
+          float pointSizeX = glContext.pointSize*glMonitorAspectRatio;
           float pointSizeY = glContext.pointSize;
           glVertices[0].textureX = 0;
           glVertices[0].textureY = 0;
@@ -2939,6 +2940,10 @@ void glDone() {
   delete[] glStencilBuffer;
   unmapPhysical((unsigned int)glFrameBufferDedicated);
   setBiosGraphicsMode(glGraphicsModeToRestore);
+}
+
+void glSetMonitorAspectRatio(float aspect) {
+  glMonitorAspectRatio = 1.0/aspect;
 }
 
 // --------------------------------------
