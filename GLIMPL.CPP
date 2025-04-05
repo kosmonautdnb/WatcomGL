@@ -2990,14 +2990,24 @@ void glDone() {
 void glSetMonitorAspectRatio(float aspect) {
   glMonitorAspectRatio = 1.0/(aspect*glFrameBufferHeight/glFrameBufferWidth);
 }
-          
-void glPixel(float xp, float yp, float zp, int x, int y, unsigned int color) {
-  glVertex v;
-  v.vertexX = xp;
-  v.vertexY = yp;
-  v.vertexZ = zp;
-  v.vertexW = 1;
-  if (glTransformVertex(&glContext, &v, true) == 0) {
+
+float glPixelLastSX = 0;
+float glPixelLastSY = 0;
+bool glPixelLastValid = false;
+
+bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned int color) {
+  if (newXYZ) {
+    glVertex v;
+    v.vertexX = xp;
+    v.vertexY = yp;
+    v.vertexZ = zp;
+    v.vertexW = 1;
+    glPixelLastValid = (glTransformVertex(&glContext, &v, true) == 0);
+    glPixelLastSX = v.sx;
+    glPixelLastSY = v.sy;
+  }
+  if (glPixelLastValid)
+  {
     int glClipRectX0 = 0;
     int glClipRectY0 = 0;
     int glClipRectX1 = glFrameBufferWidth;
@@ -3006,14 +3016,16 @@ void glPixel(float xp, float yp, float zp, int x, int y, unsigned int color) {
     if (glContext.isEnabled(GL_SCISSOR_TEST)) {
       combineIntoWindow(glClipRectX0,glClipRectY0,glClipRectX1,glClipRectY1,glContext.scissorX0,glContext.scissorY0,glContext.scissorX1,glContext.scissorY1);
     }
-    int px = v.sx+x;
-    int py = v.sy+y;
-    if (px < glClipRectX0) return;
-    if (py < glClipRectY0) return;
-    if (px >= glClipRectX1) return;
-    if (py >= glClipRectY1) return;
+    int px = glPixelLastSX+x;
+    int py = glPixelLastSY+y;
+    if (px < glClipRectX0) return false; 
+    if (py < glClipRectY0) return false;
+    if (px >= glClipRectX1) return false;
+    if (py >= glClipRectY1) return false;
     glFrameBuffer[px+py*glFrameBufferWidth] = color;
+    return true;
   }
+  return false;
 }
 
 

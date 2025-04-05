@@ -673,7 +673,7 @@ void glDone();
 
 void glSetMonitorAspectRatio(float aspect); // e.g. 16.0/9.0, default 1.0, call glVesa before
 
-void glPixel(float xp, float yp, float zp, int x, int y, unsigned int color); // paint pixel at 3d position (x,y,z) plus offset (x,y)
+bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned int color); // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped)
 
 #define GL_VK_NONE 0
 #define GL_VK_ESCAPE 27
