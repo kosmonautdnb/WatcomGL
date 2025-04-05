@@ -664,7 +664,6 @@ GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad:
 #endif
 
 // ADDITIONS BY ME
-
                           // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors
 GLboolean glVesa(int xRes,int yRes, int bPP);
                           // to be called in a loop, copies the frameBuffer to the screen and updates per frame stuff
@@ -673,6 +672,8 @@ void glRefresh();
 void glDone();
 
 void glSetMonitorAspectRatio(float aspect); // e.g. 16.0/9.0, default 1.0, call glVesa before
+
+void glPixel(float xp, float yp, float zp, int x, int y, unsigned int color); // paint pixel at 3d position (x,y,z) plus offset (x,y)
 
 #define GL_VK_NONE 0
 #define GL_VK_ESCAPE 27

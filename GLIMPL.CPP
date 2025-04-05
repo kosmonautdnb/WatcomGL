@@ -380,6 +380,24 @@ void glLightVertex(_GLContext *context, glVertex *v) {
       y /= w;
       z /= w;
     }
+    // rotate normal (inversetranspose would be better, or?)
+    float vnx = v->vertexX+v->normalX;
+    float vny = v->vertexY+v->normalY;
+    float vnz = v->vertexZ+v->normalZ;
+    float vnw = v->vertexW;
+    float nx = vnx * matrix[0*4+0] + vny * matrix[1*4+0] + vnz * matrix[2*4+0] + vnw * matrix[3*4+0];
+    float ny = vnx * matrix[0*4+1] + vny * matrix[1*4+1] + vnz * matrix[2*4+1] + vnw * matrix[3*4+1];
+    float nz = vnx * matrix[0*4+2] + vny * matrix[1*4+2] + vnz * matrix[2*4+2] + vnw * matrix[3*4+2];
+    float nw = vnx * matrix[0*4+3] + vny * matrix[1*4+3] + vnz * matrix[2*4+3] + vnw * matrix[3*4+3];
+    if (nw != 0) { // should never happen
+      nx /= nw;
+      ny /= nw;
+      nz /= nw;
+    }
+    nx -= x;
+    ny -= y;
+    nz -= z;
+
     float ambientRed = 0;
     float ambientGreen = 0;
     float ambientBlue = 0;
@@ -445,9 +463,9 @@ void glLightVertex(_GLContext *context, glVertex *v) {
       }
     }
 
-    float normalX = v->normalX;
-    float normalY = v->normalY;
-    float normalZ = v->normalZ;
+    float normalX = nx;
+    float normalY = ny;
+    float normalZ = nz;
     if (context->isEnabled(GL_NORMALIZE)) {
       float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
       if (l>0.f) {
@@ -1070,10 +1088,37 @@ GLboolean glIsEnabled (GLenum cap) {
 }  
 
 void glLightfv (GLenum light, GLenum pname, const GLfloat *params) {
-  glContext.lightRed[pname & 3][light - GL_LIGHT0] = params[0];
-  glContext.lightGreen[pname & 3][light - GL_LIGHT0] = params[1];
-  glContext.lightBlue[pname & 3][light - GL_LIGHT0] = params[2];
-  glContext.lightAlpha[pname & 3][light - GL_LIGHT0] = params[3];
+  if (pname == GL_POSITION) {
+    float lx = params[0];
+    float ly = params[1];
+    float lz = params[2];
+    float lw = params[3];
+    //if (fabs(lw)>0.0) {
+      float *matrix = glContext.matrixForMode[GL_MODELVIEW&1]; 
+      float xl = lx * matrix[0*4+0] + ly * matrix[1*4+0] + lz * matrix[2*4+0] + lw * matrix[3*4+0];
+      float yl = lx * matrix[0*4+1] + ly * matrix[1*4+1] + lz * matrix[2*4+1] + lw * matrix[3*4+1];
+      float zl = lx * matrix[0*4+2] + ly * matrix[1*4+2] + lz * matrix[2*4+2] + lw * matrix[3*4+2];
+      float wl = lx * matrix[0*4+3] + ly * matrix[1*4+3] + lz * matrix[2*4+3] + lw * matrix[3*4+3];
+      if (wl != 0.0) {
+        xl /= wl;
+        yl /= wl;
+        zl /= wl;
+      }
+      lx = xl;
+      ly = yl;
+      lz = zl;
+      lw = wl;
+    //}
+    glContext.lightRed[pname & 3][light - GL_LIGHT0] = lx;
+    glContext.lightGreen[pname & 3][light - GL_LIGHT0] = ly;
+    glContext.lightBlue[pname & 3][light - GL_LIGHT0] = lz;
+    glContext.lightAlpha[pname & 3][light - GL_LIGHT0] = lw;
+  } else {
+    glContext.lightRed[pname & 3][light - GL_LIGHT0] = params[0];
+    glContext.lightGreen[pname & 3][light - GL_LIGHT0] = params[1];
+    glContext.lightBlue[pname & 3][light - GL_LIGHT0] = params[2];
+    glContext.lightAlpha[pname & 3][light - GL_LIGHT0] = params[3];
+  }
 }
 
 void glLineStipple(GLint factor, GLushort pattern) {
@@ -2945,6 +2990,32 @@ void glDone() {
 void glSetMonitorAspectRatio(float aspect) {
   glMonitorAspectRatio = 1.0/(aspect*glFrameBufferHeight/glFrameBufferWidth);
 }
+          
+void glPixel(float xp, float yp, float zp, int x, int y, unsigned int color) {
+  glVertex v;
+  v.vertexX = xp;
+  v.vertexY = yp;
+  v.vertexZ = zp;
+  v.vertexW = 1;
+  if (glTransformVertex(&glContext, &v, true) == 0) {
+    int glClipRectX0 = 0;
+    int glClipRectY0 = 0;
+    int glClipRectX1 = glFrameBufferWidth;
+    int glClipRectY1 = glFrameBufferHeight;
+    combineIntoWindow(glClipRectX0,glClipRectY0,glClipRectX1,glClipRectY1,glContext.viewportX0,glContext.viewportY0,glContext.viewportX1,glContext.viewportY1);
+    if (glContext.isEnabled(GL_SCISSOR_TEST)) {
+      combineIntoWindow(glClipRectX0,glClipRectY0,glClipRectX1,glClipRectY1,glContext.scissorX0,glContext.scissorY0,glContext.scissorX1,glContext.scissorY1);
+    }
+    int px = v.sx+x;
+    int py = v.sy+y;
+    if (px < glClipRectX0) return;
+    if (py < glClipRectY0) return;
+    if (px >= glClipRectX1) return;
+    if (py >= glClipRectY1) return;
+    glFrameBuffer[px+py*glFrameBufferWidth] = color;
+  }
+}
+
 
 // --------------------------------------
 
