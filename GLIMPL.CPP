@@ -5,11 +5,11 @@
 
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
+float glMonitorAspectRatio = 1.0;
 unsigned int *glFrameBuffer = NULL;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
-int *glStencilBuffer = NULL;
+unsigned char *glStencilBuffer = NULL;
 float *glDepthBuffer = NULL;
-float glMonitorAspectRatio = 1.0;
 
 GLfloat identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
@@ -17,6 +17,7 @@ GLfloat identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 #define __GL_MAX_TEXTURE_SIZE__ (1024)
 #define GLMAXTEXTURES 1024
 #define GLMAXTEXTUREUNITS 8
+#define __MATRIX_STACK_SIZE__ 16
 
 __inline float glClampf(float a, float n, float x) {
   return a < n ? n : (a > x ? x : a);
@@ -58,7 +59,7 @@ public:
     depthFunc = GL_LESS;
     depthMask = true;
     depthRangeZNear = 0;
-    depthRangeZFar = 0;
+    depthRangeZFar = 1;
     pointSize = 0;
     polygonOffsetFactor = 0;
     polygonOffsetUnits = 0;
@@ -160,7 +161,6 @@ public:
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
   void enableClientState(GLenum prop, bool enable) {;}
-  GLboolean getBoolean(GLenum prop) {return true;}
   GLubyte *getString(GLenum prop) {return "";}
   GLenum error;
   GLint viewportX0;
@@ -240,7 +240,7 @@ public:
 };
 
 _GLContext glContext;
-GLfloat glMatrixStack[16][4*4];
+GLfloat glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
 GLint glMatrixStackPos = 0;
 
 typedef struct glVertex {
@@ -323,7 +323,7 @@ void combineIntoWindow(GLint &x0, GLint &y0, GLint &x1, GLint &y1,GLint nx0, GLi
   y1 = ny1>y1?y1:ny1;
 }
 
-void glMatMul(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
+void glMatMulf(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
   GLfloat result[16];
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -337,8 +337,22 @@ void glMatMul(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
   memcpy(r,result,4*4*sizeof(float));
 }
 
+void glMatMul(const GLdouble *ma, const GLdouble *mb, GLdouble *r) {
+  GLdouble result[16];
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      float a = 0.f;
+      for (int k = 0; k < 4; k++) {
+        a += ma[i+k*4] * mb[j*4+k];
+      }
+      result[i+j*4] = a;
+    }
+  }
+  memcpy(r,result,4*4*sizeof(double));
+}
+
 void glUpdateMatrix() {
-  glMatMul(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
+  glMatMulf(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
 }
 
 int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
@@ -928,9 +942,10 @@ void glClear(GLbitfield mask) {
         glDepthBuffer[x+y*glFrameBufferWidth] = glContext.clearDepth; // clamping?
   }
   if (mask & GL_STENCIL_BUFFER_BIT) {
+    unsigned char k = glContext.clearStencil & 255;
     for (int y = minY; y < maxY; y++)
       for (int x = minX; x < maxX; x++)
-        glStencilBuffer[x+y*glFrameBufferWidth] = glContext.clearStencil;
+        glStencilBuffer[x+y*glFrameBufferWidth] = k;
   }
 }
 
@@ -1055,23 +1070,214 @@ void glGenTextures (GLsizei n, GLuint *textures) {
 }
 
 void glGetBooleanv(GLenum pname, GLboolean *params) {
-  *params = glContext.getBoolean(pname);
+  int i;
+  switch(pname) {
+  case GL_ALPHA_BITS: {*params=8;} break;
+  case GL_ALPHA_TEST: {*params=glIsEnabled(GL_ALPHA_TEST);} break;
+  case GL_ALPHA_TEST_FUNC: {*params=glContext.alphaFunc;} break;
+  case GL_ALPHA_TEST_REF: {*params=glContext.alphaFuncRef;} break;
+  case GL_BLEND: {*params=glIsEnabled(GL_BLEND);} break;
+  case GL_BLEND_DST: {*params=glContext.blendFuncDFactor;} break;
+  case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
+  case GL_BLUE_BITS: {*params=8;} break;
+  case GL_COLOR_CLEAR_VALUE: {params[0]=(int)floor(glContext.clearRed);params[1]=(int)floor(glContext.clearGreen);params[2]=(int)floor(glContext.clearBlue);params[3]=(int)floor(glContext.clearAlpha);} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
+  case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
+  case GL_CURRENT_NORMAL: {params[0]=(int)floor(glContext.normalX);params[1]=(int)floor(glContext.normalY);params[2]=(int)floor(glContext.normalZ);} break;
+  case GL_CURRENT_TEXTURE_COORDS: {params[0]=(int)floor(glContext.textureX);params[1]=(int)floor(glContext.textureY);params[2]=(int)floor(glContext.textureZ);params[3]=(int)floor(glContext.textureW);} break;
+  case GL_DEPTH_CLEAR_VALUE: {*params=(int)floor(glContext.clearDepth);} break;
+  case GL_DEPTH_FUNC: {*params=glContext.depthFunc;} break;
+  case GL_DEPTH_RANGE: {params[0]=(int)floor(glContext.depthRangeZNear);params[1]=(int)floor(glContext.depthRangeZFar);} break;
+  case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
+  case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
+  case GL_GREEN_BITS: {*params=8;} break;
+  case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
+  case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
+  case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
+  case GL_LINE_WIDTH: {*params=(int)floor(glContext.lineWidth);} break;
+  case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
+  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
+  case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
+  case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
+  case GL_POINT_SIZE: {*params=(int)floor(glContext.pointSize);} break;
+  case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
+  case GL_RED_BITS: {*params=8;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
+  case GL_STENCIL_BITS: {*params=8;} break;
+  case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
+  case GL_STENCIL_FUNC: {*params=glContext.stencilFunc;} break;
+  case GL_STENCIL_REF: {*params=glContext.stencilFuncRef;} break;
+  case GL_STENCIL_TEST: {*params=glIsEnabled(GL_STENCIL_TEST);} break;
+  case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
+  case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
+  case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_ZOOM_X: {*params=(int)floor(glMonitorAspectRatio);} break;
+  case GL_ZOOM_Y: {*params=1;} break;
+  }
+}
+
+void glGetDoublev (GLenum pname, GLdouble *params) {
+  int i;
+  switch(pname) {
+  case GL_ALPHA_BITS: {*params=8;} break;
+  case GL_ALPHA_TEST: {*params=glIsEnabled(GL_ALPHA_TEST);} break;
+  case GL_ALPHA_TEST_FUNC: {*params=glContext.alphaFunc;} break;
+  case GL_ALPHA_TEST_REF: {*params=glContext.alphaFuncRef;} break;
+  case GL_BLEND: {*params=glIsEnabled(GL_BLEND);} break;
+  case GL_BLEND_DST: {*params=glContext.blendFuncDFactor;} break;
+  case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
+  case GL_BLUE_BITS: {*params=8;} break;
+  case GL_COLOR_CLEAR_VALUE: {params[0]=glContext.clearRed;params[1]=glContext.clearGreen;params[2]=glContext.clearBlue;params[3]=glContext.clearAlpha;} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
+  case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
+  case GL_CURRENT_NORMAL: {params[0]=glContext.normalX;params[1]=glContext.normalY;params[2]=glContext.normalZ;} break;
+  case GL_CURRENT_TEXTURE_COORDS: {params[0]=glContext.textureX;params[1]=glContext.textureY;params[2]=glContext.textureZ;params[3]=glContext.textureW;} break;
+  case GL_DEPTH_CLEAR_VALUE: {*params=glContext.clearDepth;} break;
+  case GL_DEPTH_FUNC: {*params=glContext.depthFunc;} break;
+  case GL_DEPTH_RANGE: {params[0]=glContext.depthRangeZNear;params[1]=glContext.depthRangeZFar;} break;
+  case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
+  case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
+  case GL_GREEN_BITS: {*params=8;} break;
+  case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
+  case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
+  case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
+  case GL_LINE_WIDTH: {*params=glContext.lineWidth;} break;
+  case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
+  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
+  case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
+  case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
+  case GL_POINT_SIZE: {*params=glContext.pointSize;} break;
+  case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
+  case GL_RED_BITS: {*params=8;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
+  case GL_STENCIL_BITS: {*params=8;} break;
+  case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
+  case GL_STENCIL_FUNC: {*params=glContext.stencilFunc;} break;
+  case GL_STENCIL_REF: {*params=glContext.stencilFuncRef;} break;
+  case GL_STENCIL_TEST: {*params=glIsEnabled(GL_STENCIL_TEST);} break;
+  case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
+  case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
+  case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_ZOOM_X: {*params=glMonitorAspectRatio;} break;
+  case GL_ZOOM_Y: {*params=1;} break;
+  }
 }
 
 void glGetFloatv (GLenum pname, GLfloat *params) {
   int i;
   switch(pname) {
-    case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
-    case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
-    case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
-    case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
+  case GL_ALPHA_BITS: {*params=8;} break;
+  case GL_ALPHA_TEST: {*params=glIsEnabled(GL_ALPHA_TEST);} break;
+  case GL_ALPHA_TEST_FUNC: {*params=glContext.alphaFunc;} break;
+  case GL_ALPHA_TEST_REF: {*params=glContext.alphaFuncRef;} break;
+  case GL_BLEND: {*params=glIsEnabled(GL_BLEND);} break;
+  case GL_BLEND_DST: {*params=glContext.blendFuncDFactor;} break;
+  case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
+  case GL_BLUE_BITS: {*params=8;} break;
+  case GL_COLOR_CLEAR_VALUE: {params[0]=glContext.clearRed;params[1]=glContext.clearGreen;params[2]=glContext.clearBlue;params[3]=glContext.clearAlpha;} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
+  case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
+  case GL_CURRENT_NORMAL: {params[0]=glContext.normalX;params[1]=glContext.normalY;params[2]=glContext.normalZ;} break;
+  case GL_CURRENT_TEXTURE_COORDS: {params[0]=glContext.textureX;params[1]=glContext.textureY;params[2]=glContext.textureZ;params[3]=glContext.textureW;} break;
+  case GL_DEPTH_CLEAR_VALUE: {*params=glContext.clearDepth;} break;
+  case GL_DEPTH_FUNC: {*params=glContext.depthFunc;} break;
+  case GL_DEPTH_RANGE: {params[0]=glContext.depthRangeZNear;params[1]=glContext.depthRangeZFar;} break;
+  case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
+  case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
+  case GL_GREEN_BITS: {*params=8;} break;
+  case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
+  case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
+  case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
+  case GL_LINE_WIDTH: {*params=glContext.lineWidth;} break;
+  case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
+  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
+  case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
+  case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
+  case GL_POINT_SIZE: {*params=glContext.pointSize;} break;
+  case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
+  case GL_RED_BITS: {*params=8;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
+  case GL_STENCIL_BITS: {*params=8;} break;
+  case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
+  case GL_STENCIL_FUNC: {*params=glContext.stencilFunc;} break;
+  case GL_STENCIL_REF: {*params=glContext.stencilFuncRef;} break;
+  case GL_STENCIL_TEST: {*params=glIsEnabled(GL_STENCIL_TEST);} break;
+  case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
+  case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
+  case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_ZOOM_X: {*params=glMonitorAspectRatio;} break;
+  case GL_ZOOM_Y: {*params=1;} break;
   }
 }
 
 void glGetIntegerv (GLenum pname, GLint *params) {
   int i;
   switch(pname) {
+  case GL_ALPHA_BITS: {*params=8;} break;
+  case GL_ALPHA_TEST: {*params=glIsEnabled(GL_ALPHA_TEST);} break;
+  case GL_ALPHA_TEST_FUNC: {*params=glContext.alphaFunc;} break;
+  case GL_ALPHA_TEST_REF: {*params=glContext.alphaFuncRef;} break;
+  case GL_BLEND: {*params=glIsEnabled(GL_BLEND);} break;
+  case GL_BLEND_DST: {*params=glContext.blendFuncDFactor;} break;
+  case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
+  case GL_BLUE_BITS: {*params=8;} break;
+  case GL_COLOR_CLEAR_VALUE: {params[0]=(int)floor(glContext.clearRed);params[1]=(int)floor(glContext.clearGreen);params[2]=(int)floor(glContext.clearBlue);params[3]=(int)floor(glContext.clearAlpha);} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
+  case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
+  case GL_CURRENT_NORMAL: {params[0]=(int)floor(glContext.normalX);params[1]=(int)floor(glContext.normalY);params[2]=(int)floor(glContext.normalZ);} break;
+  case GL_CURRENT_TEXTURE_COORDS: {params[0]=(int)floor(glContext.textureX);params[1]=(int)floor(glContext.textureY);params[2]=(int)floor(glContext.textureZ);params[3]=(int)floor(glContext.textureW);} break;
+  case GL_DEPTH_CLEAR_VALUE: {*params=(int)floor(glContext.clearDepth);} break;
+  case GL_DEPTH_FUNC: {*params=glContext.depthFunc;} break;
+  case GL_DEPTH_RANGE: {params[0]=(int)floor(glContext.depthRangeZNear);params[1]=(int)floor(glContext.depthRangeZFar);} break;
+  case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
+  case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
+  case GL_GREEN_BITS: {*params=8;} break;
+  case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
+  case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
+  case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
+  case GL_LINE_WIDTH: {*params=(int)floor(glContext.lineWidth);} break;
+  case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
+  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
+  case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
+  case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
+  case GL_POINT_SIZE: {*params=(int)floor(glContext.pointSize);} break;
+  case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
+  case GL_RED_BITS: {*params=8;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
+  case GL_STENCIL_BITS: {*params=8;} break;
+  case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
+  case GL_STENCIL_FUNC: {*params=glContext.stencilFunc;} break;
+  case GL_STENCIL_REF: {*params=glContext.stencilFuncRef;} break;
+  case GL_STENCIL_TEST: {*params=glIsEnabled(GL_STENCIL_TEST);} break;
+  case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
+  case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
+  case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
   case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_ZOOM_X: {*params=(int)floor(glMonitorAspectRatio);} break;
+  case GL_ZOOM_Y: {*params=1;} break;
   }
 }
 
@@ -1083,7 +1289,7 @@ const GLubyte *glGetString(GLenum name) {
   return glContext.getString(name);
 }
 
-GLboolean glIsEnabled (GLenum cap) {
+GLboolean glIsEnabled(GLenum cap) {
   return glContext.isEnabled(cap);
 }  
 
@@ -1199,7 +1405,7 @@ void glMatrixMode (GLenum mode) {
 }
 
 void glMultMatrixf (const GLfloat *m) {
-  glMatMul(glContext.matrixForMode[glContext.matrixModeNr],m,glContext.matrixForMode[glContext.matrixModeNr]);
+  glMatMulf(glContext.matrixForMode[glContext.matrixModeNr],m,glContext.matrixForMode[glContext.matrixModeNr]);
   glUpdateMatrix();
 }
 
@@ -1595,6 +1801,36 @@ GLAPI void APIENTRY glBlendEquation(GLenum mode) {
 // -----------
 // -----------
 // -----------
+void MultiplyMatrixByVector4by4OpenGL_FLOAT(float *dest, float *m, float *v) {
+  float x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
+  float y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
+  float z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
+  float w = v[0] * m[0*4+3] + v[1] * m[1*4+3] + v[2] * m[2*4+3] + v[3] * m[3*4+3];
+  dest[0] = x;
+  dest[1] = y;
+  dest[2] = z;
+  dest[3] = w;
+}
+
+void MultiplyMatrixByVector4by4OpenGL_DOUBLE(double *dest, double *m, double *v) {
+  double x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
+  double y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
+  double z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
+  double w = v[0] * m[0*4+3] + v[1] * m[1*4+3] + v[2] * m[2*4+3] + v[3] * m[3*4+3];
+  dest[0] = x;
+  dest[1] = y;
+  dest[2] = z;
+  dest[3] = w;
+}
+
+void MultiplyMatrices4by4OpenGL_FLOAT(float *dest, float *m1, float *m2) {
+  glMatMulf(m1,m2,dest);
+}
+
+void MultiplyMatrices4by4OpenGL_DOUBLE(double *dest, double *m1, double *m2) {
+  glMatMul(m1,m2,dest);
+}
+
 void NormalizeVector(float *v) {
   float l = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   if (l>0) {
@@ -1611,27 +1847,28 @@ void ComputeNormalOfPlane(float *normal, float *pvector1, float *pvector2) {
 }
 
 void glhFrustumf2(float *matrix, float left, float right, float bottom, float top, float znear, float zfar) {
-  float temp, temp2, temp3, temp4;
+  float matrix2[16],temp, temp2, temp3, temp4;
   temp = 2.0 * znear;
   temp2 = right - left;
   temp3 = top - bottom;
   temp4 = zfar - znear;
-  matrix[0] = temp / temp2;
-  matrix[1] = 0;
-  matrix[2] = 0;
-  matrix[3] = 0;
-  matrix[4] = 0;
-  matrix[5] = temp/temp3;
-  matrix[6] = 0;
-  matrix[7] = 0;
-  matrix[8] = (right + left)/temp2;
-  matrix[9] = (top + bottom)/temp3;
-  matrix[10] = (-zfar-znear)/temp4;
-  matrix[11] = -1;
-  matrix[12] = 0;
-  matrix[13] = 0;
-  matrix[14] = (-temp*zfar)/temp4;
-  matrix[15] = 0.0;
+  matrix2[0] = temp / temp2;
+  matrix2[1] = 0;
+  matrix2[2] = 0;
+  matrix2[3] = 0;
+  matrix2[4] = 0;
+  matrix2[5] = temp/temp3;
+  matrix2[6] = 0;
+  matrix2[7] = 0;
+  matrix2[8] = (right + left)/temp2;
+  matrix2[9] = (top + bottom)/temp3;
+  matrix2[10] = (-zfar-znear)/temp4;
+  matrix2[11] = -1;
+  matrix2[12] = 0;
+  matrix2[13] = 0;
+  matrix2[14] = (-temp*zfar)/temp4;
+  matrix2[15] = 0.0;
+  	MultiplyMatrices4by4OpenGL_FLOAT(matrix, matrix, matrix2);
 }
 
 void glhPerspectivef2(float *matrix, float fovyInDegrees, float aspectRatio, float znear, float zfar) {
@@ -1666,16 +1903,16 @@ void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *up
   matrix2[14] = 0.0;
   matrix2[3] = matrix2[7] = matrix2[11] = 0.0;
   matrix2[15] = 1.0;
-  glMatMul(matrix, matrix2, resultMatrix);
+  glMatMulf(matrix, matrix2, resultMatrix);
   glhTranslatef2(resultMatrix,-eyePosition3D[0],-eyePosition3D[1],-eyePosition3D[2]);
   memcpy(matrix,resultMatrix,16*sizeof(float));
 }
 
-#define SWAP_ROWS_DOUBLE(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
+#define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
 #define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
 #define MAT(m,r,c) (m)[(c)*4+(r)]
 
-int glhInvertMatrix(const float *m, float *out)
+int glhInvertMatrixf(const float *m, float *out)
 {
    float wtmp[4][8];
    float m0, m1, m2, m3, s;
@@ -1841,23 +2078,178 @@ int glhInvertMatrix(const float *m, float *out)
    return 1;
 }
 
-int gluInvertMatrix(const float *m, float *dest) {
+int glhInvertMatrix(const double *m, double *out)
+{
+   double wtmp[4][8];
+   double m0, m1, m2, m3, s;
+   double *r0, *r1, *r2, *r3;
+
+   r0 = wtmp[0], r1 = wtmp[1], r2 = wtmp[2], r3 = wtmp[3];
+
+   r0[0] = MAT(m, 0, 0), r0[1] = MAT(m, 0, 1),
+      r0[2] = MAT(m, 0, 2), r0[3] = MAT(m, 0, 3),
+      r0[4] = 1.0, r0[5] = r0[6] = r0[7] = 0.0,
+      r1[0] = MAT(m, 1, 0), r1[1] = MAT(m, 1, 1),
+      r1[2] = MAT(m, 1, 2), r1[3] = MAT(m, 1, 3),
+      r1[5] = 1.0, r1[4] = r1[6] = r1[7] = 0.0,
+      r2[0] = MAT(m, 2, 0), r2[1] = MAT(m, 2, 1),
+      r2[2] = MAT(m, 2, 2), r2[3] = MAT(m, 2, 3),
+      r2[6] = 1.0, r2[4] = r2[5] = r2[7] = 0.0,
+      r3[0] = MAT(m, 3, 0), r3[1] = MAT(m, 3, 1),
+      r3[2] = MAT(m, 3, 2), r3[3] = MAT(m, 3, 3),
+      r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
+
+   /* choose pivot - or die */
+   if (fabs(r3[0]) > fabs(r2[0]))
+      SWAP_ROWS_DOUBLE(r3, r2);
+   if (fabs(r2[0]) > fabs(r1[0]))
+      SWAP_ROWS_DOUBLE(r2, r1);
+   if (fabs(r1[0]) > fabs(r0[0]))
+      SWAP_ROWS_DOUBLE(r1, r0);
+   if (0.0 == r0[0])
+      return 0;
+
+   /* eliminate first variable     */
+   m1 = r1[0] / r0[0];
+   m2 = r2[0] / r0[0];
+   m3 = r3[0] / r0[0];
+   s = r0[1];
+   r1[1] -= m1 * s;
+   r2[1] -= m2 * s;
+   r3[1] -= m3 * s;
+   s = r0[2];
+   r1[2] -= m1 * s;
+   r2[2] -= m2 * s;
+   r3[2] -= m3 * s;
+   s = r0[3];
+   r1[3] -= m1 * s;
+   r2[3] -= m2 * s;
+   r3[3] -= m3 * s;
+   s = r0[4];
+   if (s != 0.0) {
+      r1[4] -= m1 * s;
+      r2[4] -= m2 * s;
+      r3[4] -= m3 * s;
+   }
+   s = r0[5];
+   if (s != 0.0) {
+      r1[5] -= m1 * s;
+      r2[5] -= m2 * s;
+      r3[5] -= m3 * s;
+   }
+   s = r0[6];
+   if (s != 0.0) {
+      r1[6] -= m1 * s;
+      r2[6] -= m2 * s;
+      r3[6] -= m3 * s;
+   }
+   s = r0[7];
+   if (s != 0.0) {
+      r1[7] -= m1 * s;
+      r2[7] -= m2 * s;
+      r3[7] -= m3 * s;
+   }
+
+   /* choose pivot - or die */
+   if (fabs(r3[1]) > fabs(r2[1]))
+      SWAP_ROWS_DOUBLE(r3, r2);
+   if (fabs(r2[1]) > fabs(r1[1]))
+      SWAP_ROWS_DOUBLE(r2, r1);
+   if (0.0 == r1[1])
+      return 0;
+
+   /* eliminate second variable */
+   m2 = r2[1] / r1[1];
+   m3 = r3[1] / r1[1];
+   r2[2] -= m2 * r1[2];
+   r3[2] -= m3 * r1[2];
+   r2[3] -= m2 * r1[3];
+   r3[3] -= m3 * r1[3];
+   s = r1[4];
+   if (0.0 != s) {
+      r2[4] -= m2 * s;
+      r3[4] -= m3 * s;
+   }
+   s = r1[5];
+   if (0.0 != s) {
+      r2[5] -= m2 * s;
+      r3[5] -= m3 * s;
+   }
+   s = r1[6];
+   if (0.0 != s) {
+      r2[6] -= m2 * s;
+      r3[6] -= m3 * s;
+   }
+   s = r1[7];
+   if (0.0 != s) {
+      r2[7] -= m2 * s;
+      r3[7] -= m3 * s;
+   }
+
+   /* choose pivot - or die */
+   if (fabs(r3[2]) > fabs(r2[2]))
+      SWAP_ROWS_DOUBLE(r3, r2);
+   if (0.0 == r2[2])
+      return 0;
+
+   /* eliminate third variable */
+   m3 = r3[2] / r2[2];
+   r3[3] -= m3 * r2[3], r3[4] -= m3 * r2[4],
+      r3[5] -= m3 * r2[5], r3[6] -= m3 * r2[6], r3[7] -= m3 * r2[7];
+
+   /* last check */
+   if (0.0 == r3[3])
+      return 0;
+
+   s = 1.0 / r3[3];		/* now back substitute row 3 */
+   r3[4] *= s;
+   r3[5] *= s;
+   r3[6] *= s;
+   r3[7] *= s;
+
+   m2 = r2[3];			/* now back substitute row 2 */
+   s = 1.0 / r2[2];
+   r2[4] = s * (r2[4] - r3[4] * m2), r2[5] = s * (r2[5] - r3[5] * m2),
+      r2[6] = s * (r2[6] - r3[6] * m2), r2[7] = s * (r2[7] - r3[7] * m2);
+   m1 = r1[3];
+   r1[4] -= r3[4] * m1, r1[5] -= r3[5] * m1,
+      r1[6] -= r3[6] * m1, r1[7] -= r3[7] * m1;
+   m0 = r0[3];
+   r0[4] -= r3[4] * m0, r0[5] -= r3[5] * m0,
+      r0[6] -= r3[6] * m0, r0[7] -= r3[7] * m0;
+
+   m1 = r1[2];			/* now back substitute row 1 */
+   s = 1.0 / r1[1];
+   r1[4] = s * (r1[4] - r2[4] * m1), r1[5] = s * (r1[5] - r2[5] * m1),
+      r1[6] = s * (r1[6] - r2[6] * m1), r1[7] = s * (r1[7] - r2[7] * m1);
+   m0 = r0[2];
+   r0[4] -= r2[4] * m0, r0[5] -= r2[5] * m0,
+      r0[6] -= r2[6] * m0, r0[7] -= r2[7] * m0;
+
+   m0 = r0[1];			/* now back substitute row 0 */
+   s = 1.0 / r0[0];
+   r0[4] = s * (r0[4] - r1[4] * m0), r0[5] = s * (r0[5] - r1[5] * m0),
+      r0[6] = s * (r0[6] - r1[6] * m0), r0[7] = s * (r0[7] - r1[7] * m0);
+
+   MAT(out, 0, 0) = r0[4];
+   MAT(out, 0, 1) = r0[5], MAT(out, 0, 2) = r0[6];
+   MAT(out, 0, 3) = r0[7], MAT(out, 1, 0) = r1[4];
+   MAT(out, 1, 1) = r1[5], MAT(out, 1, 2) = r1[6];
+   MAT(out, 1, 3) = r1[7], MAT(out, 2, 0) = r2[4];
+   MAT(out, 2, 1) = r2[5], MAT(out, 2, 2) = r2[6];
+   MAT(out, 2, 3) = r2[7], MAT(out, 3, 0) = r3[4];
+   MAT(out, 3, 1) = r3[5], MAT(out, 3, 2) = r3[6];
+   MAT(out, 3, 3) = r3[7];
+
+   return 1;
+}
+
+int gluInvertMatrixf(const float *m, float *dest) {
+  return glhInvertMatrixf(m,dest);
+}
+
+int gluInvertMatrix(const double *m, double *dest) {
   return glhInvertMatrix(m,dest);
-}
-
-void MultiplyMatrixByVector4by4OpenGL_FLOAT(float *dest, float *m, float *v) {
-  float x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
-  float y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
-  float z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
-  float w = v[0] * m[0*4+3] + v[1] * m[1*4+3] + v[2] * m[2*4+3] + v[3] * m[3*4+3];
-  dest[0] = x;
-  dest[1] = y;
-  dest[2] = z;
-  dest[3] = w;
-}
-
-void MultiplyMatrices4by4OpenGL_FLOAT(float *dest, float *m1, float *m2) {
-  glMatMul(m1,m2,dest);
 }
 
 int glhUnProjectf(float winx, float winy, float winz,
@@ -1873,7 +2265,7 @@ int glhUnProjectf(float winx, float winy, float winz,
   	//and store in A[16]
   	MultiplyMatrices4by4OpenGL_FLOAT(A, projection, modelview);
   	//Now compute the inverse of matrix A
-  	if(glhInvertMatrix(A, m)==0)
+  	if(glhInvertMatrixf(A, m)==0)
   		return 0;
   
   	//Transformation of normalized coordinates between -1 and 1
@@ -1884,6 +2276,39 @@ int glhUnProjectf(float winx, float winy, float winz,
   	
   	//Objects coordinates
   	MultiplyMatrixByVector4by4OpenGL_FLOAT(out, m, in);
+  	if(out[3]==0.0)
+  		return 0;
+  	out[3]=1.0/out[3];
+  	objectCoordinate[0]=out[0]*out[3];
+  	objectCoordinate[1]=out[1]*out[3];
+  	objectCoordinate[2]=out[2]*out[3];
+  	return 1;
+}
+
+int glhUnProject(double winx, double winy, double winz,
+	     double *modelview, double *projection,
+	     int *viewport,
+	     double *objectCoordinate)
+{
+  	//Transformation matrices
+  	double m[16], A[16];
+  	double in[4], out[4];
+  
+  	//Calculation for inverting a matrix, compute projection x modelview
+  	//and store in A[16]
+  	MultiplyMatrices4by4OpenGL_DOUBLE(A, projection, modelview);
+  	//Now compute the inverse of matrix A
+  	if(glhInvertMatrix(A, m)==0)
+  		return 0;
+  
+  	//Transformation of normalized coordinates between -1 and 1
+  	in[0]=((winx-(double)viewport[0])/(double)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
+  	in[1]=(winy-(double)viewport[1])/(double)viewport[3]*2.0-1.0;
+  	in[2]=2.0*winz-1.0;
+  	in[3]=1.0;
+  	
+  	//Objects coordinates
+  	MultiplyMatrixByVector4by4OpenGL_DOUBLE(out, m, in);
   	if(out[3]==0.0)
   		return 0;
   	out[3]=1.0/out[3];
@@ -1954,22 +2379,111 @@ int glhProjectf(float objx, float objy, float objz,
   	return 1;
 }
 
+int glhProject(double objx, double objy, double objz,
+				 double *modelview, double *projection,
+				 int *viewport,
+				 double *windowCoordinate)
+{
+  	//Transformation vectors
+  	double fTempo[8];
+  	//Modelview transform
+  	fTempo[0]=modelview[0]*objx+
+  		modelview[4]*objy+
+  		modelview[8]*objz+
+  		modelview[12];		//w is always 1
+  	fTempo[1]=modelview[1]*objx+
+  		modelview[5]*objy+
+  		modelview[9]*objz+
+  		modelview[13];
+  	fTempo[2]=modelview[2]*objx+
+  		modelview[6]*objy+
+  		modelview[10]*objz+
+  		modelview[14];
+  	fTempo[3]=modelview[3]*objx+
+  		modelview[7]*objy+
+  		modelview[11]*objz+
+  		modelview[15];
+  	//Projection transform, the final row of projection matrix is always [0 0 -1 0]
+  	//so we optimize for that.
+  	fTempo[4]=projection[0]*fTempo[0]+	
+  		projection[4]*fTempo[1]+
+  		projection[8]*fTempo[2]+
+  		projection[12]*fTempo[3];
+  	fTempo[5]=projection[1]*fTempo[0]+	
+  		projection[5]*fTempo[1]+
+  		projection[9]*fTempo[2]+
+  		projection[13]*fTempo[3];
+  	fTempo[6]=projection[2]*fTempo[0]+	
+  		projection[6]*fTempo[1]+
+  		projection[10]*fTempo[2]+
+  		projection[14]*fTempo[3];
+  	fTempo[7]=-fTempo[2];
+  
+  	//The result normalizes between -1 and 1
+  	if(fTempo[7]==0.0)	//The w value
+  		return 0;
+  
+  	fTempo[7]=1.0/fTempo[7];
+  
+  	//Perspective division
+  	fTempo[4]*=fTempo[7];
+  	fTempo[5]*=fTempo[7];
+  	fTempo[6]*=fTempo[7];
+  
+  	//Window coordinates
+  	//Map x, y to range 0-1
+  	windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
+  	windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
+  
+  	//This is only correct when glDepthRange(0.0, 1.0)
+  	windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
+  	return 1;
+}
+
 void glOrtho(float left, float right, float bottom, float top, float znear, float zfar) {
-  GLfloat x,y,z;
-  GLfloat tx,ty,tz;
-  GLfloat m[16];
-  x = 2.0 / (right-left);
-  y = 2.0 / (top-bottom);
-  z = -2.0 / (zfar - znear);
-  tx = -(right+left)/(right-left);
-  ty = -(top+bottom)/(top-bottom);
-  tz = -(zfar+znear)/(zfar-znear);
-#define M(row,col) m[col*4+row]  
-  M(0,0)=x; M(0,1)=0; M(0,2) = 0.f; M(0,3) = tx;
-  M(1,0)=0; M(1,1)=y; M(1,2) = 0.f; M(1,3) = ty;
-  M(2,0)=0; M(2,1)=0; M(2,2) = z; M(2,3) = tz;
-  M(3,0)=0; M(3,1)=0; M(3,2) = 0; M(3,3) = 1;
-  glMultMatrixf(m);
+//  GLfloat x,y,z;
+//  GLfloat tx,ty,tz;
+//  GLfloat m[16];
+//  x = 2.0 / (right-left);
+//  y = 2.0 / (top-bottom);
+//  z = -2.0 / (zfar - znear);
+//  tx = -(right+left)/(right-left);
+//  ty = -(top+bottom)/(top-bottom);
+//  tz = -(zfar+znear)/(zfar-znear);
+//#define M(row,col) m[col*4+row]  
+//  M(0,0)=x; M(0,1)=0; M(0,2) = 0.f; M(0,3) = tx;
+//  M(1,0)=0; M(1,1)=y; M(1,2) = 0.f; M(1,3) = ty;
+//  M(2,0)=0; M(2,1)=0; M(2,2) = z; M(2,3) = tz;
+//  M(3,0)=0; M(3,1)=0; M(3,2) = 0; M(3,3) = 1;
+//  glMultMatrixf(m);
+  float r2 = (right-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
+  float l2 = (left-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
+  right = r2;
+  left = l2;
+
+  float matrix2[16], temp2, temp3, temp4, resultMatrix[16];
+  temp2 = (right-left);
+  temp3 = top-bottom;
+  temp4 = zfar-znear;
+  matrix2[0]=2.0/temp2;
+  matrix2[1]=0.0;
+  matrix2[2]=0.0;
+  matrix2[3]=0.0;
+  matrix2[4]=0.0;
+  matrix2[5]=2.0/temp3;
+  matrix2[6]=0.0;
+  matrix2[7]=0.0;
+  matrix2[8]=0.0;
+  matrix2[9]=0.0;
+  matrix2[10]=2.0/temp4;
+  matrix2[11]=0.0;
+  matrix2[12]=(-right-left)/temp2;
+  matrix2[13]=(-top-bottom)/temp3;
+  matrix2[14]=(-zfar-znear)/temp4;
+  matrix2[15]=1.0;
+  float *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  	MultiplyMatrices4by4OpenGL_FLOAT(matrix, matrix, matrix2);
+  glUpdateMatrix();
 }
 
 void glFrontFace(GLenum mode) {
@@ -1978,18 +2492,22 @@ void glFrontFace(GLenum mode) {
 
 void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
   glhFrustumf2(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
+  glUpdateMatrix();
 }
 
 void glFrustumf(float left, float right, float bottom, float top, float znear, float zfar) {
   glFrustum(left,right,bottom,top,znear,zfar);
+  glUpdateMatrix();
 }
 
 void glOrthof(float left, float right, float bottom, float top, float znear, float zfar) {
   glOrtho(left, right, bottom, top, znear, zfar);
+  glUpdateMatrix();
 }
 
 void gluOrtho2D(float left, float right, float bottom, float top) {
   glOrtho(left, right, bottom, top, -1, 1);
+  glUpdateMatrix();
 }
 
 void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane) {
@@ -2014,7 +2532,7 @@ void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz
   glUpdateMatrix();
 }
 
-GLint gluProject(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
+GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
   float d[3];
   const GLint r = glhProjectf(objX, objY, objZ, model, projection, view, d);
   *winX = d[0];
@@ -2023,9 +2541,27 @@ GLint gluProject(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLflo
   return r;
 }
 
-GLint gluUnProject(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ) {
+GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ) {
   float d[3];
   const GLint r = glhUnProjectf(winX, winY, winZ, model, projection, view, d);
+  *objX = d[0];
+  *objY = d[1];
+  *objZ = d[2];
+  return r;
+}
+
+GLint gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ) {
+  double d[3];
+  const GLint r = glhProject(objX, objY, objZ, model, projection, view, d);
+  *winX = d[0];
+  *winY = d[1];
+  *winZ = d[2];
+  return r;
+}
+
+GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *objX, GLdouble *objY, GLdouble *objZ) {
+  double d[3];
+  const GLint r = glhUnProject(winX, winY, winZ, model, projection, view, d);
   *objX = d[0];
   *objY = d[1];
   *objZ = d[2];
@@ -2446,9 +2982,9 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   double v0w = 1.0/(v0->sw);
   double v1w = 1.0/(v1->sw);
   double v2w = 1.0/(v2->sw);
-  double v0z = (v0->sz*0.5+0.5);
-  double v1z = (v1->sz*0.5+0.5);
-  double v2z = (v2->sz*0.5+0.5);
+  double v0z = (v0->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  double v1z = (v1->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  double v2z = (v2->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
@@ -2958,10 +3494,10 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
       glFrameBufferHeight = yRes;
       glFrameBufferDedicated = (unsigned int*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
       glFrameBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
-      glStencilBuffer = new int[glFrameBufferWidth*glFrameBufferHeight];
+      glStencilBuffer = new unsigned char[glFrameBufferWidth*glFrameBufferHeight];
       glDepthBuffer = new float[glFrameBufferWidth*glFrameBufferHeight];
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+      memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*1);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       glSetupMouse();
       glStartClock = clock();
