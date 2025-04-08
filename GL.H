@@ -673,7 +673,7 @@ GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad:
 
 extern int glFrameBufferWidth;
 extern int glFrameBufferHeight;
-extern float glMonitorAspectRatio;
+extern double glMonitorAspectRatio;
 extern unsigned int *glFrameBuffer;
 extern unsigned char *glStencilBuffer;
 extern float *glDepthBuffer;

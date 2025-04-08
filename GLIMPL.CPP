@@ -3,15 +3,17 @@
 #include <math.h>
 #include <time.h>
 
+#define PI 3.14159265358979323846
+
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
-float glMonitorAspectRatio = 1.0;
+double glMonitorAspectRatio = 1.0;
 unsigned int *glFrameBuffer = NULL;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 unsigned char *glStencilBuffer = NULL;
 float *glDepthBuffer = NULL;
 
-GLfloat identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
+GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
 #define __GL_MAX_LIGHTS__ (2)
 #define __GL_MAX_TEXTURE_SIZE__ (1024)
@@ -86,17 +88,17 @@ public:
     colorGreen = 1.f;
     colorBlue = 1.f;
     colorAlpha = 1.f;
-    normalX = 0.f;
-    normalY = 0.f;
-    normalZ = 0.f;
-    vertexX = 1.f;
-    vertexY = 1.f;
-    vertexZ = 1.f;
-    vertexW = 1.f;
-    textureX = 0.f;
-    textureY = 0.f;
-    textureZ = 0.f;
-    textureW = 0.f;
+    normalX = 0.0;
+    normalY = 0.0;
+    normalZ = 0.0;
+    vertexX = 1.0;
+    vertexY = 1.0;
+    vertexZ = 1.0;
+    vertexW = 1.0;
+    textureX = 0.0;
+    textureY = 0.0;
+    textureZ = 0.0;
+    textureW = 0.0;
     beginMode = 0;
     colorMaterial = GL_AMBIENT_AND_DIFFUSE;
 
@@ -186,8 +188,8 @@ public:
   GLfloat pointSize;
   GLfloat polygonOffsetFactor;
   GLfloat polygonOffsetUnits;
-  GLfloat matrixForMode[2][4*4];
-  GLfloat matrix[4*4];
+  GLdouble matrixForMode[2][4*4];
+  GLdouble matrix[4*4];
   GLint matrixModeNr;
   GLfloat lineStippleFactor;
   GLshort lineStipplePattern;
@@ -208,23 +210,23 @@ public:
   GLfloat colorGreen;
   GLfloat colorBlue;
   GLfloat colorAlpha;
-  GLfloat normalX;
-  GLfloat normalY;
-  GLfloat normalZ;
-  GLfloat vertexX;
-  GLfloat vertexY;
-  GLfloat vertexZ;
-  GLfloat vertexW;
-  GLfloat textureX;
-  GLfloat textureY;
-  GLfloat textureZ;
-  GLfloat textureW;
+  GLdouble normalX;
+  GLdouble normalY;
+  GLdouble normalZ;
+  GLdouble vertexX;
+  GLdouble vertexY;
+  GLdouble vertexZ;
+  GLdouble vertexW;
+  GLdouble textureX;
+  GLdouble textureY;
+  GLdouble textureZ;
+  GLdouble textureW;
   GLenum beginMode;
   GLboolean enabledCaps[256];
-  GLfloat lightRed[4][__GL_MAX_LIGHTS__];
-  GLfloat lightGreen[4][__GL_MAX_LIGHTS__];
-  GLfloat lightBlue[4][__GL_MAX_LIGHTS__];
-  GLfloat lightAlpha[4][__GL_MAX_LIGHTS__];
+  GLdouble lightRed[4][__GL_MAX_LIGHTS__];
+  GLdouble lightGreen[4][__GL_MAX_LIGHTS__];
+  GLdouble lightBlue[4][__GL_MAX_LIGHTS__];
+  GLdouble lightAlpha[4][__GL_MAX_LIGHTS__];
   GLenum colorMaterial;
   GLfloat materialRed[5];
   GLfloat materialGreen[5];
@@ -240,7 +242,7 @@ public:
 };
 
 _GLContext glContext;
-GLfloat glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
+GLdouble glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
 GLint glMatrixStackPos = 0;
 
 typedef struct glVertex {
@@ -248,18 +250,18 @@ typedef struct glVertex {
   GLfloat colorGreen;
   GLfloat colorBlue;
   GLfloat colorAlpha;
-  GLfloat normalX;
-  GLfloat normalY;
-  GLfloat normalZ;
-  GLfloat vertexX;
-  GLfloat vertexY;
-  GLfloat vertexZ;
-  GLfloat vertexW;
-  GLfloat textureX;
-  GLfloat textureY;
-  GLfloat textureZ;
-  GLfloat textureW;
-  float sx,sy,sz,sw;
+  GLdouble normalX;
+  GLdouble normalY;
+  GLdouble normalZ;
+  GLdouble vertexX;
+  GLdouble vertexY;
+  GLdouble vertexZ;
+  GLdouble vertexW;
+  GLdouble textureX;
+  GLdouble textureY;
+  GLdouble textureZ;
+  GLdouble textureW;
+  double sx,sy,sz,sw;
 } glVertex;
 
 glVertex glVertices[4];
@@ -337,6 +339,20 @@ void glMatMulf(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
   memcpy(r,result,4*4*sizeof(float));
 }
 
+void glMatMulf2(const GLdouble *ma, const GLfloat *mb, GLdouble *r) {
+  GLdouble result[16];
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      float a = 0.f;
+      for (int k = 0; k < 4; k++) {
+        a += ma[i+k*4] * mb[j*4+k];
+      }
+      result[i+j*4] = a;
+    }
+  }
+  memcpy(r,result,4*4*sizeof(double));
+}
+
 void glMatMul(const GLdouble *ma, const GLdouble *mb, GLdouble *r) {
   GLdouble result[16];
   for (int i = 0; i < 4; i++) {
@@ -352,14 +368,14 @@ void glMatMul(const GLdouble *ma, const GLdouble *mb, GLdouble *r) {
 }
 
 void glUpdateMatrix() {
-  glMatMulf(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
+  glMatMul(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
 }
 
 int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
-  float x = v->vertexX * context->matrix[0*4+0] + v->vertexY * context->matrix[1*4+0] + v->vertexZ * context->matrix[2*4+0] + v->vertexW * context->matrix[3*4+0];
-  float y = v->vertexX * context->matrix[0*4+1] + v->vertexY * context->matrix[1*4+1] + v->vertexZ * context->matrix[2*4+1] + v->vertexW * context->matrix[3*4+1];
-  float z = v->vertexX * context->matrix[0*4+2] + v->vertexY * context->matrix[1*4+2] + v->vertexZ * context->matrix[2*4+2] + v->vertexW * context->matrix[3*4+2];
-  float w = v->vertexX * context->matrix[0*4+3] + v->vertexY * context->matrix[1*4+3] + v->vertexZ * context->matrix[2*4+3] + v->vertexW * context->matrix[3*4+3];
+  double x = v->vertexX * context->matrix[0*4+0] + v->vertexY * context->matrix[1*4+0] + v->vertexZ * context->matrix[2*4+0] + v->vertexW * context->matrix[3*4+0];
+  double y = v->vertexX * context->matrix[0*4+1] + v->vertexY * context->matrix[1*4+1] + v->vertexZ * context->matrix[2*4+1] + v->vertexW * context->matrix[3*4+1];
+  double z = v->vertexX * context->matrix[0*4+2] + v->vertexY * context->matrix[1*4+2] + v->vertexZ * context->matrix[2*4+2] + v->vertexW * context->matrix[3*4+2];
+  double w = v->vertexX * context->matrix[0*4+3] + v->vertexY * context->matrix[1*4+3] + v->vertexZ * context->matrix[2*4+3] + v->vertexW * context->matrix[3*4+3];
 
   if (clip) {
     if (z < -w) {
@@ -384,25 +400,25 @@ int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
 
 void glLightVertex(_GLContext *context, glVertex *v) {
   if (context->isEnabled(GL_LIGHTING)) {
-    float *matrix = context->matrixForMode[GL_MODELVIEW & 1];
-    float x = v->vertexX * matrix[0*4+0] + v->vertexY * matrix[1*4+0] + v->vertexZ * matrix[2*4+0] + v->vertexW * matrix[3*4+0];
-    float y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
-    float z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
-    float w = v->vertexX * matrix[0*4+3] + v->vertexY * matrix[1*4+3] + v->vertexZ * matrix[2*4+3] + v->vertexW * matrix[3*4+3];
+    double *matrix = context->matrixForMode[GL_MODELVIEW & 1];
+    double x = v->vertexX * matrix[0*4+0] + v->vertexY * matrix[1*4+0] + v->vertexZ * matrix[2*4+0] + v->vertexW * matrix[3*4+0];
+    double y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
+    double z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
+    double w = v->vertexX * matrix[0*4+3] + v->vertexY * matrix[1*4+3] + v->vertexZ * matrix[2*4+3] + v->vertexW * matrix[3*4+3];
     if (w != 0) { // should never happen
       x /= w;
       y /= w;
       z /= w;
     }
     // rotate normal (inversetranspose would be better, or?)
-    float vnx = v->vertexX+v->normalX;
-    float vny = v->vertexY+v->normalY;
-    float vnz = v->vertexZ+v->normalZ;
-    float vnw = v->vertexW;
-    float nx = vnx * matrix[0*4+0] + vny * matrix[1*4+0] + vnz * matrix[2*4+0] + vnw * matrix[3*4+0];
-    float ny = vnx * matrix[0*4+1] + vny * matrix[1*4+1] + vnz * matrix[2*4+1] + vnw * matrix[3*4+1];
-    float nz = vnx * matrix[0*4+2] + vny * matrix[1*4+2] + vnz * matrix[2*4+2] + vnw * matrix[3*4+2];
-    float nw = vnx * matrix[0*4+3] + vny * matrix[1*4+3] + vnz * matrix[2*4+3] + vnw * matrix[3*4+3];
+    double vnx = v->vertexX+v->normalX;
+    double vny = v->vertexY+v->normalY;
+    double vnz = v->vertexZ+v->normalZ;
+    double vnw = v->vertexW;
+    double nx = vnx * matrix[0*4+0] + vny * matrix[1*4+0] + vnz * matrix[2*4+0] + vnw * matrix[3*4+0];
+    double ny = vnx * matrix[0*4+1] + vny * matrix[1*4+1] + vnz * matrix[2*4+1] + vnw * matrix[3*4+1];
+    double nz = vnx * matrix[0*4+2] + vny * matrix[1*4+2] + vnz * matrix[2*4+2] + vnw * matrix[3*4+2];
+    double nw = vnx * matrix[0*4+3] + vny * matrix[1*4+3] + vnz * matrix[2*4+3] + vnw * matrix[3*4+3];
     if (nw != 0) { // should never happen
       nx /= nw;
       ny /= nw;
@@ -477,9 +493,9 @@ void glLightVertex(_GLContext *context, glVertex *v) {
       }
     }
 
-    float normalX = nx;
-    float normalY = ny;
-    float normalZ = nz;
+    double normalX = nx;
+    double normalY = ny;
+    double normalZ = nz;
     if (context->isEnabled(GL_NORMALIZE)) {
       float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
       if (l>0.f) {
@@ -500,34 +516,34 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         float lightSpecularRed = context->lightRed[2][i];
         float lightSpecularGreen = context->lightGreen[2][i];
         float lightSpecularBlue =  context->lightBlue[2][i];
-        float lightPositionX = context->lightRed[3][i];
-        float lightPositionY = context->lightGreen[3][i];
-        float lightPositionZ =  context->lightBlue[3][i];
-        float lightPositionW =  context->lightAlpha[3][i];
-        float lVecX = lightPositionX;
-        float lVecY = lightPositionY;
-        float lVecZ = lightPositionZ;
+        double lightPositionX = context->lightRed[3][i];
+        double lightPositionY = context->lightGreen[3][i];
+        double lightPositionZ =  context->lightBlue[3][i];
+        double lightPositionW =  context->lightAlpha[3][i];
+        double lVecX = lightPositionX;
+        double lVecY = lightPositionY;
+        double lVecZ = lightPositionZ;
         if (fabs(lightPositionW)>0.0) {
           lVecX-=x;
           lVecY-=y;
           lVecZ-=z;
         }
-        float l = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
-        if (l>0.f) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
-        float diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
+        double l = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
+        if (l>0.0) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
+        double diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
         if (diffuse<0) diffuse = 0;
-        float viewX = -x;
-        float viewY = -y;
-        float viewZ = -z;
+        double viewX = -x;
+        double viewY = -y;
+        double viewZ = -z;
         l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
         if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
-        float dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
-        float reflectionX = viewX - dot2NI * normalX;
-        float reflectionY = viewY - dot2NI * normalY;
-        float reflectionZ = viewZ - dot2NI * normalZ;
+        double dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
+        double reflectionX = viewX - dot2NI * normalX;
+        double reflectionY = viewY - dot2NI * normalY;
+        double reflectionZ = viewZ - dot2NI * normalZ;
         l = sqrt(reflectionX*reflectionX+reflectionY*reflectionY+reflectionZ*reflectionZ);
         if (l>0.f) {reflectionX/=l; reflectionY /= l; reflectionZ /= l;}
-        float specular = lVecX * reflectionX + lVecY * reflectionY + lVecZ * reflectionZ;
+        double specular = lVecX * reflectionX + lVecY * reflectionY + lVecZ * reflectionZ;
         if (specular<0.0) specular = 0.0;
         ambientRed += materialAmbientRed*lightAmbientRed;
         ambientGreen += materialAmbientGreen*lightAmbientGreen;
@@ -535,7 +551,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         diffuseRed += materialDiffuseRed*lightDiffuseRed*diffuse;
         diffuseGreen += materialDiffuseGreen*lightDiffuseGreen*diffuse;
         diffuseBlue += materialDiffuseBlue*lightDiffuseBlue*diffuse;
-        float shininess = materialShininessRed;
+        double shininess = materialShininessRed;
         if (shininess < 0.001) shininess = 0.001;
         specularRed += materialSpecularRed*lightSpecularRed*pow(specular,shininess);
         specularGreen += materialSpecularGreen*lightSpecularGreen*pow(specular,shininess);
@@ -556,7 +572,7 @@ __inline int glClipVertex(_GLContext *context, glVertex *v) {
   return clipFlags;
 }
 
-void interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, float f) {
+void interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, double f) {
   dest->colorRed = v0->colorRed + f * (v1->colorRed-v0->colorRed);
   dest->colorGreen = v0->colorGreen + f * (v1->colorGreen-v0->colorGreen);
   dest->colorBlue = v0->colorBlue + f * (v1->colorBlue-v0->colorBlue);
@@ -578,17 +594,17 @@ void interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, float f) {
 }
 
 void drawClippedNgon(_GLContext *context, glVertex *vertices[], int vertexCount) {
-  float *matrix = context->matrix;
+  double *matrix = context->matrix;
   glVertex poly[8];
   int count = 0;
   int clipFlags = 1|2|4|8;
   for(int i = 0; i < vertexCount; i++) {
     glVertex *v0 = vertices[i];
     glVertex *v1 = vertices[(i+1) % vertexCount];
-    float z0 = v0->vertexX * matrix[0*4+2] + v0->vertexY * matrix[1*4+2] + v0->vertexZ * matrix[2*4+2] + v0->vertexW * matrix[3*4+2];
-    float w0 = v0->vertexX * matrix[0*4+3] + v0->vertexY * matrix[1*4+3] + v0->vertexZ * matrix[2*4+3] + v0->vertexW * matrix[3*4+3];
-    float z1 = v1->vertexX * matrix[0*4+2] + v1->vertexY * matrix[1*4+2] + v1->vertexZ * matrix[2*4+2] + v1->vertexW * matrix[3*4+2];
-    float w1 = v1->vertexX * matrix[0*4+3] + v1->vertexY * matrix[1*4+3] + v1->vertexZ * matrix[2*4+3] + v1->vertexW * matrix[3*4+3];
+    double z0 = v0->vertexX * matrix[0*4+2] + v0->vertexY * matrix[1*4+2] + v0->vertexZ * matrix[2*4+2] + v0->vertexW * matrix[3*4+2];
+    double w0 = v0->vertexX * matrix[0*4+3] + v0->vertexY * matrix[1*4+3] + v0->vertexZ * matrix[2*4+3] + v0->vertexW * matrix[3*4+3];
+    double z1 = v1->vertexX * matrix[0*4+2] + v1->vertexY * matrix[1*4+2] + v1->vertexZ * matrix[2*4+2] + v1->vertexW * matrix[3*4+2];
+    double w1 = v1->vertexX * matrix[0*4+3] + v1->vertexY * matrix[1*4+3] + v1->vertexZ * matrix[2*4+3] + v1->vertexW * matrix[3*4+3];
     bool currentInside = z0 >= -w0;
     bool nextInside = z1 >= -w1;
     if (currentInside&&nextInside) {
@@ -645,19 +661,19 @@ void drawClippedLine(_GLContext *context, glVertex *v0a, glVertex *v1a)  {
   vertices[0] = *v0a;
   vertices[1] = *v1a;
 
-  float *matrix = context->matrix;
+  double *matrix = context->matrix;
   glVertex *v0 = &vertices[0];
   glVertex *v1 = &vertices[1];
-  float z0 = v0->vertexX * matrix[0*4+2] + v0->vertexY * matrix[1*4+2] + v0->vertexZ * matrix[2*4+2] + v0->vertexW * matrix[3*4+2];
-  float w0 = v0->vertexX * matrix[0*4+3] + v0->vertexY * matrix[1*4+3] + v0->vertexZ * matrix[2*4+3] + v0->vertexW * matrix[3*4+3];
-  float z1 = v1->vertexX * matrix[0*4+2] + v1->vertexY * matrix[1*4+2] + v1->vertexZ * matrix[2*4+2] + v1->vertexW * matrix[3*4+2];
-  float w1 = v1->vertexX * matrix[0*4+3] + v1->vertexY * matrix[1*4+3] + v1->vertexZ * matrix[2*4+3] + v1->vertexW * matrix[3*4+3];
+  double z0 = v0->vertexX * matrix[0*4+2] + v0->vertexY * matrix[1*4+2] + v0->vertexZ * matrix[2*4+2] + v0->vertexW * matrix[3*4+2];
+  double w0 = v0->vertexX * matrix[0*4+3] + v0->vertexY * matrix[1*4+3] + v0->vertexZ * matrix[2*4+3] + v0->vertexW * matrix[3*4+3];
+  double z1 = v1->vertexX * matrix[0*4+2] + v1->vertexY * matrix[1*4+2] + v1->vertexZ * matrix[2*4+2] + v1->vertexW * matrix[3*4+2];
+  double w1 = v1->vertexX * matrix[0*4+3] + v1->vertexY * matrix[1*4+3] + v1->vertexZ * matrix[2*4+3] + v1->vertexW * matrix[3*4+3];
   bool currentInside = z0 >= -w0;
   bool nextInside = z1 >= -w1;
   if ((!currentInside)&&(!nextInside))
     return;
   if ((!currentInside)||(!nextInside)) {
-    float f = (w0+z0) / ((z0-z1)+(w0-w1));
+    double f = (w0+z0) / ((z0-z1)+(w0-w1));
     if (!currentInside)
       interpolateVertex(&vertices[0],v0,v1,f);
     else
@@ -669,13 +685,13 @@ void drawClippedLine(_GLContext *context, glVertex *v0a, glVertex *v1a)  {
   glLightVertex(context,&vertices[1]);
   memcpy(&vertices[2],&vertices[1],sizeof(glVertex));
   memcpy(&vertices[3],&vertices[0],sizeof(glVertex));
-  float dx = vertices[1].sx-vertices[0].sx;
-  float dy = vertices[1].sy-vertices[0].sy;
-  float l = sqrt(dx*dx+dy*dy);
+  double dx = vertices[1].sx-vertices[0].sx;
+  double dy = vertices[1].sy-vertices[0].sy;
+  double l = sqrt(dx*dx+dy*dy);
   if (l>0.f) {dx/=l;dy/=l;};
-  float nx = dy;
-  float ny = -dx;
-  float d = context->lineWidth*0.5;
+  double nx = dy;
+  double ny = -dx;
+  double d = context->lineWidth*0.5;
   vertices[0].sx += nx*d;
   vertices[0].sy += ny*d;
   vertices[1].sx += nx*d;
@@ -723,13 +739,13 @@ void glEmitVertex() {
             glLightVertex(&glContext,&glVertices[1]);
             memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
             memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
-            float dx = glVertices[1].sx-glVertices[0].sx;
-            float dy = glVertices[1].sy-glVertices[0].sy;
-            float l = sqrt(dx*dx+dy*dy);
+            double dx = glVertices[1].sx-glVertices[0].sx;
+            double dy = glVertices[1].sy-glVertices[0].sy;
+            double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            float nx = dy * glMonitorAspectRatio;
-            float ny = -dx;
-            float d = glContext.lineWidth*0.5;
+            double nx = dy * glMonitorAspectRatio;
+            double ny = -dx;
+            double d = glContext.lineWidth*0.5;
             glVertices[0].sx += nx*d;
             glVertices[0].sy += ny*d;
             glVertices[1].sx += nx*d;
@@ -761,9 +777,9 @@ void glEmitVertex() {
             glLightVertex(&glContext,&glVertices[1]);
             memcpy(&glVertices[2],&glVertices[1],sizeof(glVertex));
             memcpy(&glVertices[3],&glVertices[0],sizeof(glVertex));
-            float dx = glVertices[1].sx-glVertices[0].sx;
-            float dy = glVertices[1].sy-glVertices[0].sy;
-            float l = sqrt(dx*dx+dy*dy);
+            double dx = glVertices[1].sx-glVertices[0].sx;
+            double dy = glVertices[1].sy-glVertices[0].sy;
+            double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
             float nx = dy*glMonitorAspectRatio;
             float ny = -dx;
@@ -848,8 +864,8 @@ void glEmitVertex() {
           glVertices[1] = glVertices[0];
           glVertices[2] = glVertices[0];
           glVertices[3] = glVertices[0];
-          float pointSizeX = glContext.pointSize*0.5f*glMonitorAspectRatio;
-          float pointSizeY = glContext.pointSize*0.5f;
+          double pointSizeX = glContext.pointSize*0.5*glMonitorAspectRatio;
+          double pointSizeY = glContext.pointSize*0.5;
           glVertices[0].textureX = 0;
           glVertices[0].textureY = 0;
           glVertices[0].sx -= pointSizeX;
@@ -1295,16 +1311,16 @@ GLboolean glIsEnabled(GLenum cap) {
 
 void glLightfv (GLenum light, GLenum pname, const GLfloat *params) {
   if (pname == GL_POSITION) {
-    float lx = params[0];
-    float ly = params[1];
-    float lz = params[2];
-    float lw = params[3];
+    double lx = params[0];
+    double ly = params[1];
+    double lz = params[2];
+    double lw = params[3];
     //if (fabs(lw)>0.0) {
-      float *matrix = glContext.matrixForMode[GL_MODELVIEW&1]; 
-      float xl = lx * matrix[0*4+0] + ly * matrix[1*4+0] + lz * matrix[2*4+0] + lw * matrix[3*4+0];
-      float yl = lx * matrix[0*4+1] + ly * matrix[1*4+1] + lz * matrix[2*4+1] + lw * matrix[3*4+1];
-      float zl = lx * matrix[0*4+2] + ly * matrix[1*4+2] + lz * matrix[2*4+2] + lw * matrix[3*4+2];
-      float wl = lx * matrix[0*4+3] + ly * matrix[1*4+3] + lz * matrix[2*4+3] + lw * matrix[3*4+3];
+      double *matrix = glContext.matrixForMode[GL_MODELVIEW&1]; 
+      double xl = lx * matrix[0*4+0] + ly * matrix[1*4+0] + lz * matrix[2*4+0] + lw * matrix[3*4+0];
+      double yl = lx * matrix[0*4+1] + ly * matrix[1*4+1] + lz * matrix[2*4+1] + lw * matrix[3*4+1];
+      double zl = lx * matrix[0*4+2] + ly * matrix[1*4+2] + lz * matrix[2*4+2] + lw * matrix[3*4+2];
+      double wl = lx * matrix[0*4+3] + ly * matrix[1*4+3] + lz * matrix[2*4+3] + lw * matrix[3*4+3];
       if (wl != 0.0) {
         xl /= wl;
         yl /= wl;
@@ -1337,12 +1353,12 @@ void glLineWidth(GLfloat width) {
 }
 
 void glLoadIdentity() {
-  memcpy(glContext.matrixForMode[glContext.matrixModeNr], identityMatrix, 4*4*sizeof(GLfloat));
+  memcpy(glContext.matrixForMode[glContext.matrixModeNr], identityMatrix, 4*4*sizeof(GLdouble));
   glUpdateMatrix();
 }
 
 void glLoadMatrixf (const GLfloat *m) {
-  memcpy(glContext.matrixForMode[glContext.matrixModeNr], m, 4*4*sizeof(GLfloat));
+  for (int i = 0; i < 4*4; i++) glContext.matrixForMode[glContext.matrixModeNr][i] = m[i];
   glUpdateMatrix();
 }
 
@@ -1405,7 +1421,7 @@ void glMatrixMode (GLenum mode) {
 }
 
 void glMultMatrixf (const GLfloat *m) {
-  glMatMulf(glContext.matrixForMode[glContext.matrixModeNr],m,glContext.matrixForMode[glContext.matrixModeNr]);
+  glMatMulf2(glContext.matrixForMode[glContext.matrixModeNr],m,glContext.matrixForMode[glContext.matrixModeNr]);
   glUpdateMatrix();
 }
 
@@ -1420,19 +1436,19 @@ void glPolygonOffset (GLfloat factor, GLfloat units) {
 
 void glPopMatrix() {
   glMatrixStackPos--;
-  memcpy(glContext.matrixForMode[glContext.matrixModeNr], glMatrixStack[glMatrixStackPos], 4*4*sizeof(GLfloat));
+  memcpy(glContext.matrixForMode[glContext.matrixModeNr], glMatrixStack[glMatrixStackPos], 4*4*sizeof(GLdouble));
   glUpdateMatrix();
 }
 
 void glPushMatrix() {
-  memcpy(glMatrixStack[glMatrixStackPos], glContext.matrixForMode[glContext.matrixModeNr], 4*4*sizeof(GLfloat));
+  memcpy(glMatrixStack[glMatrixStackPos], glContext.matrixForMode[glContext.matrixModeNr], 4*4*sizeof(GLdouble));
   glMatrixStackPos++;
 }
 
-void glhRotate2f(GLfloat *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, GLfloat z) {
-  float m[16], rotate[16];
-  float OneMinusCosAngle, CosAngle, SinAngle;
-  float A_OneMinusCosAngle, C_OneMinusCosAngle;
+void glhRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, GLfloat z) {
+  double m[16], rotate[16];
+  double OneMinusCosAngle, CosAngle, SinAngle;
+  double A_OneMinusCosAngle, C_OneMinusCosAngle;
   CosAngle = cos(angleInRadians);
   OneMinusCosAngle = 1.f - CosAngle;
   SinAngle = sin(angleInRadians);
@@ -1472,25 +1488,25 @@ void glhRotate2f(GLfloat *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, 
 }
 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
-  float *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  glhRotate2f(matrix,angle*2.f*3.1415927f/360.f,x,y,z);
+  double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  glhRotate(matrix,angle*2.0*PI/360.0,x,y,z);
   glUpdateMatrix();
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
-  float *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  matrix[0] *= x;
-  matrix[4] *= y;
-  matrix[8] *= z;
-  matrix[1] *= x;
-  matrix[5] *= y;
-  matrix[9] *= z;
-  matrix[2] *= x;
-  matrix[6] *= y;
-  matrix[10] *= z;
-  matrix[3] *= x;
-  matrix[7] *= y;
-  matrix[11] *= z;
+  double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  matrix[0] *= (double)x;
+  matrix[4] *= (double)y;
+  matrix[8] *= (double)z;
+  matrix[1] *= (double)x;
+  matrix[5] *= (double)y;
+  matrix[9] *= (double)z;
+  matrix[2] *= (double)x;
+  matrix[6] *= (double)y;
+  matrix[10] *= (double)z;
+  matrix[3] *= (double)x;
+  matrix[7] *= (double)y;
+  matrix[11] *= (double)z;
   glUpdateMatrix();
 }
 
@@ -1662,16 +1678,16 @@ void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, 
 }
 
 
-void glhTranslatef2(GLfloat *matrix, GLfloat x, GLfloat y, GLfloat z) {
-  matrix[12]=matrix[0]*x+matrix[4]*y+matrix[8]*z+matrix[12];
-  matrix[13]=matrix[1]*x+matrix[5]*y+matrix[9]*z+matrix[13];
-  matrix[14]=matrix[2]*x+matrix[6]*y+matrix[10]*z+matrix[14];
-  matrix[15]=matrix[3]*x+matrix[7]*y+matrix[11]*z+matrix[15];
+void glhTranslate(GLdouble *matrix, GLfloat x, GLfloat y, GLfloat z) {
+  matrix[12]=matrix[0]*(double)x+matrix[4]*(double)y+matrix[8]*(double)z+matrix[12];
+  matrix[13]=matrix[1]*(double)x+matrix[5]*(double)y+matrix[9]*(double)z+matrix[13];
+  matrix[14]=matrix[2]*(double)x+matrix[6]*(double)y+matrix[10]*(double)z+matrix[14];
+  matrix[15]=matrix[3]*(double)x+matrix[7]*(double)y+matrix[11]*(double)z+matrix[15];
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
-  float *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  glhTranslatef2(matrix,x,y,z);
+  double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  glhTranslate(matrix,x,y,z);
   glUpdateMatrix();
 }
 
@@ -1709,7 +1725,10 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 }
 
 void glVertex3d(GLdouble x, GLdouble y, GLdouble z) {
-  glVertex3f(x,y,z);
+  glContext.vertexX = x;
+  glContext.vertexY = y;
+  glContext.vertexZ = z;
+  glEmitVertex();
 }
 
 void glTexCoord1f(GLfloat x) {
@@ -1735,19 +1754,25 @@ void glTexCoord4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
 }
 
 void glTexCoord1d(GLdouble x) {
-  glTexCoord1f(x);
+  glContext.textureX = x;
 }
 
 void glTexCoord2d(GLdouble x, GLdouble y) {
-  glTexCoord2f(x,y);
+  glContext.textureX = x;
+  glContext.textureY = y;
 }
 
 void glTexCoord3d(GLdouble x, GLdouble y, GLdouble z) {
-  glTexCoord3f(x,y,z);
+  glContext.textureX = x;
+  glContext.textureY = y;
+  glContext.textureZ = z;
 }
 
 void glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w) {
-  glTexCoord4f(x,y,z,w);
+  glContext.textureX = x;
+  glContext.textureY = y;
+  glContext.textureZ = z;
+  glContext.textureW = w;
 }
 
 void glPushAttrib(GLbitfield mask) {
@@ -1831,8 +1856,8 @@ void MultiplyMatrices4by4OpenGL_DOUBLE(double *dest, double *m1, double *m2) {
   glMatMul(m1,m2,dest);
 }
 
-void NormalizeVector(float *v) {
-  float l = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+void NormalizeVector(double *v) {
+  double l = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   if (l>0) {
     v[0] /= l;
     v[1] /= l;
@@ -1840,14 +1865,14 @@ void NormalizeVector(float *v) {
   }
 }
 
-void ComputeNormalOfPlane(float *normal, float *pvector1, float *pvector2) {
+void ComputeNormalOfPlane(double *normal, double *pvector1, double *pvector2) {
   normal[0]=(pvector1[1]*pvector2[2])-(pvector1[2]*pvector2[1]);
   normal[1]=(pvector1[2]*pvector2[0])-(pvector1[0]*pvector2[2]);
   normal[2]=(pvector1[0]*pvector2[1])-(pvector1[1]*pvector2[0]);
 }
 
-void glhFrustumf2(float *matrix, float left, float right, float bottom, float top, float znear, float zfar) {
-  float matrix2[16],temp, temp2, temp3, temp4;
+void glhFrustum(double *matrix, double left, double right, double bottom, double top, double znear, double zfar) {
+  double matrix2[16],temp, temp2, temp3, temp4;
   temp = 2.0 * znear;
   temp2 = right - left;
   temp3 = top - bottom;
@@ -1868,20 +1893,20 @@ void glhFrustumf2(float *matrix, float left, float right, float bottom, float to
   matrix2[13] = 0;
   matrix2[14] = (-temp*zfar)/temp4;
   matrix2[15] = 0.0;
-  	MultiplyMatrices4by4OpenGL_FLOAT(matrix, matrix, matrix2);
+  MultiplyMatrices4by4OpenGL_DOUBLE(matrix, matrix, matrix2);
 }
 
-void glhPerspectivef2(float *matrix, float fovyInDegrees, float aspectRatio, float znear, float zfar) {
-  float ymax, xmax;
-  float temp, temp2, temp3, temp4;
-  ymax = znear * tan(fovyInDegrees*3.1415927f/360.f);
+void glhPerspective(double *matrix, double fovyInDegrees, double aspectRatio, double znear, double zfar) {
+  double ymax, xmax;
+  double temp, temp2, temp3, temp4;
+  ymax = znear * tan(fovyInDegrees*PI/360.f);
   xmax = ymax * aspectRatio;
-  glhFrustumf2(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
+  glhFrustum(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
 }
 
-void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *upVector3D) {
-  float forward[3], side[3], up[3];
-  float matrix2[16], resultMatrix[16];
+void glhLookAt(double *matrix, double *eyePosition3D, double *center3D, double *upVector3D) {
+  double forward[3], side[3], up[3];
+  double matrix2[16], resultMatrix[16];
   forward[0] = center3D[0]-eyePosition3D[0];
   forward[1] = center3D[1]-eyePosition3D[1];
   forward[2] = center3D[2]-eyePosition3D[2];
@@ -1903,9 +1928,9 @@ void glhLookAtf2(float *matrix, float *eyePosition3D, float *center3D, float *up
   matrix2[14] = 0.0;
   matrix2[3] = matrix2[7] = matrix2[11] = 0.0;
   matrix2[15] = 1.0;
-  glMatMulf(matrix, matrix2, resultMatrix);
-  glhTranslatef2(resultMatrix,-eyePosition3D[0],-eyePosition3D[1],-eyePosition3D[2]);
-  memcpy(matrix,resultMatrix,16*sizeof(float));
+  glMatMul(matrix, matrix2, resultMatrix);
+  glhTranslate(resultMatrix,-eyePosition3D[0],-eyePosition3D[1],-eyePosition3D[2]);
+  memcpy(matrix,resultMatrix,16*sizeof(double));
 }
 
 #define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
@@ -2253,191 +2278,191 @@ int gluInvertMatrix(const double *m, double *dest) {
 }
 
 int glhUnProjectf(float winx, float winy, float winz,
-	     float *modelview, float *projection,
-	     int *viewport,
-	     float *objectCoordinate)
+     float *modelview, float *projection,
+     int *viewport,
+     float *objectCoordinate)
 {
-  	//Transformation matrices
-  	float m[16], A[16];
-  	float in[4], out[4];
+  //Transformation matrices
+  float m[16], A[16];
+  float in[4], out[4];
   
-  	//Calculation for inverting a matrix, compute projection x modelview
-  	//and store in A[16]
-  	MultiplyMatrices4by4OpenGL_FLOAT(A, projection, modelview);
-  	//Now compute the inverse of matrix A
-  	if(glhInvertMatrixf(A, m)==0)
-  		return 0;
+  //Calculation for inverting a matrix, compute projection x modelview
+  //and store in A[16]
+  MultiplyMatrices4by4OpenGL_FLOAT(A, projection, modelview);
+  //Now compute the inverse of matrix A
+  if(glhInvertMatrixf(A, m)==0)
+    return 0;
   
-  	//Transformation of normalized coordinates between -1 and 1
-  	in[0]=((winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
-  	in[1]=(winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
-  	in[2]=2.0*winz-1.0;
-  	in[3]=1.0;
-  	
-  	//Objects coordinates
-  	MultiplyMatrixByVector4by4OpenGL_FLOAT(out, m, in);
-  	if(out[3]==0.0)
-  		return 0;
-  	out[3]=1.0/out[3];
-  	objectCoordinate[0]=out[0]*out[3];
-  	objectCoordinate[1]=out[1]*out[3];
-  	objectCoordinate[2]=out[2]*out[3];
-  	return 1;
+  //Transformation of normalized coordinates between -1 and 1
+  in[0]=((winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
+  in[1]=(winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
+  in[2]=2.0*winz-1.0;
+  in[3]=1.0;
+  
+  //Objects coordinates
+  MultiplyMatrixByVector4by4OpenGL_FLOAT(out, m, in);
+  if(out[3]==0.0)
+    return 0;
+  out[3]=1.0/out[3];
+  objectCoordinate[0]=out[0]*out[3];
+  objectCoordinate[1]=out[1]*out[3];
+  objectCoordinate[2]=out[2]*out[3];
+  return 1;
 }
 
 int glhUnProject(double winx, double winy, double winz,
-	     double *modelview, double *projection,
-	     int *viewport,
-	     double *objectCoordinate)
+     double *modelview, double *projection,
+     int *viewport,
+     double *objectCoordinate)
 {
-  	//Transformation matrices
-  	double m[16], A[16];
-  	double in[4], out[4];
+  //Transformation matrices
+  double m[16], A[16];
+  double in[4], out[4];
   
-  	//Calculation for inverting a matrix, compute projection x modelview
-  	//and store in A[16]
-  	MultiplyMatrices4by4OpenGL_DOUBLE(A, projection, modelview);
-  	//Now compute the inverse of matrix A
-  	if(glhInvertMatrix(A, m)==0)
-  		return 0;
+  //Calculation for inverting a matrix, compute projection x modelview
+  //and store in A[16]
+  MultiplyMatrices4by4OpenGL_DOUBLE(A, projection, modelview);
+  //Now compute the inverse of matrix A
+  if(glhInvertMatrix(A, m)==0)
+    return 0;
   
-  	//Transformation of normalized coordinates between -1 and 1
-  	in[0]=((winx-(double)viewport[0])/(double)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
-  	in[1]=(winy-(double)viewport[1])/(double)viewport[3]*2.0-1.0;
-  	in[2]=2.0*winz-1.0;
-  	in[3]=1.0;
-  	
-  	//Objects coordinates
-  	MultiplyMatrixByVector4by4OpenGL_DOUBLE(out, m, in);
-  	if(out[3]==0.0)
-  		return 0;
-  	out[3]=1.0/out[3];
-  	objectCoordinate[0]=out[0]*out[3];
-  	objectCoordinate[1]=out[1]*out[3];
-  	objectCoordinate[2]=out[2]*out[3];
-  	return 1;
+  //Transformation of normalized coordinates between -1 and 1
+  in[0]=((winx-(double)viewport[0])/(double)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
+  in[1]=(winy-(double)viewport[1])/(double)viewport[3]*2.0-1.0;
+  in[2]=2.0*winz-1.0;
+  in[3]=1.0;
+  
+  //Objects coordinates
+  MultiplyMatrixByVector4by4OpenGL_DOUBLE(out, m, in);
+  if(out[3]==0.0)
+    return 0;
+  out[3]=1.0/out[3];
+  objectCoordinate[0]=out[0]*out[3];
+  objectCoordinate[1]=out[1]*out[3];
+  objectCoordinate[2]=out[2]*out[3];
+  return 1;
 }
 
 int glhProjectf(float objx, float objy, float objz,
-				 float *modelview, float *projection,
-				 int *viewport,
-				 float *windowCoordinate)
+  float *modelview, float *projection,
+  int *viewport,
+  float *windowCoordinate)
 {
-  	//Transformation vectors
-  	float fTempo[8];
-  	//Modelview transform
-  	fTempo[0]=modelview[0]*objx+
-  		modelview[4]*objy+
-  		modelview[8]*objz+
-  		modelview[12];		//w is always 1
-  	fTempo[1]=modelview[1]*objx+
-  		modelview[5]*objy+
-  		modelview[9]*objz+
-  		modelview[13];
-  	fTempo[2]=modelview[2]*objx+
-  		modelview[6]*objy+
-  		modelview[10]*objz+
-  		modelview[14];
-  	fTempo[3]=modelview[3]*objx+
-  		modelview[7]*objy+
-  		modelview[11]*objz+
-  		modelview[15];
-  	//Projection transform, the final row of projection matrix is always [0 0 -1 0]
-  	//so we optimize for that.
-  	fTempo[4]=projection[0]*fTempo[0]+	
-  		projection[4]*fTempo[1]+
-  		projection[8]*fTempo[2]+
-  		projection[12]*fTempo[3];
-  	fTempo[5]=projection[1]*fTempo[0]+	
-  		projection[5]*fTempo[1]+
-  		projection[9]*fTempo[2]+
-  		projection[13]*fTempo[3];
-  	fTempo[6]=projection[2]*fTempo[0]+	
-  		projection[6]*fTempo[1]+
-  		projection[10]*fTempo[2]+
-  		projection[14]*fTempo[3];
-  	fTempo[7]=-fTempo[2];
+  //Transformation vectors
+  float fTempo[8];
+  //Modelview transform
+  fTempo[0]=modelview[0]*objx+
+  modelview[4]*objy+
+  modelview[8]*objz+
+  modelview[12];		//w is always 1
+  fTempo[1]=modelview[1]*objx+
+  modelview[5]*objy+
+  modelview[9]*objz+
+  modelview[13];
+  fTempo[2]=modelview[2]*objx+
+  modelview[6]*objy+
+  modelview[10]*objz+
+  modelview[14];
+  fTempo[3]=modelview[3]*objx+
+  modelview[7]*objy+
+  modelview[11]*objz+
+  modelview[15];
+  //Projection transform, the final row of projection matrix is always [0 0 -1 0]
+  //so we optimize for that.
+  fTempo[4]=projection[0]*fTempo[0]+	
+  projection[4]*fTempo[1]+
+  projection[8]*fTempo[2]+
+  projection[12]*fTempo[3];
+  fTempo[5]=projection[1]*fTempo[0]+	
+  projection[5]*fTempo[1]+
+  projection[9]*fTempo[2]+
+  projection[13]*fTempo[3];
+  fTempo[6]=projection[2]*fTempo[0]+	
+  projection[6]*fTempo[1]+
+  projection[10]*fTempo[2]+
+  projection[14]*fTempo[3];
+  fTempo[7]=-fTempo[2];
   
-  	//The result normalizes between -1 and 1
-  	if(fTempo[7]==0.0)	//The w value
-  		return 0;
+  //The result normalizes between -1 and 1
+  if(fTempo[7]==0.0)	//The w value
+    return 0;
   
-  	fTempo[7]=1.0/fTempo[7];
+  fTempo[7]=1.0/fTempo[7];
   
-  	//Perspective division
-  	fTempo[4]*=fTempo[7];
-  	fTempo[5]*=fTempo[7];
-  	fTempo[6]*=fTempo[7];
+  //Perspective division
+  fTempo[4]*=fTempo[7];
+  fTempo[5]*=fTempo[7];
+  fTempo[6]*=fTempo[7];
   
-  	//Window coordinates
-  	//Map x, y to range 0-1
-  	windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
-  	windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
+  //Window coordinates
+  //Map x, y to range 0-1
+  windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
+  windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
   
-  	//This is only correct when glDepthRange(0.0, 1.0)
-  	windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
-  	return 1;
+  //This is only correct when glDepthRange(0.0, 1.0)
+  windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
+  return 1;
 }
 
 int glhProject(double objx, double objy, double objz,
-				 double *modelview, double *projection,
-				 int *viewport,
-				 double *windowCoordinate)
+ double *modelview, double *projection,
+ int *viewport,
+ double *windowCoordinate)
 {
-  	//Transformation vectors
-  	double fTempo[8];
-  	//Modelview transform
-  	fTempo[0]=modelview[0]*objx+
-  		modelview[4]*objy+
-  		modelview[8]*objz+
-  		modelview[12];		//w is always 1
-  	fTempo[1]=modelview[1]*objx+
-  		modelview[5]*objy+
-  		modelview[9]*objz+
-  		modelview[13];
-  	fTempo[2]=modelview[2]*objx+
-  		modelview[6]*objy+
-  		modelview[10]*objz+
-  		modelview[14];
-  	fTempo[3]=modelview[3]*objx+
-  		modelview[7]*objy+
-  		modelview[11]*objz+
-  		modelview[15];
-  	//Projection transform, the final row of projection matrix is always [0 0 -1 0]
-  	//so we optimize for that.
-  	fTempo[4]=projection[0]*fTempo[0]+	
-  		projection[4]*fTempo[1]+
-  		projection[8]*fTempo[2]+
-  		projection[12]*fTempo[3];
-  	fTempo[5]=projection[1]*fTempo[0]+	
-  		projection[5]*fTempo[1]+
-  		projection[9]*fTempo[2]+
-  		projection[13]*fTempo[3];
-  	fTempo[6]=projection[2]*fTempo[0]+	
-  		projection[6]*fTempo[1]+
-  		projection[10]*fTempo[2]+
-  		projection[14]*fTempo[3];
-  	fTempo[7]=-fTempo[2];
+  //Transformation vectors
+  double fTempo[8];
+  //Modelview transform
+  fTempo[0]=modelview[0]*objx+
+  modelview[4]*objy+
+  modelview[8]*objz+
+  modelview[12];		//w is always 1
+  fTempo[1]=modelview[1]*objx+
+  modelview[5]*objy+
+  modelview[9]*objz+
+  modelview[13];
+  fTempo[2]=modelview[2]*objx+
+  modelview[6]*objy+
+  modelview[10]*objz+
+  modelview[14];
+  fTempo[3]=modelview[3]*objx+
+  modelview[7]*objy+
+  modelview[11]*objz+
+  modelview[15];
+  //Projection transform, the final row of projection matrix is always [0 0 -1 0]
+  //so we optimize for that.
+  fTempo[4]=projection[0]*fTempo[0]+	
+  projection[4]*fTempo[1]+
+  projection[8]*fTempo[2]+
+  projection[12]*fTempo[3];
+  fTempo[5]=projection[1]*fTempo[0]+	
+  projection[5]*fTempo[1]+
+  projection[9]*fTempo[2]+
+  projection[13]*fTempo[3];
+  fTempo[6]=projection[2]*fTempo[0]+	
+  projection[6]*fTempo[1]+
+  projection[10]*fTempo[2]+
+  projection[14]*fTempo[3];
+  fTempo[7]=-fTempo[2];
   
-  	//The result normalizes between -1 and 1
-  	if(fTempo[7]==0.0)	//The w value
-  		return 0;
+  //The result normalizes between -1 and 1
+  if(fTempo[7]==0.0)	//The w value
+    return 0;
   
-  	fTempo[7]=1.0/fTempo[7];
+  fTempo[7]=1.0/fTempo[7];
   
-  	//Perspective division
-  	fTempo[4]*=fTempo[7];
-  	fTempo[5]*=fTempo[7];
-  	fTempo[6]*=fTempo[7];
+  //Perspective division
+  fTempo[4]*=fTempo[7];
+  fTempo[5]*=fTempo[7];
+  fTempo[6]*=fTempo[7];
   
-  	//Window coordinates
-  	//Map x, y to range 0-1
-  	windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
-  	windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
+  //Window coordinates
+  //Map x, y to range 0-1
+  windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
+  windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
   
-  	//This is only correct when glDepthRange(0.0, 1.0)
-  	windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
-  	return 1;
+  //This is only correct when glDepthRange(0.0, 1.0)
+  windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
+  return 1;
 }
 
 void glOrtho(float left, float right, float bottom, float top, float znear, float zfar) {
@@ -2456,12 +2481,12 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
 //  M(2,0)=0; M(2,1)=0; M(2,2) = z; M(2,3) = tz;
 //  M(3,0)=0; M(3,1)=0; M(3,2) = 0; M(3,3) = 1;
 //  glMultMatrixf(m);
-  float r2 = (right-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
-  float l2 = (left-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
+  double r2 = (right-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
+  double l2 = (left-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
   right = r2;
   left = l2;
 
-  float matrix2[16], temp2, temp3, temp4, resultMatrix[16];
+  double matrix2[16], temp2, temp3, temp4, resultMatrix[16];
   temp2 = (right-left);
   temp3 = top-bottom;
   temp4 = zfar-znear;
@@ -2481,8 +2506,8 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
   matrix2[13]=(-top-bottom)/temp3;
   matrix2[14]=(-zfar-znear)/temp4;
   matrix2[15]=1.0;
-  float *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  	MultiplyMatrices4by4OpenGL_FLOAT(matrix, matrix, matrix2);
+  double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  	MultiplyMatrices4by4OpenGL_DOUBLE(matrix, matrix, matrix2);
   glUpdateMatrix();
 }
 
@@ -2491,7 +2516,7 @@ void glFrontFace(GLenum mode) {
 }
 
 void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
-  glhFrustumf2(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
+  glhFrustum(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
   glUpdateMatrix();
 }
 
@@ -2511,14 +2536,14 @@ void gluOrtho2D(float left, float right, float bottom, float top) {
 }
 
 void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane) {
-  glhPerspectivef2(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
+  glhPerspective(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
   glUpdateMatrix();
 }
 
 void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz) {
-  float eye[3];
-  float center[3];
-  float up[3];
+  double eye[3];
+  double center[3];
+  double up[3];
   eye[0] = cx;
   eye[1] = cy;
   eye[2] = cz;
@@ -2528,7 +2553,7 @@ void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz
   up[0] = ux;
   up[1] = uy;
   up[2] = uz;
-  glhLookAtf2(glContext.matrixForMode[glContext.matrixModeNr],eye,center,up);
+  glhLookAt(glContext.matrixForMode[glContext.matrixModeNr],eye,center,up);
   glUpdateMatrix();
 }
 
