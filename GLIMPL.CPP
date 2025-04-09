@@ -159,6 +159,10 @@ public:
     blendColorAlpha = 1;
     blendEquation = GL_FUNC_ADD;
     frontFace = GL_CW;
+    maskRed = true;
+    maskGreen = true;
+    maskBlue = true;
+    maskAlpha = true;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -239,6 +243,10 @@ public:
   GLfloat blendColorAlpha;
   GLenum blendEquation;
   GLenum frontFace;
+  GLboolean maskRed;
+  GLboolean maskGreen;
+  GLboolean maskBlue;
+  GLboolean maskAlpha;
 };
 
 _GLContext glContext;
@@ -1025,6 +1033,13 @@ void glColor4ubv(const GLubyte *v) {
   glContext.colorGreen = (float)v[1] / 255.f;
   glContext.colorBlue = (float)v[2] / 255.f;
   glContext.colorAlpha = (float)v[3] / 255.f;
+}
+
+void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha) {
+  glContext.maskRed = red;
+  glContext.maskGreen = green;
+  glContext.maskBlue = blue;
+  glContext.maskAlpha = alpha;
 }
 
 void glColorMaterial(GLenum face, GLenum pname) {
@@ -3003,6 +3018,11 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
 
   bool stencil = context->isEnabled(GL_STENCIL_TEST);
   bool blending = context->isEnabled(GL_BLEND);
+  bool maskRed = context->maskRed;
+  bool maskGreen = context->maskGreen;
+  bool maskBlue = context->maskBlue;
+  bool maskAlpha = context->maskAlpha;
+  bool notMasked = maskRed && maskGreen && maskBlue && maskAlpha;
 
   double v0w = 1.0/(v0->sw);
   double v1w = 1.0/(v1->sw);
@@ -3235,9 +3255,27 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
             if (writeDepth) 
               *zDest=zp;
             if (!blending)
-              *pDest=r|(g<<8)|(b<<16)|(a<<24);
+              if (notMasked) {
+                *pDest=r|(g<<8)|(b<<16)|(a<<24);
+              } else {
+                unsigned char *pDest2 = (unsigned char *)pDest;
+                if (maskRed) pDest2[0] = r;
+                if (maskGreen) pDest2[1] = g;
+                if (maskBlue) pDest2[2] = b;
+                if (maskAlpha) pDest2[3] = a;
+              }
             else {
-              *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+              if (notMasked) {
+                *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+              } else {
+                unsigned int k = doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+                unsigned char *pDest2 = (unsigned char *)pDest;
+                unsigned char *k2 = (unsigned char*)k;
+                if (maskRed) pDest2[0] = k2[0];
+                if (maskGreen) pDest2[1] = k2[1];
+                if (maskBlue) pDest2[2] = k2[2];
+                if (maskAlpha) pDest2[3] = k2[3];
+              }
             }
           }
         }
@@ -3677,6 +3715,19 @@ void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey) {
 
 double glSeconds() {
   return (double)(clock() - glStartClock) / CLOCKS_PER_SEC;
+}
+
+void glTexturePointer(int width, int height, unsigned int *textureData) {
+  if (glContext.boundTextures[glContext.activeTexture]==0) 
+    return;
+  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
+  if (t->data != NULL)  {
+    delete[] t->data;
+    t->data = NULL;
+  }
+  t->data = textureData;
+  t->width = width;
+  t->height = height;
 }
 
 // --------------------------------------
