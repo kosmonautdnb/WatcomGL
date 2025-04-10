@@ -1,6 +1,8 @@
 ## Simple OpenGL "Emulator"
 
-not finished yet. Just link GLIMPL.CPP and include GL.H to your WatcomC project. May also work in other environments.
+not finished yet. Just link GLIMPL.CPP and include GL.H to your WatcomC project. 
+
+May also work in other (non Dos) environments.
 
 Current hot topics: barycentric coordinates cause polygon edges to be calculated incorrectly (in seldom cases).
 
