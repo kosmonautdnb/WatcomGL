@@ -1,3 +1,10 @@
+//-------------------------
+// OpenGL emulation for WatcomC/Dos. 
+//--------------
+// Just the most basic functionality. And some glu.
+// Of course with texturing/blending and alphatest etc.. 
+// It is required that Vesa 3.0 e.g. 640x480x32 works on your device.
+//-------------------------
 #include "gl.h"
 #include <string.h>
 #include <math.h>
@@ -10,7 +17,7 @@ int glFrameBufferHeight = 0;
 double glMonitorAspectRatio = 1.0;
 unsigned int *glFrameBuffer = NULL;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
-unsigned char *glStencilBuffer = NULL;
+unsigned int *glStencilBuffer = NULL; // not supported
 float *glDepthBuffer = NULL;
 
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
@@ -966,7 +973,7 @@ void glClear(GLbitfield mask) {
         glDepthBuffer[x+y*glFrameBufferWidth] = glContext.clearDepth; // clamping?
   }
   if (mask & GL_STENCIL_BUFFER_BIT) {
-    unsigned char k = glContext.clearStencil & 255;
+    unsigned int k = glContext.clearStencil;
     for (int y = minY; y < maxY; y++)
       for (int x = minX; x < maxX; x++)
         glStencilBuffer[x+y*glFrameBufferWidth] = k;
@@ -2627,7 +2634,7 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
 float glSign(float v) {
   return v < 0 ? -1 : (v > 0 ? 1 : 0);
 }
-double getBary(double x, double y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
+__inline double getBary(double x, double y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   double nx = v2->sy - v1->sy;
   double ny = -(v2->sx - v1->sx);
   double l = (v0->sx-v1->sx)*nx + (v0->sy-v1->sy)*ny;
@@ -2734,6 +2741,13 @@ __inline int textureWrap(float tx, int siz, GLenum filterMode) {
 }
 
 __inline unsigned int doBlend(unsigned int dest, unsigned int source, int sourceFunc, int destFunc, unsigned int constantColor, int blendEquation) {
+
+  if ((blendEquation == GL_FUNC_ADD) && (sourceFunc == GL_ONE) && (destFunc == GL_ONE)) {
+    // purelay additive speedup for dest = 0xxx00000 and source = 0xffxxxxxx; seems to have no or almost no effect, but whatever
+    if ( ((source & 0xff000000)==0xff000000)  && ((dest & 0x00ffffff)==0x00) ) {
+      return source;
+    }
+  }
 
   int Sr = source & 255;
   int Sg = (source>>8) & 255;
@@ -3016,7 +3030,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   if (fullyClipped) 
     return;
 
-  bool stencil = context->isEnabled(GL_STENCIL_TEST);
+  bool stencil = context->isEnabled(GL_STENCIL_TEST); // not supported
   bool blending = context->isEnabled(GL_BLEND);
   bool maskRed = context->maskRed;
   bool maskGreen = context->maskGreen;
@@ -3200,41 +3214,52 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
                 rgba = borderColor;
               }
             }
-            switch(texEnvMode) {
-              case GL_REPLACE: {
-                r = rgba & 255;
-                g = (rgba >> 8) & 255;
-                b = (rgba >> 16) & 255;
-              } break;
-              case GL_DECAL: {
-                const int as = ((rgba >> 24)&255);
-                r = r*(255-as)+(rgba & 255)*as;
-                g = g*(255-as)+((rgba>>8) & 255)*as;
-                b = b*(255-as)+((rgba>>16) & 255)*as;
-                r /= 255;
-                g /= 255;
-                b /= 255;
-              } break;
-              case GL_ADD: {
-                const int as = ((rgba >> 24)&255);
-                r += rgba & 255;
-                g += (rgba >> 8) & 255;
-                b += (rgba >> 16) & 255;
-                a = (a*as)>>8;
-                if (r > 255) r = 255;
-                if (g > 255) g = 255;
-                if (b > 255) b = 255;
-              } break;
-              default: {//case GL_MODULATE: {
-                r *= rgba & 255;
-                g *= (rgba >> 8) & 255;
-                b *= (rgba >> 16) & 255;
-                a *= (rgba >> 24) & 255;
-                r /= 255;
-                g /= 255;
-                b /= 255;
-                a /= 255;
-              } break;
+            if (texEnvMode==GL_MODULATE) {
+              r *= rgba & 255;
+              g *= (rgba >> 8) & 255;
+              b *= (rgba >> 16) & 255;
+              a *= (rgba >> 24) & 255;
+              r /= 255;
+              g /= 255;
+              b /= 255;
+              a /= 255;
+            } else {
+              switch(texEnvMode) {
+                case GL_REPLACE: {
+                  r = rgba & 255;
+                  g = (rgba >> 8) & 255;
+                  b = (rgba >> 16) & 255;
+                } break;
+                case GL_DECAL: {
+                  const int as = ((rgba >> 24)&255);
+                  r = r*(255-as)+(rgba & 255)*as;
+                  g = g*(255-as)+((rgba>>8) & 255)*as;
+                  b = b*(255-as)+((rgba>>16) & 255)*as;
+                  r /= 255;
+                  g /= 255;
+                  b /= 255;
+                } break;
+                case GL_ADD: {
+                  const int as = ((rgba >> 24)&255);
+                  r += rgba & 255;
+                  g += (rgba >> 8) & 255;
+                  b += (rgba >> 16) & 255;
+                  a = (a*as)>>8;
+                  if (r > 255) r = 255;
+                  if (g > 255) g = 255;
+                  if (b > 255) b = 255;
+                } break;
+                default: {//case GL_MODULATE: {
+                  r *= rgba & 255;
+                  g *= (rgba >> 8) & 255;
+                  b *= (rgba >> 16) & 255;
+                  a *= (rgba >> 24) & 255;
+                  r /= 255;
+                  g /= 255;
+                  b /= 255;
+                  a /= 255;
+                } break;
+              }
             }
           }
           bool writePixel = true;
@@ -3557,10 +3582,10 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
       glFrameBufferHeight = yRes;
       glFrameBufferDedicated = (unsigned int*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
       glFrameBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
-      glStencilBuffer = new unsigned char[glFrameBufferWidth*glFrameBufferHeight];
+      glStencilBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
       glDepthBuffer = new float[glFrameBufferWidth*glFrameBufferHeight];
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*1);
+      memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       glSetupMouse();
       glStartClock = clock();
