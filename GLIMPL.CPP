@@ -113,7 +113,7 @@ public:
     materialRed[0] = 0;
     materialGreen[0] = 0;
     materialBlue[0] = 0;
-    materialAlpha[0] = 0;
+    materialAlpha[0] = 1;
     // diffuse
     materialRed[1] = 1;
     materialGreen[1] = 1;
@@ -123,12 +123,12 @@ public:
     materialRed[2] = 0;
     materialGreen[2] = 0;
     materialBlue[2] = 0;
-    materialAlpha[2] = 0;
+    materialAlpha[2] = 1;
     // emission
     materialRed[3] = 0;
     materialGreen[3] = 0;
     materialBlue[3] = 0;
-    materialAlpha[3] = 0;
+    materialAlpha[3] = 1;
     // shininess
     materialRed[4] = 1;
     materialGreen[4] = 1;
@@ -449,6 +449,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     float diffuseRed = 0;
     float diffuseGreen = 0;
     float diffuseBlue = 0;
+    float diffuseAlpha = 0;
     float specularRed = 0;
     float specularGreen = 0;
     float specularBlue = 0;
@@ -459,6 +460,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     float materialDiffuseRed = context->materialRed[1];
     float materialDiffuseGreen = context->materialGreen[1];
     float materialDiffuseBlue = context->materialBlue[1];
+    float materialDiffuseAlpha = context->materialAlpha[1];
     float materialSpecularRed = context->materialRed[2];
     float materialSpecularGreen = context->materialGreen[2];
     float materialSpecularBlue = context->materialBlue[2];
@@ -481,6 +483,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
           materialDiffuseRed = v->colorRed;
           materialDiffuseGreen = v->colorGreen;
           materialDiffuseBlue = v->colorBlue;
+          materialDiffuseAlpha = v->colorAlpha;
         } break;
         case GL_SPECULAR: {
           materialSpecularRed = v->colorRed;
@@ -504,6 +507,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
           materialDiffuseRed = v->colorRed;
           materialDiffuseGreen = v->colorGreen;
           materialDiffuseBlue = v->colorBlue;
+          materialDiffuseAlpha = v->colorAlpha;
         } break;
       }
     }
@@ -528,6 +532,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         float lightDiffuseRed = context->lightRed[1][i];
         float lightDiffuseGreen = context->lightGreen[1][i];
         float lightDiffuseBlue = context->lightBlue[1][i];
+        float lightDiffuseAlpha = context->lightAlpha[1][i];
         float lightSpecularRed = context->lightRed[2][i];
         float lightSpecularGreen = context->lightGreen[2][i];
         float lightSpecularBlue =  context->lightBlue[2][i];
@@ -576,6 +581,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     v->colorRed = materialEmissionRed + ambientRed + diffuseRed + specularRed;
     v->colorGreen = materialEmissionGreen + ambientGreen + diffuseGreen + specularGreen;
     v->colorBlue = materialEmissionBlue + ambientBlue + diffuseBlue + specularBlue;
+    v->colorAlpha = materialDiffuseAlpha;
   }
 }
 
@@ -3589,6 +3595,7 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       glSetupMouse();
       glStartClock = clock();
+      glViewport(0,0,xRes,yRes);
       return true;
     }
     v++;
