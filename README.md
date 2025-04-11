@@ -11,3 +11,7 @@ Currently you can just paint all the usual and normal OpenGL stuff. Maybe the li
 For some fun: link MAIN.CPP and OSA.CPP to see "Yellow Rose of Texas" a 4k by Fit and Bandwagon.
 
 Btw. seems like NVidia and maybe AMD are keeping the support for Vesa (under Dos).
+
+This OpenGL "Emulation" is purely in software "slow" and not optimized yet. 
+
+Multithreading is planned (if a multithreading lib pops up somewhere).
