@@ -165,7 +165,7 @@ public:
     blendColorBlue = 0;
     blendColorAlpha = 1;
     blendEquation = GL_FUNC_ADD;
-    frontFace = GL_CW;
+    frontFace = GL_CCW;
     maskRed = true;
     maskGreen = true;
     maskBlue = true;
@@ -713,14 +713,14 @@ void drawClippedLine(_GLContext *context, glVertex *v0a, glVertex *v1a)  {
   double nx = dy;
   double ny = -dx;
   double d = context->lineWidth*0.5;
-  vertices[0].sx += nx*d;
-  vertices[0].sy += ny*d;
-  vertices[1].sx += nx*d;
-  vertices[1].sy += ny*d;
-  vertices[2].sx -= nx*d;
-  vertices[2].sy -= ny*d;
-  vertices[3].sx -= nx*d;
-  vertices[3].sy -= ny*d;
+  vertices[3].sx += nx*d;
+  vertices[3].sy += ny*d;
+  vertices[2].sx += nx*d;
+  vertices[2].sy += ny*d;
+  vertices[1].sx -= nx*d;
+  vertices[1].sy -= ny*d;
+  vertices[0].sx -= nx*d;
+  vertices[0].sy -= ny*d;
   int clipFlags = glClipVertex(&glContext,&vertices[0]);
   clipFlags &= glClipVertex(&glContext,&vertices[1]);
   if (clipFlags == 0)
@@ -767,14 +767,14 @@ void glEmitVertex() {
             double nx = dy * glMonitorAspectRatio;
             double ny = -dx;
             double d = glContext.lineWidth*0.5;
-            glVertices[0].sx += nx*d;
-            glVertices[0].sy += ny*d;
-            glVertices[1].sx += nx*d;
-            glVertices[1].sy += ny*d;
-            glVertices[2].sx -= nx*d;
-            glVertices[2].sy -= ny*d;
-            glVertices[3].sx -= nx*d;
-            glVertices[3].sy -= ny*d;
+            glVertices[3].sx += nx*d;
+            glVertices[3].sy += ny*d;
+            glVertices[2].sx += nx*d;
+            glVertices[2].sy += ny*d;
+            glVertices[1].sx -= nx*d;
+            glVertices[1].sy -= ny*d;
+            glVertices[0].sx -= nx*d;
+            glVertices[0].sy -= ny*d;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
           }
         } else {
@@ -805,14 +805,14 @@ void glEmitVertex() {
             float nx = dy*glMonitorAspectRatio;
             float ny = -dx;
             float d = glContext.lineWidth*0.5;
-            glVertices[0].sx += nx*d;
-            glVertices[0].sy += ny*d;
-            glVertices[1].sx += nx*d;
-            glVertices[1].sy += ny*d;
-            glVertices[2].sx -= nx*d;
-            glVertices[2].sy -= ny*d;
-            glVertices[3].sx -= nx*d;
-            glVertices[3].sy -= ny*d;
+            glVertices[3].sx += nx*d;
+            glVertices[3].sy += ny*d;
+            glVertices[2].sx += nx*d;
+            glVertices[2].sy += ny*d;
+            glVertices[1].sx -= nx*d;
+            glVertices[1].sy -= ny*d;
+            glVertices[0].sx -= nx*d;
+            glVertices[0].sy -= ny*d;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
           }
         } else {
@@ -887,22 +887,22 @@ void glEmitVertex() {
           glVertices[3] = glVertices[0];
           double pointSizeX = glContext.pointSize*0.5*glMonitorAspectRatio;
           double pointSizeY = glContext.pointSize*0.5;
-          glVertices[0].textureX = 0;
-          glVertices[0].textureY = 0;
-          glVertices[0].sx -= pointSizeX;
-          glVertices[0].sy -= pointSizeY;
-          glVertices[1].textureX = 1;
-          glVertices[1].textureY = 0;
-          glVertices[1].sx += pointSizeX;
-          glVertices[1].sy -= pointSizeY;
-          glVertices[2].textureX = 1;
-          glVertices[2].textureY = 1;
-          glVertices[2].sx += pointSizeX;
-          glVertices[2].sy += pointSizeY;
           glVertices[3].textureX = 0;
-          glVertices[3].textureY = 1;
+          glVertices[3].textureY = 0;
           glVertices[3].sx -= pointSizeX;
-          glVertices[3].sy += pointSizeY;
+          glVertices[3].sy -= pointSizeY;
+          glVertices[2].textureX = 1;
+          glVertices[2].textureY = 0;
+          glVertices[2].sx += pointSizeX;
+          glVertices[2].sy -= pointSizeY;
+          glVertices[1].textureX = 1;
+          glVertices[1].textureY = 1;
+          glVertices[1].sx += pointSizeX;
+          glVertices[1].sy += pointSizeY;
+          glVertices[0].textureX = 0;
+          glVertices[0].textureY = 1;
+          glVertices[0].sx -= pointSizeX;
+          glVertices[0].sy += pointSizeY;
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
           clipFlags &= glClipVertex(&glContext,&glVertices[1]);
           clipFlags &= glClipVertex(&glContext,&glVertices[2]);
@@ -1526,12 +1526,15 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z) {
   matrix[0] *= (double)x;
   matrix[4] *= (double)y;
   matrix[8] *= (double)z;
+
   matrix[1] *= (double)x;
   matrix[5] *= (double)y;
   matrix[9] *= (double)z;
+
   matrix[2] *= (double)x;
   matrix[6] *= (double)y;
   matrix[10] *= (double)z;
+
   matrix[3] *= (double)x;
   matrix[7] *= (double)y;
   matrix[11] *= (double)z;
@@ -2692,14 +2695,13 @@ __inline double getBary(double x, double y, const glVertex *v0, const glVertex *
   baryAdd0 = (getBary(pmaxx,y,v0,v1,v2)-bary0)/(pmaxx-pminx);\
   baryAdd1 = (getBary(pmaxx,y,v1,v2,v0)-bary1)/(pmaxx-pminx);\
   baryAdd2 = (getBary(pmaxx,y,v2,v0,v1)-bary2)/(pmaxx-pminx);
-  
+
 #define __PAINTPOLYQUAD_BEGINX__\
-  pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
-  zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth];\
   int dminx = pminx;\
   int dmaxx = pmaxx;\
+  pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
+  zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth];\
   for (x = dminx;x<dmaxx;x++) {
-
 
 #define __BARY0__(__v__) ((__v__)*bary0)
 #define __BARY1__(__v__) ((__v__)*bary1)
