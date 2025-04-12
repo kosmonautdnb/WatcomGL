@@ -170,6 +170,7 @@ public:
     maskGreen = true;
     maskBlue = true;
     maskAlpha = true;
+    forceNoCull = 0;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -254,6 +255,7 @@ public:
   GLboolean maskGreen;
   GLboolean maskBlue;
   GLboolean maskAlpha;
+  int forceNoCull;
 };
 
 _GLContext glContext;
@@ -775,11 +777,15 @@ void glEmitVertex() {
             glVertices[1].sy -= ny*d;
             glVertices[0].sx -= nx*d;
             glVertices[0].sy -= ny*d;
+            glContext.forceNoCull++;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+            glContext.forceNoCull--;
           }
         } else {
           if (a != 3) {
+            glContext.forceNoCull++;
             drawClippedLine(&glContext,&glVertices[0],&glVertices[1]);
+            glContext.forceNoCull--;
           }
         }
         glCurrentVertexElement = 0;
@@ -813,11 +819,15 @@ void glEmitVertex() {
             glVertices[1].sy -= ny*d;
             glVertices[0].sx -= nx*d;
             glVertices[0].sy -= ny*d;
+            glContext.forceNoCull++;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+            glContext.forceNoCull--;
           }
         } else {
           if (a != 3) {
+            glContext.forceNoCull++;
             drawClippedLine(&glContext,&glVertices[0],&glVertices[1]);
+            glContext.forceNoCull--;
           }
         }
         glVertices[0]=glVertices[1];
@@ -912,7 +922,9 @@ void glEmitVertex() {
             glLightVertex(&glContext,&glVertices[1]);
             glLightVertex(&glContext,&glVertices[2]);
             glLightVertex(&glContext,&glVertices[3]);
+            glContext.forceNoCull++;
             glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+            glContext.forceNoCull--;
           }
         }
         glCurrentVertexElement = 0;
@@ -3019,11 +3031,13 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
 
 void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   if (context->isEnabled(GL_CULL_FACE)) {
-    bool backFacing = glCCW(v0,v1,v2);
-    if (context->frontFace == GL_CCW) backFacing = !backFacing;
-    if (context->cullFaceMode == GL_FRONT && backFacing) return;
-    if (context->cullFaceMode == GL_BACK && (!backFacing)) return;
-    if (context->cullFaceMode == GL_FRONT_AND_BACK) return;
+    if (context->forceNoCull==0) {
+      bool backFacing = glCCW(v0,v1,v2);
+      if (context->frontFace == GL_CCW) backFacing = !backFacing;
+      if (context->cullFaceMode == GL_FRONT && backFacing) return;
+      if (context->cullFaceMode == GL_BACK && (!backFacing)) return;
+      if (context->cullFaceMode == GL_FRONT_AND_BACK) return;
+    }
   }   
   __POLYMINMAX__
   int glClipRectX0 = 0;
