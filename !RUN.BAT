@@ -1,1 +1,1 @@
-gltest.exe
+R:\gltest.exe
