@@ -729,6 +729,7 @@ void drawClippedLine(_GLContext *context, glVertex *v0a, glVertex *v1a)  {
     glDrawQuad(context,&vertices[0],&vertices[1],&vertices[2],&vertices[3]);
 }
 
+
 void glEmitVertex() {
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
@@ -2651,7 +2652,6 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
 // -----------
 // -----------
 // -----------
-#include <stdlib.h>
 float glSign(float v) {
   return v < 0 ? -1 : (v > 0 ? 1 : 0);
 }
@@ -3362,8 +3362,8 @@ typedef unsigned long uint64_t;
 // ---- DPMI for VESA ---
 #include <i86.h>
 #include <conio.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 int glGraphicsModeToRestore=0x02;
 void setBiosGraphicsMode(int mode) {
     union REGS regs;
