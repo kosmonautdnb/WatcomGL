@@ -1,5 +1,5 @@
 @echo off
-@echo Starting..
+@echo Starting.. (needs RamDisk at R:)
 rem @echo system dos4g > R:\LINK.LNK
 @echo system pmodew > R:\LINK.LNK
 @echo build errors > R:\LOGS.LOG
