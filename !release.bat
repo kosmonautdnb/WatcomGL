@@ -1,0 +1,1 @@
+copy r:\gltest.exe gltest.exe
