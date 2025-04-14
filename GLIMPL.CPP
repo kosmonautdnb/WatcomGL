@@ -2708,12 +2708,43 @@ __inline double getBary(double x, double y, const glVertex *v0, const glVertex *
   baryAdd1 = (getBary(pmaxx,y,v1,v2,v0)-bary1)/(pmaxx-pminx);\
   baryAdd2 = (getBary(pmaxx,y,v2,v0,v1)-bary2)/(pmaxx-pminx);
 
-#define __PAINTPOLYQUAD_BEGINX__\
+#define __PAINTPOLYQUAD_BEGINX__QUADREGION\
   int dminx = pminx;\
   int dmaxx = pmaxx;\
   pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
   zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth];\
   for (x = dminx;x<dmaxx;x++) {
+
+#include <stdlib.h>
+#include <stdio.h>
+#define __PAINTPOLYQUAD_BEGINX__TRI\
+  int dminx = pminx;\
+  int dmaxx = pmaxx;\
+  pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
+  zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth];\
+  int xp[3]; int xc=0;\
+  if ((y>=vk0->sy)&&(y<vk1->sy)) xp[xc++]=(vk1->sx-vk0->sx)*(y-vk0->sy)/(vk1->sy-vk0->sy)+vk0->sx;\
+  if ((y>=vk0->sy)&&(y<vk2->sy)) xp[xc++]=(vk2->sx-vk0->sx)*(y-vk0->sy)/(vk2->sy-vk0->sy)+vk0->sx;\
+  if ((y>=vk1->sy)&&(y<vk2->sy)) xp[xc++]=(vk2->sx-vk1->sx)*(y-vk1->sy)/(vk2->sy-vk1->sy)+vk1->sx;\
+  if (xc == 2) {\
+    if (xp[1]<xp[0]) {int k = xp[0]; xp[0] = xp[1]; xp[1] = k;}\
+    xp[0]-=2;\
+    xp[1]+=2;\
+    if (xp[1]>dminx&&xp[1]<dmaxx) {dmaxx = xp[1];}\
+    if (xp[0]>dminx&&xp[0]<dmaxx) {\
+      int addx = xp[0]-dminx;\
+      dminx += addx;\
+      pDest += addx;\
+      zDest += addx;\
+      bary0 += (double)addx * baryAdd0;\
+      bary1 += (double)addx * baryAdd1;\
+      bary2 += (double)addx * baryAdd2;\
+    }\
+  }\
+  for (x = dminx;x<dmaxx;x++) {
+// __TRI has some overcoverage on both ends (starty andor maybe endy, but for subpixel/subtexel maybe that's ok)
+
+#define __PAINTPOLYQUAD_BEGINX__ __PAINTPOLYQUAD_BEGINX__TRI // __PAINTPOLYQUAD_BEGINX__QUADREGION (maybe used instead)
 
 #define __BARY0__(__v__) ((__v__)*bary0)
 #define __BARY1__(__v__) ((__v__)*bary1)
@@ -3066,6 +3097,13 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   double v0z = (v0->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
   double v1z = (v1->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
   double v2z = (v2->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+
+  glVertex *vk0 = v0;\
+  glVertex *vk1 = v1;\
+  glVertex *vk2 = v2;\
+  if (vk0->sy>vk1->sy) {glVertex *t; t = vk0; vk0 = vk1; vk1 = t;}\
+  if (vk0->sy>vk2->sy) {glVertex *t; t = vk0; vk0 = vk2; vk2 = t;}\
+  if (vk1->sy>vk2->sy) {glVertex *t; t = vk1; vk1 = vk2; vk2 = t;}\
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;

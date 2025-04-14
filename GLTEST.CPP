@@ -382,7 +382,6 @@ int main(int argc, char **argv) {
   glEnable(GL_LIGHT0);
   glEnable(GL_LIGHT1);
   glEnable(GL_CULL_FACE);
-  glCullFace(GL_FRONT);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
   do

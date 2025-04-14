@@ -25,23 +25,23 @@ bool keyPressed() {
   return (inp(0x60)&0x80)==0x00;
 }
 
-void getVertexFromScreen(float screenX, float screenY, float screenZ, float *dest) {
-  GLfloat modelView[16];
-  GLfloat projection[16];
+void getVertexFromScreen(float screenX, float screenY, float screenZ, double *dest) {
+  GLdouble modelView[16];
+  GLdouble projection[16];
   GLint viewport[4];
-  glGetFloatv(GL_MODELVIEW_MATRIX,modelView);
-  glGetFloatv(GL_PROJECTION_MATRIX,projection);
+  glGetDoublev(GL_MODELVIEW_MATRIX,modelView);
+  glGetDoublev(GL_PROJECTION_MATRIX,projection);
   glGetIntegerv(GL_VIEWPORT,viewport);
   gluUnProject(screenX, screenY, screenZ, modelView, projection, viewport, &dest[0], &dest[1], &dest[2]);
 }
 
 
-void projectVertexToScreen(float objX, float objY, float objZ, float *dest) {
-  GLfloat modelView[16];
-  GLfloat projection[16];
+void projectVertexToScreen(float objX, float objY, float objZ, double *dest) {
+  GLdouble modelView[16];
+  GLdouble projection[16];
   GLint viewport[4];
-  glGetFloatv(GL_MODELVIEW_MATRIX,modelView);
-  glGetFloatv(GL_PROJECTION_MATRIX,projection);
+  glGetDoublev(GL_MODELVIEW_MATRIX,modelView);
+  glGetDoublev(GL_PROJECTION_MATRIX,projection);
   glGetIntegerv(GL_VIEWPORT,viewport);
   gluProject(objX, objY, objZ, modelView, projection, viewport, &dest[0], &dest[1], &dest[2]);
 }

@@ -312,7 +312,6 @@ int main(int argc, char **argv) {
   glViewport(0,0,XRES,YRES);
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_CULL_FACE);
-  glCullFace(GL_FRONT);
   glEnable(GL_DEPTH_TEST);
   glLoadSkyBox("TEXTURES\\%s.TGA","sky0002","sky0005","sky0003","sky0006","sky0001","sky0004");
   buildTrack();
@@ -338,6 +337,7 @@ int main(int argc, char **argv) {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    glFrontFace(GL_CW); // sorry
     gluPerspective(FOV, (double)XRES/(double)YRES, NEARPLANE, FARPLANE);
     glMatrixMode(GL_MODELVIEW);
 /*
@@ -389,7 +389,7 @@ int main(int argc, char **argv) {
 
     float m[16];
     getInterpolatedTrackMatrix(m,globalTime*4.f);
-    gluInvertMatrix(m,m);
+    gluInvertMatrixf(m,m);
     glMultMatrixf(m);
 
     glCullFace(GL_FRONT);
