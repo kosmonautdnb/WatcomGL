@@ -1610,6 +1610,7 @@ void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei wid
   int rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
   int formatStride = 4;
   switch(format) {
+  case GL_ALPHA:{aIn=0;formatStride = 1;} break;
   case GL_RED:{rIn=0;formatStride = 1;} break;
   case GL_RG:{rIn=0;gIn=1;formatStride = 2;} break;
   case GL_RGB:{rIn=0;gIn=1;bIn=2;formatStride = 3;} break;
@@ -1641,7 +1642,7 @@ void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei wid
       if (formatStride>=4)
         input[3] = ((unsigned char*)pixels)[i*formatStride+3];
     }
-    unsigned int rgba = 0x00000000;
+    unsigned int rgba = format == GL_ALPHA ? 0x00ffffff : 0x00000000;
     if (rIn != -1) rgba |= input[rIn];
     if (gIn != -1) rgba |= input[gIn]<<8;
     if (bIn != -1) rgba |= input[bIn]<<16;
@@ -1676,6 +1677,7 @@ void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, 
   int rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
   int formatStride = 4;
   switch(format) {
+  case GL_ALPHA:{aIn=0;formatStride = 1;} break;
   case GL_RED:{rIn=0;formatStride = 1;} break;
   case GL_RG:{rIn=0;gIn=1;formatStride = 2;} break;
   case GL_RGB:{rIn=0;gIn=1;bIn=2;formatStride = 3;} break;
@@ -1707,7 +1709,7 @@ void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, 
       if (formatStride>=4)
         input[3] = ((unsigned char*)pixels)[i*formatStride+3];
     }
-    unsigned int rgba = 0x00000000;
+    unsigned int rgba = format == GL_ALPHA ? 0x00ffffff : 0x00000000;
     if (rIn != -1) rgba |= input[rIn];
     if (gIn != -1) rgba |= input[gIn]<<8;
     if (bIn != -1) rgba |= input[bIn]<<16;
@@ -1758,6 +1760,22 @@ void glVertex3fv (const GLfloat *v) {
   glContext.vertexX = v[0];
   glContext.vertexY = v[1];
   glContext.vertexZ = v[2];
+  glEmitVertex();
+}
+
+void glVertex4f (GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
+  glContext.vertexX = x;
+  glContext.vertexY = y;
+  glContext.vertexZ = z;
+  glContext.vertexW = w;
+  glEmitVertex();
+}
+
+void glVertex4fv (const GLfloat *v) {
+  glContext.vertexX = v[0];
+  glContext.vertexY = v[1];
+  glContext.vertexZ = v[2];
+  glContext.vertexW = v[3];
   glEmitVertex();
 }
 

@@ -635,6 +635,8 @@ GLAPI void APIENTRY glVertex2f (GLfloat x, GLfloat y); // supported
 GLAPI void APIENTRY glVertex2fv (const GLfloat *v); // supported
 GLAPI void APIENTRY glVertex3f (GLfloat x, GLfloat y, GLfloat z); // supported
 GLAPI void APIENTRY glVertex3fv (const GLfloat *v); // supported
+GLAPI void APIENTRY glVertex4f (GLfloat x, GLfloat y, GLfloat z, GLfloat w); // supported
+GLAPI void APIENTRY glVertex4fv (const GLfloat *v); // supported
 GLAPI void APIENTRY glVertexPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 GLAPI void APIENTRY glViewport (GLint x, GLint y, GLsizei width, GLsizei height); // supported
 
