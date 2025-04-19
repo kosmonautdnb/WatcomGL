@@ -755,8 +755,8 @@ bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned i
 #define GL_VK_TAB_SHIFT (15*256)
 #define GL_VK_ENTF (83*256)
 #define GL_VK_INSERT (82*256)
-#define GL_VK_DELETE 8
-#define GL_VK_BACKSPACE GL_VK_DELETE
+#define GL_VK_DELETE GL_VK_ENTF
+#define GL_VK_BACKSPACE 8
 #define GL_VK_C_CTRL 3
 #define GL_VK_P_CTRL 16
 #define GL_VK_V_CTRL 22

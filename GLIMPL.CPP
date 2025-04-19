@@ -27,6 +27,7 @@ GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 #define GLMAXTEXTURES 1024
 #define GLMAXTEXTUREUNITS 8
 #define __MATRIX_STACK_SIZE__ 16
+#define __ATTRIB_STACK_SIZE__ 4
 
 __inline float glClampf(float a, float n, float x) {
   return a < n ? n : (a > x ? x : a);
@@ -261,6 +262,8 @@ public:
 _GLContext glContext;
 GLdouble glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
 GLint glMatrixStackPos = 0;
+_GLContext glAttribStack[__ATTRIB_STACK_SIZE__];
+GLint glAttribStackPos = 0;
 
 typedef struct glVertex {
   GLfloat colorRed;
@@ -1838,9 +1841,15 @@ void glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w) {
 }
 
 void glPushAttrib(GLbitfield mask) {
+  // mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
+  memcpy(&glAttribStack[glAttribStackPos], &glContext, sizeof(_GLContext));
+  glAttribStackPos++;
 }
 
 void glPopAttrib() {
+  glAttribStackPos--;
+  memcpy(&glContext,&glAttribStack[glAttribStackPos], sizeof(_GLContext));
+  glUpdateMatrix();
 }
 
 void glFogf(GLenum pname, GLfloat param) {
