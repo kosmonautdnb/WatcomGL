@@ -3099,6 +3099,8 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
   return Sr|(Sg<<8)|(Sb<<16)|(Sa<<24);
 }
 
+#define __CLIP_FAR_PLANE__ if (v0->sz>1.0&&v1->sz>1.0&&v2->sz>1.0) return;
+
 void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   if (context->isEnabled(GL_CULL_FACE)) {
     if (context->forceNoCull==0) {
@@ -3109,6 +3111,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
       if (context->cullFaceMode == GL_FRONT_AND_BACK) return;
     }
   }   
+  __CLIP_FAR_PLANE__
   __POLYMINMAX__
   int glClipRectX0 = 0;
   int glClipRectY0 = 0;
