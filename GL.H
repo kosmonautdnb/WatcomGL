@@ -664,7 +664,7 @@ GLAPI void APIENTRY glTexCoord3d(GLdouble x, GLdouble y, GLdouble z); // :mad: /
 GLAPI void APIENTRY glTexCoord3f(GLfloat x, GLfloat y, GLfloat z); // :mad: // supported
 GLAPI void APIENTRY glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w); // :mad: // supported
 GLAPI void APIENTRY glTexCoord4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w); // :mad: // supported
-GLAPI void APIENTRY glPushAttrib(GLbitfield mask); // :mad: // supported
+GLAPI void APIENTRY glPushAttrib(GLbitfield mask); // :mad: // supported (mask not supported)
 GLAPI void APIENTRY glPopAttrib(); // :mad: // supported
 GLAPI void APIENTRY gluOrtho2D(float left, float right, float bottom, float top); // :mad: // supported
 GLAPI void APIENTRY glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar); // :mad: // supported
@@ -695,9 +695,17 @@ void glRefresh();
                           // can be called to close the vesa mode and clean up opengl again
 void glDone();
 
-void glSetMonitorAspectRatio(float aspect); // e.g. 16.0/9.0, default 1.0, call glVesa before
+  // some non standard pixel zoom for all the functions (maybe you don't need that)
+  // actually just for GL_POINTS and GL_LINES (so they have propper width/height on e.g. a non 4:3 screen
+void glSetMonitorAspectRatio(float aspect); // e.g. 16.0/9.0 (default 1.0, maybe use only if you draw pointssprites, non standard stuff) modifies zoomX and zoomY
+double glGetMonitorAspectRatio(); // hopefully not needed, maybe you can make all with glFrustum/glOrtho and so on without the extra aspect
+void glZoomX(float zoom); // also non standard, hopefully you don't need it
+void glZoomY(float zoom); // also non standard, hopefully you don't need it
+float glGetZoomX(); // also non standard, hopefully you don't need it
+float glGetZoomY(); // also non standard, hopefully you don't need it
 
-bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned int color); // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped)
+   // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp)
+bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned int color);
 
 #define GL_VK_NONE 0
 #define GL_VK_ESCAPE 27

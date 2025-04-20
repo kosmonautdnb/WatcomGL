@@ -14,7 +14,6 @@
 
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
-double glMonitorAspectRatio = 1.0;
 unsigned int *glFrameBuffer = NULL;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 unsigned int *glStencilBuffer = NULL; // not supported
@@ -172,6 +171,9 @@ public:
     maskBlue = true;
     maskAlpha = true;
     forceNoCull = 0;
+    zoomX = 1.0;
+    zoomY = 1.0;
+    pushAttribBitsHere = 0;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -257,6 +259,9 @@ public:
   GLboolean maskBlue;
   GLboolean maskAlpha;
   int forceNoCull;
+  double zoomX;
+  double zoomY;
+  unsigned int pushAttribBitsHere;
 };
 
 _GLContext glContext;
@@ -411,8 +416,8 @@ int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   v->sz = z/w;
   v->sw = w;
 
-  v->sx *= (context->viewportX1-context->viewportX0)*0.5*glMonitorAspectRatio;
-  v->sy *= (context->viewportY1-context->viewportY0)*-0.5;
+  v->sx *= (context->viewportX1-context->viewportX0)*0.5*context->zoomX;
+  v->sy *= (context->viewportY1-context->viewportY0)*-0.5*context->zoomY;
   v->sx += (context->viewportX0+context->viewportX1)*0.5;
   v->sy += (context->viewportY0+context->viewportY1)*0.5;
   return 0;
@@ -770,8 +775,8 @@ void glEmitVertex() {
             double dy = glVertices[1].sy-glVertices[0].sy;
             double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            double nx = dy * glMonitorAspectRatio;
-            double ny = -dx;
+            double nx = dy * glContext.zoomX;
+            double ny = -dx * glContext.zoomY;
             double d = glContext.lineWidth*0.5;
             glVertices[3].sx += nx*d;
             glVertices[3].sy += ny*d;
@@ -812,8 +817,8 @@ void glEmitVertex() {
             double dy = glVertices[1].sy-glVertices[0].sy;
             double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            float nx = dy*glMonitorAspectRatio;
-            float ny = -dx;
+            float nx = dy*glContext.zoomX;
+            float ny = -dx*glContext.zoomY;
             float d = glContext.lineWidth*0.5;
             glVertices[3].sx += nx*d;
             glVertices[3].sy += ny*d;
@@ -899,8 +904,8 @@ void glEmitVertex() {
           glVertices[1] = glVertices[0];
           glVertices[2] = glVertices[0];
           glVertices[3] = glVertices[0];
-          double pointSizeX = glContext.pointSize*0.5*glMonitorAspectRatio;
-          double pointSizeY = glContext.pointSize*0.5;
+          double pointSizeX = glContext.pointSize*0.5*glContext.zoomX;
+          double pointSizeY = glContext.pointSize*0.5*glContext.zoomY;
           glVertices[3].textureX = 0;
           glVertices[3].textureY = 0;
           glVertices[3].sx -= pointSizeX;
@@ -1177,8 +1182,8 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
   case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
-  case GL_ZOOM_X: {*params=(int)floor(glMonitorAspectRatio);} break;
-  case GL_ZOOM_Y: {*params=1;} break;
+  case GL_ZOOM_X: {*params=(int)floor(glContext.zoomX);} break;
+  case GL_ZOOM_Y: {*params=(int)floor(glContext.zoomY);;} break;
   }
 }
 
@@ -1230,8 +1235,8 @@ void glGetDoublev (GLenum pname, GLdouble *params) {
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
   case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
-  case GL_ZOOM_X: {*params=glMonitorAspectRatio;} break;
-  case GL_ZOOM_Y: {*params=1;} break;
+  case GL_ZOOM_X: {*params=glContext.zoomX;} break;
+  case GL_ZOOM_Y: {*params=glContext.zoomY;;} break;
   }
 }
 
@@ -1283,8 +1288,8 @@ void glGetFloatv (GLenum pname, GLfloat *params) {
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
   case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
-  case GL_ZOOM_X: {*params=glMonitorAspectRatio;} break;
-  case GL_ZOOM_Y: {*params=1;} break;
+  case GL_ZOOM_X: {*params=glContext.zoomX;} break;
+  case GL_ZOOM_Y: {*params=glContext.zoomY;} break;
   }
 }
 
@@ -1336,8 +1341,8 @@ void glGetIntegerv (GLenum pname, GLint *params) {
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
   case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
-  case GL_ZOOM_X: {*params=(int)floor(glMonitorAspectRatio);} break;
-  case GL_ZOOM_Y: {*params=1;} break;
+  case GL_ZOOM_X: {*params=(int)floor(glContext.zoomX);} break;
+  case GL_ZOOM_Y: {*params=(int)floor(glContext.zoomY);;} break;
   }
 }
 
@@ -1842,7 +1847,9 @@ void glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w) {
 
 void glPushAttrib(GLbitfield mask) {
   // mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
+  glContext.pushAttribBitsHere = mask; // maybe evaluate at glPopAttrib later
   memcpy(&glAttribStack[glAttribStackPos], &glContext, sizeof(_GLContext));
+  glContext.pushAttribBitsHere = 0;
   glAttribStackPos++;
 }
 
@@ -2365,8 +2372,8 @@ int glhUnProjectf(float winx, float winy, float winz,
     return 0;
   
   //Transformation of normalized coordinates between -1 and 1
-  in[0]=((winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
-  in[1]=(winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
+  in[0]=((winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0)/glContext.zoomX;
+  in[1]=((winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0)/glContext.zoomY;
   in[2]=2.0*winz-1.0;
   in[3]=1.0;
   
@@ -2398,8 +2405,8 @@ int glhUnProject(double winx, double winy, double winz,
     return 0;
   
   //Transformation of normalized coordinates between -1 and 1
-  in[0]=((winx-(double)viewport[0])/(double)viewport[2]*2.0-1.0)/glMonitorAspectRatio;
-  in[1]=(winy-(double)viewport[1])/(double)viewport[3]*2.0-1.0;
+  in[0]=((winx-(double)viewport[0])/(double)viewport[2]*2.0-1.0)/glContext.zoomX;
+  in[1]=((winy-(double)viewport[1])/(double)viewport[3]*2.0-1.0)/glContext.zoomY;
   in[2]=2.0*winz-1.0;
   in[3]=1.0;
   
@@ -2467,8 +2474,8 @@ int glhProjectf(float objx, float objy, float objz,
   
   //Window coordinates
   //Map x, y to range 0-1
-  windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
-  windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
+  windowCoordinate[0]=(fTempo[4]*0.5*glContext.zoomX+0.5)*viewport[2]+viewport[0];
+  windowCoordinate[1]=(fTempo[5]*0.5*glContext.zoomY+0.5)*viewport[3]+viewport[1];
   
   //This is only correct when glDepthRange(0.0, 1.0)
   windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
@@ -2528,8 +2535,8 @@ int glhProject(double objx, double objy, double objz,
   
   //Window coordinates
   //Map x, y to range 0-1
-  windowCoordinate[0]=(fTempo[4]*0.5*glMonitorAspectRatio+0.5)*viewport[2]+viewport[0];
-  windowCoordinate[1]=(fTempo[5]*0.5+0.5)*viewport[3]+viewport[1];
+  windowCoordinate[0]=(fTempo[4]*0.5*glContext.zoomX+0.5)*viewport[2]+viewport[0];
+  windowCoordinate[1]=(fTempo[5]*0.5*glContext.zoomY+0.5)*viewport[3]+viewport[1];
   
   //This is only correct when glDepthRange(0.0, 1.0)
   windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
@@ -2552,11 +2559,16 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
 //  M(2,0)=0; M(2,1)=0; M(2,2) = z; M(2,3) = tz;
 //  M(3,0)=0; M(3,1)=0; M(3,2) = 0; M(3,3) = 1;
 //  glMultMatrixf(m);
-  double r2 = (right-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
-  double l2 = (left-(right-left)*0.5)*glMonitorAspectRatio+(right-left)*0.5;
+  double r2 = (right-(right-left)*0.5)*glContext.zoomX+(right-left)*0.5;
+  double l2 = (left-(right-left)*0.5)*glContext.zoomX+(right-left)*0.5;
+  double t2 = (top-(top-bottom)*0.5)*glContext.zoomY+(top-bottom)*0.5;
+  double b2 = (bottom-(top-bottom)*0.5)*glContext.zoomY+(top-bottom)*0.5;
+
   right = r2;
   left = l2;
-
+  top = t2;
+  bottom = b2;
+  
   double matrix2[16], temp2, temp3, temp4, resultMatrix[16];
   temp2 = (right-left);
   temp3 = top-bottom;
@@ -3700,7 +3712,28 @@ void glDone() {
 }
 
 void glSetMonitorAspectRatio(float aspect) {
-  glMonitorAspectRatio = 1.0/(aspect*glFrameBufferHeight/glFrameBufferWidth);
+  glContext.zoomX = 1.0/(aspect*glFrameBufferHeight/glFrameBufferWidth);
+  glContext.zoomY = 1.0;
+}
+
+double glGetMonitorAspectRatio() {
+  return 1.0/glContext.zoomX/((double)glFrameBufferHeight/glFrameBufferWidth);
+}
+
+void glZoomX(float zoom) {
+  glContext.zoomX = zoom;
+}
+
+void glZoomY(float zoom) {
+  glContext.zoomY = zoom;
+}
+
+float glGetZoomX() {
+  return glContext.zoomX;
+}
+
+float glGetZoomY() {
+  return glContext.zoomY;
 }
 
 float glPixelLastSX = 0;
