@@ -25,4 +25,5 @@ PNG\PNGWRITE.C      PNGWRITE.OBJ
 PNG\PNGWTRAN.C     PNGWTRAN.OBJ
 PNG\PNGWUTIL.C      PNGWUTIL.OBJ
 GLIMPL.CPP GLIMPL.OBJ
-project.cpp project.obj
+osa.cpp osa.obj
+main.cpp main.obj
