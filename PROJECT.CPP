@@ -121,7 +121,7 @@ void glLoadSkyBox(const char *maskString, const char *left,const char *right,con
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i,0,GL_RGBA,img.width,img.height,0,GL_BGR,GL_UNSIGNED_BYTE,img.data);
     delete[] img.data;
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -392,9 +392,6 @@ int main(int argc, char **argv) {
     gluInvertMatrixf(m,m);
     glMultMatrixf(m);
 
-    glCullFace(GL_FRONT);
-    skyCube(-m[3*4+0],-m[3*4+1],-m[3*4+2],FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f));
-    glCullFace(GL_BACK);
 
     int i;
     for (i = 0; i < TRACKSEGMENTS/TRACKSCALE-1; i++) {
@@ -464,6 +461,7 @@ int main(int argc, char **argv) {
       glEnd();
     }
 
+
     glDisable(GL_TEXTURE_2D);
     srand(0);
     for (i = 0; i < 1000; i++) {
@@ -473,6 +471,9 @@ int main(int argc, char **argv) {
       cube( f[0],f[1],f[2], 5,1,5);
     }
 
+    glCullFace(GL_FRONT);
+    skyCube(-m[3*4+0],-m[3*4+1],-m[3*4+2],FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f),FARPLANE/sqrt(3.f));
+    glCullFace(GL_BACK);
 
     glRefresh();
   } while(!keyPressed());
