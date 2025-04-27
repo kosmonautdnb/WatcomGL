@@ -789,6 +789,8 @@ char glMouseButtons();
 void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey);
                            // tells the seconds ellapsed since the start of OpenGL (glVesa())
 double glSeconds();
+                           // sets the time to <seconds>
+void glSetTime(double seconds);
                            // convenient, allocation free glTexImage2D for 32bit RGBA
 void glTexturePointer(int width, int height, unsigned int *textureData);
 #endif /* __gl_h_ */

@@ -2590,7 +2590,7 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
   matrix2[14]=(-zfar-znear)/temp4;
   matrix2[15]=1.0;
   double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  	MultiplyMatrices4by4OpenGL_DOUBLE(matrix, matrix, matrix2);
+  MultiplyMatrices4by4OpenGL_DOUBLE(matrix, matrix, matrix2);
   glUpdateMatrix();
 }
 
@@ -3864,6 +3864,10 @@ void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey) {
 
 double glSeconds() {
   return (double)(clock() - glStartClock) / CLOCKS_PER_SEC;
+}
+
+void glSetTime(double seconds) {
+  glStartClock = clock() - seconds * CLOCKS_PER_SEC;
 }
 
 void glTexturePointer(int width, int height, unsigned int *textureData) {
