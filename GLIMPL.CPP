@@ -1069,6 +1069,12 @@ void glColor4ubv(const GLubyte *v) {
   glContext.colorAlpha = (float)v[3] / 255.f;
 }
 
+void glColor3ubv(const GLubyte *v) {
+  glContext.colorRed = (float)v[0] / 255.f;
+  glContext.colorGreen = (float)v[1] / 255.f;
+  glContext.colorBlue = (float)v[2] / 255.f;
+}
+
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha) {
   glContext.maskRed = red;
   glContext.maskGreen = green;
@@ -3250,21 +3256,49 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   if (g2 > 1) g2 = 1;
   if (b2 > 1) b2 = 1;
   if (a2 > 1) a2 = 1;
+
+  r0 *= 255.0;
+  g0 *= 255.0;
+  b0 *= 255.0;
+  a0 *= 255.0;
+
+  r1 *= 255.0;
+  g1 *= 255.0;
+  b1 *= 255.0;
+  a1 *= 255.0;
+
+  r2 *= 255.0;
+  g2 *= 255.0;
+  b2 *= 255.0;
+  a2 *= 255.0;
+
+  int r,g,b,a,rf,gf,bf,af;
+  bool interpolateColor = true;
+  if ( floor(r0)==floor(r1)&&floor(r1)==floor(r2)
+    &&floor(g0)==floor(g1)&&floor(g1)==floor(g2)
+    &&floor(b0)==floor(b1)&&floor(b1)==floor(b2)
+    &&floor(a0)==floor(a1)&&floor(a1)==floor(a2)) {
+    interpolateColor = false;
+    rf = r0;
+    gf = g0;
+    bf = b0;
+    af = a0;
+  }   
    
-  r0 = r0*255.0*v0w;
-  g0 = g0*255.0*v0w;
-  b0 = b0*255.0*v0w;
-  a0 = a0*255.0*v0w;
+  r0 *= v0w;
+  g0 *= v0w;
+  b0 *= v0w;
+  a0 *= v0w;
 
-  r1 = r1*255.0*v1w;
-  g1 = g1*255.0*v1w;
-  b1 = b1*255.0*v1w;
-  a1 = a1*255.0*v1w;
+  r1 *= v1w;
+  g1 *= v1w;
+  b1 *= v1w;
+  a1 *= v1w;
 
-  r2 = r2*255.0*v2w;
-  g2 = g2*255.0*v2w;
-  b2 = b2*255.0*v2w;
-  a2 = a2*255.0*v2w;
+  r2 *= v2w;
+  g2 *= v2w;
+  b2 *= v2w;
+  a2 *= v2w;
 
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
@@ -3273,10 +3307,17 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
         double zp = __BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z);
         if ((!depthTest)||glCheckDepthFunction(*zDest,zp,depthFunction)) {
           double iw = 1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w));
-          int r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw;
-          int g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw;
-          int b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iw;
-          int a = (__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iw;
+          if (interpolateColor) {
+            r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw;
+            g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw;
+            b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iw;
+            a = (__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iw;
+          } else {
+            r = rf;
+            g = gf;
+            b = bf;
+            a = af;
+          }
           if (textured) {
             float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw;
             float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw;

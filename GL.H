@@ -644,6 +644,7 @@ GLAPI void APIENTRY glColor3f (GLfloat red, GLfloat green, GLfloat blue); // :ma
 GLAPI void APIENTRY glColor3fv (const GLfloat *v); // :mad: // supported
 GLAPI void APIENTRY glColor3ub (GLubyte red, GLubyte green, GLubyte blue); // :mad: // supported
 GLAPI void APIENTRY glColor4ubv(const GLubyte *color); // :mad: // supported
+GLAPI void APIENTRY glColor3ubv(const GLubyte *color); // :mad: // supported
 GLAPI void APIENTRY glColorMaterial(GLenum face, GLenum pname); // :mad: // supported
 GLAPI void APIENTRY glMateriali(GLenum face, GLenum pname, GLint param); // :mad: // supported
 GLAPI void APIENTRY glFrustum(float left, float right, float bottom, float top, float znear, float zfar); // :mad: // supported
