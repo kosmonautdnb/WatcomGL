@@ -12,12 +12,20 @@
 
 #define PI 3.14159265358979323846
 
+unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
 unsigned int *glFrameBuffer = NULL;
-unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 unsigned int *glStencilBuffer = NULL; // not supported
 float *glDepthBuffer = NULL;
+
+int glFrameBufferWidth0 = 0;
+int glFrameBufferHeight0 = 0;
+unsigned int *glFrameBuffer0 = NULL;
+unsigned int *glStencilBuffer0 = NULL;
+float *glDepthBuffer0 = NULL;
+
+
 
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
@@ -999,7 +1007,7 @@ void glClear(GLbitfield mask) {
       for (int x = minX; x < maxX; x++)
         glDepthBuffer[x+y*glFrameBufferWidth] = glContext.clearDepth; // clamping?
   }
-  if (mask & GL_STENCIL_BUFFER_BIT) {
+  if ((mask & GL_STENCIL_BUFFER_BIT) && (glStencilBuffer != NULL)) {
     unsigned int k = glContext.clearStencil;
     for (int y = minY; y < maxY; y++)
       for (int x = minX; x < maxX; x++)
@@ -3730,6 +3738,11 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+      glFrameBufferWidth0 = glFrameBufferWidth;
+      glFrameBufferHeight0 = glFrameBufferHeight;
+      glFrameBuffer0 = glFrameBuffer;
+      glDepthBuffer0 = glDepthBuffer;
+      glStencilBuffer0 = glStencilBuffer;
       glSetupMouse();
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
@@ -3742,26 +3755,26 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
 }
 void glRefresh() {
   unsigned int rgba;
-  for (int i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) {
-    rgba = glFrameBuffer[i];
+  for (int i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
+    rgba = glFrameBuffer0[i];
     glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000);
   }
 }
 void glDone() {
-  delete[] glFrameBuffer;
-  delete[] glDepthBuffer;
-  delete[] glStencilBuffer;
+  delete[] glFrameBuffer0;
+  delete[] glDepthBuffer0;
+  delete[] glStencilBuffer0;
   unmapPhysical((unsigned int)glFrameBufferDedicated);
   setBiosGraphicsMode(glGraphicsModeToRestore);
 }
 
 void glSetMonitorAspectRatio(float aspect) {
-  glContext.zoomX = 1.0/(aspect*glFrameBufferHeight/glFrameBufferWidth);
+  glContext.zoomX = 1.0/(aspect*glFrameBufferHeight0/glFrameBufferWidth0);
   glContext.zoomY = 1.0;
 }
 
 double glGetMonitorAspectRatio() {
-  return 1.0/glContext.zoomX/((double)glFrameBufferHeight/glFrameBufferWidth);
+  return 1.0/glContext.zoomX/((double)glFrameBufferHeight0/glFrameBufferWidth0);
 }
 
 void glZoomX(float zoom) {
@@ -3779,7 +3792,7 @@ float glGetZoomX() {
 float glGetZoomY() {
   return glContext.zoomY;
 }
-
+                                                                                                                                                                         
 float glPixelLastSX = 0;
 float glPixelLastSY = 0;
 bool glPixelLastValid = false;
@@ -3864,10 +3877,10 @@ void glNextMouseDelta(double *mouseX, double *mouseY) {
   *mouseX = glMouseX - glLastMouseX;
   *mouseY = glMouseY - glLastMouseY;
   if (true) {
-    glSetMousePos(glFrameBufferWidth/2, glFrameBufferHeight/2);
+    glSetMousePos(glFrameBufferWidth0/2, glFrameBufferHeight0/2);
     // update lastMouseX this way
-    glMouseX = glFrameBufferWidth/2;
-    glMouseY = glFrameBufferHeight/2;
+    glMouseX = glFrameBufferWidth0/2;
+    glMouseY = glFrameBufferHeight0/2;
   }
 }
 
@@ -3885,14 +3898,14 @@ void glSetupMouse() {
     union REGS regs;
     regs.x.eax = 0x07;
     regs.x.ecx = 0;
-    regs.x.edx = glFrameBufferWidth-1;
+    regs.x.edx = glFrameBufferWidth0-1;
     int386(0x33, &regs, &regs);
     regs.x.eax = 0x08;
     regs.x.ecx = 0;
-    regs.x.edx = glFrameBufferHeight-1;
+    regs.x.edx = glFrameBufferHeight0-1;
     int386(0x33, &regs, &regs);
-    glMouseX = glFrameBufferWidth/2;
-    glMouseY = glFrameBufferHeight/2;
+    glMouseX = glFrameBufferWidth0/2;
+    glMouseY = glFrameBufferHeight0/2;
     glSetMousePos(glMouseX, glMouseY);
 }
 
@@ -3922,6 +3935,41 @@ void glTexturePointer(int width, int height, unsigned int *textureData) {
   t->data = textureData;
   t->width = width;
   t->height = height;
+}
+
+void glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height) {
+  if (frameBufferOrNULL == NULL) {
+    glFrameBufferWidth = glFrameBufferWidth0;
+    glFrameBufferHeight = glFrameBufferHeight0;
+    glFrameBuffer = glFrameBuffer0;
+    glStencilBuffer = glStencilBuffer0;
+    glDepthBuffer = glDepthBuffer0;
+  } else {
+    glFrameBufferWidth = width;
+    glFrameBufferHeight = height;
+    glFrameBuffer = frameBufferOrNULL;
+    glStencilBuffer = NULL;
+    glDepthBuffer = depthBuffer;
+  }
+}
+
+GLuint glGetTextureWidth(GLuint textureId) {
+  glTexture *t = &glTextures[textureId];
+  if (t->name == 0x00) return 0;
+  return t->width;
+
+}
+
+GLuint glGetTextureHeight(GLuint textureId) {
+  glTexture *t = &glTextures[textureId];
+  if (t->name == 0x00) return 0;
+  return t->height;
+}
+
+GLuint *glGetTexturePointer(GLuint textureId) {
+  glTexture *t = &glTextures[textureId];
+  if (t->name == 0x00) return NULL;
+  return t->data;
 }
 
 // --------------------------------------
