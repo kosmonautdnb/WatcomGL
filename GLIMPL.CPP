@@ -3442,7 +3442,16 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
               }
             else {
               if (notMasked) {
-                *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+                if (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) {
+                  unsigned int a8 = (a<<16)/255;
+                  unsigned char *c = (unsigned char*)pDest;
+                  c[0] += ((r-c[0])*a8)>>16;
+                  c[1] += ((g-c[1])*a8)>>16;
+                  c[2] += ((b-c[2])*a8)>>16;
+                  c[3] += ((a-c[3])*a8)>>16;
+                } else {
+                  *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+                }
               } else {
                 unsigned int k = doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
                 unsigned char *pDest2 = (unsigned char *)pDest;
