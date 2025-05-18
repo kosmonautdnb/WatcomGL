@@ -4,6 +4,7 @@
 // Just the most basic functionality. And some glu.
 // Of course with texturing/blending and alphatest etc.. 
 // It is required that Vesa 3.0 e.g. 640x480x32 works on your device.
+// by Stefan Mader in 2025
 //-------------------------
 #ifndef __gl_h__
 #define __gl_h__
