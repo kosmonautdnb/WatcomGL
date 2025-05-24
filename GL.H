@@ -789,7 +789,7 @@ void glNextMouseDelta(double *deltaX, double *deltaY);
 char glMouseButtons();
                            // gets the currently pressed special keys
 void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey);
-                           // tells the seconds ellapsed since the start of OpenGL (glVesa())
+                           // tells the seconds ellapsed since the start of OpenGL (glVesa()) (granularity seems to be 18.2 fps, maybe better use speaker.hpp)
 double glSeconds();
                            // sets the time to <seconds>
 void glSetTime(double seconds);
