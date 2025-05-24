@@ -571,9 +571,9 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         if (l>0.0) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
         double diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
         if (diffuse<0) diffuse = 0;
-        double viewX = -x;
-        double viewY = -y;
-        double viewZ = -z;
+        double viewX = x;
+        double viewY = y;
+        double viewZ = z;
         l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
         if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
         double dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
