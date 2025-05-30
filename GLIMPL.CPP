@@ -2436,6 +2436,58 @@ int glhUnProject(double winx, double winy, double winz,
   return 1;
 }
 
+int glhProjectfx(float objx, float objy, float objz,
+  float *modelview, float *projection,
+  int *viewport,
+  float *windowCoordinate) {
+  float in[4];
+  in[0] = objx;
+  in[1] = objy;
+  in[2] = objz;
+  in[3] = 1;
+  MultiplyMatrixByVector4by4OpenGL_FLOAT(in, modelview, in);
+  MultiplyMatrixByVector4by4OpenGL_FLOAT(in, projection, in);
+  if (in[3]==0) return 0;
+  in[0]/=in[3];
+  in[1]/=in[3];
+  in[2]/=in[3];
+  in[3] = 1;
+  in[0] *= viewport[2]*0.5*glContext.zoomX;
+  in[1] *= viewport[3]*-0.5*glContext.zoomY;
+  in[0] += viewport[0]+viewport[2]*0.5;
+  in[1] += viewport[1]+viewport[3]*0.5;
+  windowCoordinate[0] = in[0];
+  windowCoordinate[1] = in[1];
+  windowCoordinate[2] = in[2];
+  return 1;
+}
+
+int glhProjectx(double objx, double objy, double objz,
+  double *modelview, double *projection,
+  int *viewport,
+  double *windowCoordinate) {
+  double in[4];
+  in[0] = objx;
+  in[1] = objy;
+  in[2] = objz;
+  in[3] = 1;
+  MultiplyMatrixByVector4by4OpenGL_DOUBLE(in, modelview, in);
+  MultiplyMatrixByVector4by4OpenGL_DOUBLE(in, projection, in);
+  if (in[3]==0) return 0;
+  in[0]/=in[3];
+  in[1]/=in[3];
+  in[2]/=in[3];
+  in[3] = 1;
+  in[0] *= viewport[2]*0.5*glContext.zoomX;
+  in[1] *= viewport[3]*-0.5*glContext.zoomY;
+  in[0] += viewport[0]+viewport[2]*0.5;
+  in[1] += viewport[1]+viewport[3]*0.5;
+  windowCoordinate[0] = in[0];
+  windowCoordinate[1] = in[1];
+  windowCoordinate[2] = in[2];
+  return 1;
+}
+
 int glhProjectf(float objx, float objy, float objz,
   float *modelview, float *projection,
   int *viewport,
@@ -2655,6 +2707,15 @@ void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz
   glUpdateMatrix();
 }
 
+GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
+  float d[3];
+  const GLint r = glhProjectfx(objX, objY, objZ, model, projection, view, d);
+  *winX = d[0];
+  *winY = d[1];
+  *winZ = d[2];
+  return r;
+}
+
 GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
   float d[3];
   const GLint r = glhProjectf(objX, objY, objZ, model, projection, view, d);
@@ -2670,6 +2731,15 @@ GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GL
   *objX = d[0];
   *objY = d[1];
   *objZ = d[2];
+  return r;
+}
+
+GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ) {
+  double d[3];
+  const GLint r = glhProjectx(objX, objY, objZ, model, projection, view, d);
+  *winX = d[0];
+  *winY = d[1];
+  *winZ = d[2];
   return r;
 }
 
