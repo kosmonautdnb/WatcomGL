@@ -1553,6 +1553,12 @@ void glhRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, G
 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
   double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  double l = sqrt(x*x+y*y+z*z);
+  if (l>0) {
+    x/=l;
+    y/=l;
+    z/=l;
+  }
   glhRotate(matrix,angle*2.0*PI/360.0,x,y,z);
   glUpdateMatrix();
 }
