@@ -46,6 +46,8 @@ extern "C" {
 #define GL_TEXTURE_CUBE_MAP_POSITIVE_Z 0x8519 // gl3.h
 #define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z 0x851a //gl3.h
 #define GL_QUADS 0x0007 // :mad:
+#define GL_GREEN 0x1904 // :mad:
+#define GL_BLUE 0x1905 // :mad:
 #define GL_RED 0x190b // :mad:
 #define GL_RG 0x190c // :mad:
 #define GL_BGR 0x190d // :mad:
@@ -59,6 +61,7 @@ extern "C" {
 #define GL_STENCIL_INDEX 0x1915 // :mad:
 #define GL_DEPTH_COMPONENT 0x1916 // :mad:
 #define GL_DEPTH_STENCIL 0x1917 // :mad:
+#define GL_
 #define GL_MIRRORED_REPEAT 0x2902 // :mad:
 #define GL_CLAMP_TO_BORDER 0x2903 // :mad:
 #define GL_SRC_COLOR 0x330 // :mad:
@@ -617,7 +620,7 @@ GLAPI void APIENTRY glPolygonStipple (const GLubyte *mask);
 GLAPI void APIENTRY glPopMatrix (void); // supported
 GLAPI void APIENTRY glPushMatrix (void); // supported
 GLAPI void APIENTRY glRasterPos3f (GLfloat x, GLfloat y, GLfloat z);
-GLAPI void APIENTRY glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
+GLAPI void APIENTRY glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels); // supported
 GLAPI void APIENTRY glRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z); // supported
 GLAPI void APIENTRY glScalef (GLfloat x, GLfloat y, GLfloat z); // supported
 GLAPI void APIENTRY glScissor (GLint x, GLint y, GLsizei width, GLsizei height); // supported

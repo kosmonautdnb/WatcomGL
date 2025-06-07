@@ -1509,6 +1509,31 @@ void glPushMatrix() {
   glMatrixStackPos++;
 }
 
+#define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
+
+void glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) {
+  for (int yp = 0; yp < height; yp++) {
+    int y2 = yp + glFrameBufferHeight - 1 - y;
+    if (y2 < 0 || y2 >= glFrameBufferHeight) continue;
+    for (int xp = 0; xp < width; xp++) {
+      int x2 = xp + x;
+      if (x2 < 0 || x2 >= glFrameBufferWidth) continue;
+      const unsigned int rgba = glFrameBuffer[x2+y2*glFrameBufferWidth];
+      if (type == GL_UNSIGNED_BYTE||type==GL_BYTE) {
+        switch(format) {
+        case GL_RGBA: {((unsigned int*)pixels)[xp+yp*width] = rgba;} break;
+        case GL_BGRA: {((unsigned int*)pixels)[xp+yp*width] = FLIPRB(rgba);} break;
+        case GL_RED: {((unsigned char*)pixels)[xp+yp*width] = rgba & 0xff;} break;
+        case GL_GREEN: {((unsigned char*)pixels)[xp+yp*width] = (rgba>>8)& 0xff;} break;
+        case GL_BLUE: {((unsigned char*)pixels)[xp+yp*width] = (rgba>>16)& 0xff;} break;
+        case GL_RGB: {unsigned char*c=&((unsigned char*)pixels)[(xp+yp*width)*3];c[0]=rgba&255;c[1]=(rgba>>8)&255;c[2]=(rgba>>16)&255;} break;
+        case GL_BGR: {unsigned char*c=&((unsigned char*)pixels)[(xp+yp*width)*3];c[2]=rgba&255;c[1]=(rgba>>8)&255;c[0]=(rgba>>16)&255;} break;
+        }
+      }
+    }
+  }
+}
+
 void glhRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, GLfloat z) {
   double m[16], rotate[16];
   double OneMinusCosAngle, CosAngle, SinAngle;
@@ -2905,6 +2930,7 @@ __inline bool glCheckDepthFunction(float depthBufferValue, float newValue, int d
 
 __inline int textureWrap(float tx, int siz, GLenum filterMode) {
   int t = (int)floor(tx);
+  if (t<siz&&t>=0) return t;
   switch(filterMode) {
   case GL_MIRRORED_REPEAT: {
       t = t<0?(siz*2-1-((-t)%(siz*2))):(t%(siz*2));
@@ -3239,7 +3265,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   if (vk1->sy>vk2->sy) {glVertex *t; t = vk1; vk1 = vk2; vk2 = t;}\
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
-  bool textured = true && context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
+  bool textured = context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
   bool filtering = (t->magFilter != GL_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_LINEAR);
   float tx0,ty0,tz0,tw0;
   float tx1,ty1,tz1,tw1;
@@ -3385,13 +3411,16 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   b2 *= v2w;
   a2 *= v2w;
 
+  double iw = 0;
+  const bool wValue = textured||interpolateColor;
+
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0>=0&&bary1>=0&&bary2>=0) {
         double zp = __BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z);
         if ((!depthTest)||glCheckDepthFunction(*zDest,zp,depthFunction)) {
-          double iw = 1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w));
+          if (wValue) iw = 1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w));
           if (interpolateColor) {
             r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw;
             g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw;
@@ -3436,8 +3465,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
               rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
             } else {
               if (tix0>=0&&tiy0>=0) {
-                tiy0 *= twidth0;
-                rgba  = tdata0[tix0+tiy0];
+                rgba  = tdata0[tix0+tiy0*twidth0];
               } else {
                 rgba = borderColor;
               }
@@ -3552,6 +3580,8 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
 }
 
 void glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3) {
+  // 12 if ccw
+  // 03
   glDrawTriangle(context,v0,v1,v2);
   glDrawTriangle(context,v2,v3,v0);
 }
