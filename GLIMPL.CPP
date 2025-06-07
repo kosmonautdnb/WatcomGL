@@ -1900,7 +1900,7 @@ void glTexParameterfv (GLenum target, GLenum pname, GLfloat *param) {
   }
 }
 
-GLAPI void APIENTRY glBlendCOlor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
+GLAPI void APIENTRY glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
   glContext.blendColorRed = red;
   glContext.blendColorGreen = green;
   glContext.blendColorBlue = blue;

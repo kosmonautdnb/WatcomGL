@@ -677,7 +677,7 @@ GLAPI void APIENTRY glFogf(GLenum pname, GLfloat param); // :mad: // supported
 GLAPI void APIENTRY glFogfv(GLenum pname, GLfloat *params); // :mad: // supported
 GLAPI void APIENTRY glDeleteTextures (GLsizei n, GLuint *textures); // :mad: // supported
 GLAPI void APIENTRY glTexParameterfv (GLenum target, GLenum pname, GLfloat *param); // :mad: // supported
-GLAPI void APIENTRY glBlendCOlor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad: // supported
+GLAPI void APIENTRY glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad: // supported
 GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad: // supported
 
 
