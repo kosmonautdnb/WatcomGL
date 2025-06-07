@@ -61,7 +61,6 @@ extern "C" {
 #define GL_STENCIL_INDEX 0x1915 // :mad:
 #define GL_DEPTH_COMPONENT 0x1916 // :mad:
 #define GL_DEPTH_STENCIL 0x1917 // :mad:
-#define GL_
 #define GL_MIRRORED_REPEAT 0x2902 // :mad:
 #define GL_CLAMP_TO_BORDER 0x2903 // :mad:
 #define GL_SRC_COLOR 0x330 // :mad:
