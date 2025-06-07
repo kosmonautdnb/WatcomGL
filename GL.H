@@ -696,6 +696,7 @@ extern float *glDepthBuffer;
                           // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors
 GLboolean glVesa(int xRes,int yRes, int bPP);
                           // to be called in a loop, copies the frameBuffer to the screen and updates per frame stuff
+GLboolean glVGA(); // 320x200x13bit may return true even if it's not supported (it's a fallback for no vesa320x200x32)
 void glRefresh();
                           // can be called to close the vesa mode and clean up opengl again
 void glDone();

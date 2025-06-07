@@ -3800,6 +3800,7 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
   RMREGS regs;
   regs.ax = 0x4f00;
   VBE_callESDI(&regs,&vbeInfo,sizeof(glVbeInfoBlock));
+  if (regs.ax != 0x004f) return false;
   uint16_t *u = (uint16_t *)glVesaPointer(vbeInfo.videoModes);
   uint16_t *v = u;
   while(*v != 0xffff) {v++;}
@@ -3821,6 +3822,7 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
       glFrameBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
       glStencilBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
       glDepthBuffer = new float[glFrameBufferWidth*glFrameBufferHeight];
+      memset(glFrameBufferDedicated,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
@@ -3839,7 +3841,126 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
   delete[] w;
   return false;
 }
+static void setBiosCursor(int x, int y) {
+    union REGS regs;
+    regs.x.eax = 0x200;
+    regs.h.bh = 0;
+    regs.h.dl = x;
+    regs.h.dh = y;
+    int386(0x10, &regs, &regs);
+}
+static unsigned int toColor(int r,int g,int b) {
+  if (r < 0) r = 0;
+  if (g < 0) g = 0;
+  if (b < 0) b = 0;
+  if (r > 255) r = 255;
+  if (g > 255) g = 255;
+  if (b > 255) b = 255;
+  return r|(g<<8)|(b<<16)|0xff000000;
+}
+static void setPalette(int index, unsigned int color) {
+  outp(0x3c8,index);
+  outp(0x3c9,(color & 255)>>2);
+  outp(0x3c9,((color>>8) & 255)>>2);
+  outp(0x3c9,((color>>16) & 255)>>2);
+}
+static unsigned int getPalette(int index) {
+  outp(0x3c8,index);
+  int r = inp(0x3c9);
+  int g = inp(0x3c9);
+  int b = inp(0x3c9);
+  return 0xff000000|(r<<2)|(g<<10)|(b<<18);
+}
+static void setHiColorPalette() {
+  int i;
+  for (i = 0; i < 64; i++) setPalette(i,toColor(0,i*4+3,0));
+  for (i = 0; i < 16*8; i++) setPalette(i+128,toColor((i/8)*16+15,0,(i & 7)*32+31));
+}
+static void setModeX() {
+  outp(0x3c4,4);
+  int a = inp(0x3c5);
+  a &= 255-8;
+  a |= 4;
+  outp(0x3c5,a);  
+  outp(0x3d4,0x14);
+  a = inp (0x3d5);
+  a &= 255-64;
+  outp(0x3d5,a);
+  outp(0x3d4,0x17);
+  a = inp(0x3d5);
+  a |= 64;
+  outp(0x3d5,a);
+}
+static void set400Lines() {
+  outp(0x3d4,9);
+  int a = inp(0x3d5);
+  a &= 16+32+64;//001110000b
+  outp(0x3d5,a);
+}
+static void setVGABufferStart(unsigned int adr) {
+  outp(0x3d4,0x0c);
+  outp(0x3d5,(adr >> 8) & 255);
+  outp(0x3d4,0x0d);
+  outp(0x3d5,adr & 255);
+}
+static bool hiColor = false;
+static bool otherFrame = false;
+unsigned char hiRedTab[256];
+GLboolean glVGA() {
+  glGraphicsModeToRestore = getBiosGraphicsMode();
+  setBiosGraphicsMode(0x13);
+  setModeX();
+  set400Lines();
+  setHiColorPalette();
+  hiColor = true;
+  otherFrame = false;
+  unsigned char *vga = (unsigned char*)(0xa0000);
+  memset(vga,0,0x10000);
+  setVGABufferStart(otherFrame ? 0x8000 : 0x0000);
+  int xRes = 320;
+  int yRes = 200;
+  glFrameBufferWidth = xRes;
+  glFrameBufferHeight = yRes;
+  glFrameBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
+  glStencilBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
+  glDepthBuffer = new float[glFrameBufferWidth*glFrameBufferHeight];
+  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+  memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+  memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+  glFrameBufferWidth0 = glFrameBufferWidth;
+  glFrameBufferHeight0 = glFrameBufferHeight;
+  glFrameBuffer0 = glFrameBuffer;
+  glDepthBuffer0 = glDepthBuffer;
+  glStencilBuffer0 = glStencilBuffer;
+  glSetupMouse();
+  glStartClock = clock();
+  glViewport(0,0,xRes,yRes);
+  for (int i = 0; i < 256; i++) {
+    hiRedTab[i] = 128+(((i>>4)&15)<<3);
+  }
+  return true;
+}
+void glRefreshHiColor() {
+  unsigned char *vga = (unsigned char*)(0xa0000+(otherFrame?0x8000:0x00));
+  for (int p = 0; p < 4; p++) {
+    outp(0x3c4,0x02);
+    outp(0x3c5,1<<p);
+    unsigned char *s = (unsigned char*)&glFrameBuffer[p];
+    for (int y = 0; y < 200; y++) {
+      unsigned char *w1 = &vga[y*(320/4*2)];
+      unsigned char *w2 = &vga[y*(320/4*2)+320/4];
+      for (int x = 320/4; x > 0; x--) {
+        *w2++ = s[1]>>2;
+        *w1++ = (s[2]>>5)|hiRedTab[s[0]];
+        s += 16;
+      }
+    }
+  }
+  setVGABufferStart(otherFrame ? 0x8000 : 0x0000);
+  otherFrame = !otherFrame;   
+}
 void glRefresh() {
+  if (hiColor) {glRefreshHiColor();return;}
   unsigned int rgba;
   for (int i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
     rgba = glFrameBuffer0[i];
@@ -3850,7 +3971,7 @@ void glDone() {
   delete[] glFrameBuffer0;
   delete[] glDepthBuffer0;
   delete[] glStencilBuffer0;
-  unmapPhysical((unsigned int)glFrameBufferDedicated);
+  if (!hiColor) unmapPhysical((unsigned int)glFrameBufferDedicated);
   setBiosGraphicsMode(glGraphicsModeToRestore);
 }
 
