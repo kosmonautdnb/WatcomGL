@@ -3322,7 +3322,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   int depthFunction = context->depthFunc;
   bool depthTest = context->isEnabled(GL_DEPTH_TEST);
   int alphaFunction = context->alphaFunc;
-  float alphaRef = context->alphaFuncRef;
+  int alphaRef = (int)floor(context->alphaFuncRef*255.f);
   bool alphaTest = context->isEnabled(GL_ALPHA_TEST);
 
   // rgba
@@ -3413,6 +3413,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
 
   double iw = 0;
   const bool wValue = textured||interpolateColor;
+  const bool normalAlphaBlending = blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD;
 
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
@@ -3520,15 +3521,14 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
           }
           bool writePixel = true;
           if (alphaTest) {
-            float alpha = (float)a / 255.f;
             switch(alphaFunction) {
             case GL_NEVER: {writePixel = false;} break;
-            case GL_LESS: {writePixel = alpha<alphaRef;} break;
-            case GL_EQUAL: {writePixel = alpha==alphaRef;} break;
-            case GL_LEQUAL: {writePixel = alpha<=alphaRef;} break;
-            case GL_GREATER: {writePixel = alpha>alphaRef;} break;
-            case GL_NOTEQUAL: {writePixel = alpha!=alphaRef;} break;
-            case GL_GEQUAL: {writePixel = alpha>=alphaRef;} break;
+            case GL_LESS: {writePixel = a<alphaRef;} break;
+            case GL_EQUAL: {writePixel = a==alphaRef;} break;
+            case GL_LEQUAL: {writePixel = a<=alphaRef;} break;
+            case GL_GREATER: {writePixel = a>alphaRef;} break;
+            case GL_NOTEQUAL: {writePixel = a!=alphaRef;} break;
+            case GL_GEQUAL: {writePixel = a>=alphaRef;} break;
             case GL_ALWAYS: {writePixel = true;} break;
             }
           }
@@ -3547,7 +3547,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
               }
             else {
               if (notMasked) {
-                if (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) {
+                if (normalAlphaBlending) {
                   unsigned int a8 = (a<<16)/255;
                   unsigned char *c = (unsigned char*)pDest;
                   c[0] += ((r-c[0])*a8)>>16;
