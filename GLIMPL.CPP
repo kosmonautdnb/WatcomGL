@@ -3414,6 +3414,8 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   double iw = 0;
   const bool wValue = textured||interpolateColor;
   const bool normalAlphaBlending = blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD;
+  const bool preMultipliedAlpha = blendFuncS == GL_ONE && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD;
+  const bool normalAlphaBlendingOrPreMultipliedAlpha = normalAlphaBlending || preMultipliedAlpha;
 
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
@@ -3547,13 +3549,26 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
               }
             else {
               if (notMasked) {
-                if (normalAlphaBlending) {
+                if (normalAlphaBlendingOrPreMultipliedAlpha) {
                   unsigned int a8 = (a<<16)/255;
                   unsigned char *c = (unsigned char*)pDest;
-                  c[0] += ((r-c[0])*a8)>>16;
-                  c[1] += ((g-c[1])*a8)>>16;
-                  c[2] += ((b-c[2])*a8)>>16;
-                  c[3] += ((a-c[3])*a8)>>16;
+                  if (preMultipliedAlpha) {
+                    a8 = 0x10000-a8;
+                    r += (c[0]*a8)>>16;
+                    g += (c[1]*a8)>>16;
+                    b += (c[2]*a8)>>16;
+                    a += (c[3]*a8)>>16;
+                    if (r>255) r = 255;
+                    if (g>255) g = 255;
+                    if (b>255) b = 255;
+                    if (a>255) a = 255;
+                    *pDest=r|(g<<8)|(b<<16)|(a<<24);
+                  } else {
+                    c[0] += ((r-c[0])*a8)>>16;
+                    c[1] += ((g-c[1])*a8)>>16;
+                    c[2] += ((b-c[2])*a8)>>16;
+                    c[3] += ((a-c[3])*a8)>>16;    
+                  }
                 } else {
                   *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
                 }
