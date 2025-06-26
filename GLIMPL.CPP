@@ -1186,7 +1186,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
   case GL_POINT_SIZE: {*params=(int)floor(glContext.pointSize);} break;
   case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
   case GL_RED_BITS: {*params=8;} break;
-  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY1;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
   case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
   case GL_STENCIL_BITS: {*params=8;} break;
   case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
@@ -1196,7 +1196,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
   case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
-  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glFrameBufferHeight-glContext.viewportY1;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
   case GL_ZOOM_X: {*params=(int)floor(glContext.zoomX);} break;
   case GL_ZOOM_Y: {*params=(int)floor(glContext.zoomY);;} break;
   }
@@ -1239,7 +1239,7 @@ void glGetDoublev (GLenum pname, GLdouble *params) {
   case GL_POINT_SIZE: {*params=glContext.pointSize;} break;
   case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
   case GL_RED_BITS: {*params=8;} break;
-  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY1;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
   case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
   case GL_STENCIL_BITS: {*params=8;} break;
   case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
@@ -1249,7 +1249,7 @@ void glGetDoublev (GLenum pname, GLdouble *params) {
   case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
-  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glFrameBufferHeight-glContext.viewportY1;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
   case GL_ZOOM_X: {*params=glContext.zoomX;} break;
   case GL_ZOOM_Y: {*params=glContext.zoomY;;} break;
   }
@@ -1292,7 +1292,7 @@ void glGetFloatv (GLenum pname, GLfloat *params) {
   case GL_POINT_SIZE: {*params=glContext.pointSize;} break;
   case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
   case GL_RED_BITS: {*params=8;} break;
-  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY1;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
   case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
   case GL_STENCIL_BITS: {*params=8;} break;
   case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
@@ -1302,7 +1302,7 @@ void glGetFloatv (GLenum pname, GLfloat *params) {
   case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
-  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glFrameBufferHeight-glContext.viewportY1;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
   case GL_ZOOM_X: {*params=glContext.zoomX;} break;
   case GL_ZOOM_Y: {*params=glContext.zoomY;} break;
   }
@@ -1345,7 +1345,7 @@ void glGetIntegerv (GLenum pname, GLint *params) {
   case GL_POINT_SIZE: {*params=(int)floor(glContext.pointSize);} break;
   case GL_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][i];} break;
   case GL_RED_BITS: {*params=8;} break;
-  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY0;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
+  case GL_SCISSOR_BOX: {params[0]=glContext.scissorX0;params[1]=glFrameBufferHeight-glContext.scissorY1;params[2]=glContext.scissorX1-glContext.scissorX0;params[3]=glContext.scissorY1-glContext.scissorY0;} break;
   case GL_SCISSOR_TEST: {*params=glIsEnabled(GL_SCISSOR_TEST);} break;
   case GL_STENCIL_BITS: {*params=8;} break;
   case GL_STENCIL_CLEAR_VALUE: {*params=glContext.clearStencil;} break;
@@ -1355,7 +1355,7 @@ void glGetIntegerv (GLenum pname, GLint *params) {
   case GL_TEXTURE_2D: {*params=glIsEnabled(GL_TEXTURE_2D);} break;
   case GL_TRANSPOSE_PROJECTION_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_PROJECTION&1][(i&3)*4+i/4];} break;
   case GL_TRANSPOSE_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][(i&3)*4+i/4];} break;
-  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glContext.viewportY0;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
+  case GL_VIEWPORT: {params[0]=glContext.viewportX0;params[1]=glFrameBufferHeight-glContext.viewportY1;params[2]=glContext.viewportX1-glContext.viewportX0;params[3]=glContext.viewportY1-glContext.viewportY0;} break;
   case GL_ZOOM_X: {*params=(int)floor(glContext.zoomX);} break;
   case GL_ZOOM_Y: {*params=(int)floor(glContext.zoomY);;} break;
   }
