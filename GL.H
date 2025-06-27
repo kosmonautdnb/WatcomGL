@@ -6,6 +6,8 @@
 // It is required that Vesa 3.0 e.g. 640x480x32 works on your device.
 // by Stefan Mader in 2025
 //-------------------------
+// Known issues: pixel and texel centers are at 0,0 resulting in shifted output to original OpenGL
+// In very rare cases (on 3d x or y==0) polygons may have seams
 #ifndef __gl_h__
 #define __gl_h__
 
