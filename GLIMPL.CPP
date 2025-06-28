@@ -16,8 +16,8 @@
 
 double glPixelCenterX = -0.5;
 double glPixelCenterY = -0.5;
-double glTexelCenterX = -0.5;
-double glTexelCenterY = -0.5;
+double glTexelCenterX = -0.5f;
+double glTexelCenterY = -0.5f;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
@@ -3294,15 +3294,19 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     tdata0 = t->data;
     texEnvMode = t->texEnvMode;
 
-    tx0 = (v0->textureX*twidth0+glTexelCenterX)*v0w;
-    ty0 = (v0->textureY*theight0+glTexelCenterY)*v0w;
+    double scx = glTexelCenterX;
+    double scy = glTexelCenterY;
+    if (!filtering) {scx = 0; scy = 0;}
+
+    tx0 = (v0->textureX*twidth0+scx)*v0w;
+    ty0 = (v0->textureY*theight0+scy)*v0w;
   
 
-    tx1 = (v1->textureX*twidth0+glTexelCenterX)*v1w;
-    ty1 = (v1->textureY*theight0+glTexelCenterY)*v1w;
+    tx1 = (v1->textureX*twidth0+scx)*v1w;
+    ty1 = (v1->textureY*theight0+scy)*v1w;
 
-    tx2 = (v2->textureX*twidth0+glTexelCenterX)*v2w;
-    ty2 = (v2->textureY*theight0+glTexelCenterY)*v2w;
+    tx2 = (v2->textureX*twidth0+scx)*v2w;
+    ty2 = (v2->textureY*theight0+scy)*v2w;
 
     borderColor = ((int)floor(glClampf(t->borderColorRed*255.f,0.f,255.f)));
     borderColor |= ((int)floor(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;

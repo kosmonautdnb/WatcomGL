@@ -688,6 +688,10 @@ GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad: // supported
 }
 #endif
 
+extern double glPixelCenterX; // -0.5 (screenX += glPixelCenterX)
+extern double glPixelCenterY; // -0.5
+extern double glTexelCenterX; // -0.5 (texCoord += glTexelCenterX)
+extern double glTexelCenterY; // -0.5
 extern int glFrameBufferWidth;
 extern int glFrameBufferHeight;
 extern double glMonitorAspectRatio;
