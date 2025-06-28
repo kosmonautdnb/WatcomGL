@@ -6,8 +6,7 @@
 // It is required that Vesa 3.0 e.g. 640x480x32 works on your device.
 // by Stefan Mader in 2025
 //-------------------------
-// Known issues: pixel and texel centers are at 0,0 resulting in shifted output to original OpenGL
-// In very rare cases (on 3d x or y==0) polygons may have seams
+// Issues: In very rare cases (on 3d x or y==0) polygons may have seams
 #include "gl.h"
 #include <string.h>
 #include <math.h>
@@ -15,6 +14,10 @@
 
 #define PI 3.14159265358979323846
 
+double glPixelCenterX = -0.5;
+double glPixelCenterY = -0.5;
+double glTexelCenterX = -0.5;
+double glTexelCenterY = -0.5;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
@@ -431,6 +434,8 @@ int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   v->sy *= (context->viewportY1-context->viewportY0)*-0.5*context->zoomY;
   v->sx += (context->viewportX0+context->viewportX1)*0.5;
   v->sy += (context->viewportY0+context->viewportY1)*0.5;
+  v->sx += glPixelCenterX;
+  v->sy += glPixelCenterY;
   return 0;
 }
 
@@ -2743,8 +2748,8 @@ void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz
 GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
   float d[3];
   const GLint r = glhProjectfx(objX, objY, objZ, model, projection, view, d);
-  *winX = d[0];
-  *winY = d[1];
+  *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
+  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
@@ -2752,14 +2757,16 @@ GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLf
 GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
   float d[3];
   const GLint r = glhProjectf(objX, objY, objZ, model, projection, view, d);
-  *winX = d[0];
-  *winY = d[1];
+  *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
+  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
 
 GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ) {
   float d[3];
+  winX -= glPixelCenterX; // actually you need the pixelCenter?
+  winY -= glPixelCenterY; // actually you need the pixelCenter?
   const GLint r = glhUnProjectf(winX, winY, winZ, model, projection, view, d);
   *objX = d[0];
   *objY = d[1];
@@ -2770,8 +2777,8 @@ GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GL
 GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ) {
   double d[3];
   const GLint r = glhProjectx(objX, objY, objZ, model, projection, view, d);
-  *winX = d[0];
-  *winY = d[1];
+  *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
+  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
@@ -2779,14 +2786,16 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 GLint gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ) {
   double d[3];
   const GLint r = glhProject(objX, objY, objZ, model, projection, view, d);
-  *winX = d[0];
-  *winY = d[1];
+  *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
+  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
 
 GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *objX, GLdouble *objY, GLdouble *objZ) {
   double d[3];
+  winX -= glPixelCenterX; // actually you need the pixelCenter?
+  winY -= glPixelCenterY; // actually you need the pixelCenter?
   const GLint r = glhUnProject(winX, winY, winZ, model, projection, view, d);
   *objX = d[0];
   *objY = d[1];
@@ -3285,14 +3294,15 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     tdata0 = t->data;
     texEnvMode = t->texEnvMode;
 
-    tx0 = v0->textureX*v0w*twidth0;
-    ty0 = v0->textureY*v0w*theight0;
+    tx0 = (v0->textureX*twidth0+glTexelCenterX)*v0w;
+    ty0 = (v0->textureY*theight0+glTexelCenterY)*v0w;
   
-    tx1 = v1->textureX*v1w*twidth0;
-    ty1 = v1->textureY*v1w*theight0;
-  
-    tx2 = v2->textureX*v2w*twidth0;
-    ty2 = v2->textureY*v2w*theight0;
+
+    tx1 = (v1->textureX*twidth0+glTexelCenterX)*v1w;
+    ty1 = (v1->textureY*theight0+glTexelCenterY)*v1w;
+
+    tx2 = (v2->textureX*twidth0+glTexelCenterX)*v2w;
+    ty2 = (v2->textureY*theight0+glTexelCenterY)*v2w;
 
     borderColor = ((int)floor(glClampf(t->borderColorRed*255.f,0.f,255.f)));
     borderColor |= ((int)floor(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
