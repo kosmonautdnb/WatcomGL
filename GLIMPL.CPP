@@ -910,7 +910,7 @@ void glEmitVertex() {
             drawClippedQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
           }
         }
-        glCurrentVertexElement = 0;
+Q        glCurrentVertexElement = 0;
       }
     } break;
     case GL_POINTS: {
@@ -2749,7 +2749,7 @@ GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLf
   float d[3];
   const GLint r = glhProjectfx(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
-  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
+  *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
@@ -2758,7 +2758,7 @@ GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfl
   float d[3];
   const GLint r = glhProjectf(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
-  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
+  *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
@@ -2766,7 +2766,7 @@ GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfl
 GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ) {
   float d[3];
   winX -= glPixelCenterX; // actually you need the pixelCenter?
-  winY -= glPixelCenterY; // actually you need the pixelCenter?
+  winY += glPixelCenterY; // actually you need the pixelCenter?
   const GLint r = glhUnProjectf(winX, winY, winZ, model, projection, view, d);
   *objX = d[0];
   *objY = d[1];
@@ -2778,7 +2778,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
   double d[3];
   const GLint r = glhProjectx(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
-  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
+  *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
@@ -2787,7 +2787,7 @@ GLint gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, G
   double d[3];
   const GLint r = glhProject(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
-  *winY = d[1]+glPixelCenterY; // actually you need the pixelCenter?
+  *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
   return r;
 }
@@ -2795,7 +2795,7 @@ GLint gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, G
 GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *objX, GLdouble *objY, GLdouble *objZ) {
   double d[3];
   winX -= glPixelCenterX; // actually you need the pixelCenter?
-  winY -= glPixelCenterY; // actually you need the pixelCenter?
+  winY += glPixelCenterY; // actually you need the pixelCenter?
   const GLint r = glhUnProject(winX, winY, winZ, model, projection, view, d);
   *objX = d[0];
   *objY = d[1];
