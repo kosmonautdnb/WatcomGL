@@ -910,7 +910,7 @@ void glEmitVertex() {
             drawClippedQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
           }
         }
-Q        glCurrentVertexElement = 0;
+        glCurrentVertexElement = 0;
       }
     } break;
     case GL_POINTS: {
