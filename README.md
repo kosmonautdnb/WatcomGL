@@ -14,4 +14,4 @@ This OpenGL "Emulation" is purely in software "slow" and not optimized yet.
 
 Multithreading is planned (if a multithreading lib for Dos pops up somewhere).
 
-A demo game (in the making) can be found here: https://github.com/kosmonautdnb/OpenGLDemoGame_DOS
+A demo game can be found here: https://github.com/kosmonautdnb/OpenGLDemoGame_DOS
