@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <dos.h>
 
 #define GLAD_GL_IMPLEMENTATION
 #include "gl.h"
@@ -674,10 +675,23 @@ int main( void )
 
    glfwSetTime( 0.0 );
   */
-   glVesa(XRES,YRES,32);
+  const bool pureVGA = true;
+  if (pureVGA) {
+    glVGA();
+  } else {
+    if (!glVesa(XRES,YRES,32)) {
+      printf("No Vesa %dx%dx32 found.\n", XRES, YRES);
+      sleep(1);
+      if (!glVGA())
+      {
+        printf("No VGA device found.\n");
+        exit(0);
+      }
+    }
+  }
    //glSetMonitorAspectRatio(16.0/9.0);
    glSetTime(0.0);
-   reshape(NULL, XRES, YRES);
+   reshape(NULL, glFrameBufferWidth, glFrameBufferHeight);
 
    init();
 

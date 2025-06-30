@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dos.h>
 #define XRES 640 // 320
 #define YRES 480 // 200
 
@@ -358,17 +359,24 @@ void NEHE8_Blending() {
 
 int main(int argc, const char *argv[]) {
 
-  if (!glVesa(XRES,YRES,32)) {
-    printf("Your graphics card doesn't support this vesa mode.\n");
-    exit(0);
+  const bool pureVGA = false;
+  if (pureVGA) {
+    glVGA();
+  } else {
+    if (!glVesa(XRES,YRES,32)) {
+      printf("No Vesa %dx%dx32 found.\n", XRES, YRES);
+      sleep(1);
+      if (!glVGA())
+      {
+        printf("No VGA device found.\n");
+        exit(0);
+      }
+    }
   }
-
-  glSetMonitorAspectRatio(16.0/9.0);
-  glViewport(0,0,XRES,YRES);
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(45.0f,(GLfloat)XRES/YRES,0.1f,100.f);
+  gluPerspective(45.0f,(GLfloat)16.0/9.0,0.1f,100.f);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   glEnable(GL_DEPTH_TEST);
