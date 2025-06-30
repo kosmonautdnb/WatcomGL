@@ -13,6 +13,7 @@
 #include <time.h>
 
 #define PI 3.14159265358979323846
+#define FLOOR(__v__) (__v__) // not needed since conversion to int truncates
 
 double glPixelCenterX = -0.5;
 double glPixelCenterY = -0.5;
@@ -2940,7 +2941,7 @@ __inline bool glCheckDepthFunction(float depthBufferValue, float newValue, int d
 
 
 __inline int textureWrap(float tx, int siz, GLenum filterMode) {
-  int t = (int)floor(tx);
+  int t = (int)FLOOR(tx); // pseudo floor is a trunc directly below 0 makes a seam but is much faster
   if (t<siz&&t>=0) return t;
   switch(filterMode) {
   case GL_MIRRORED_REPEAT: {
@@ -3460,8 +3461,8 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
             if (filtering) {
               int tix1 = textureWrap(tx+1, twidth0, t->wrapS);
               int tiy1 = textureWrap(ty+1, theight0, t->wrapT);
-              int txf = (int)floor(fmod(tx*256.f,256.f));
-              int tyf = (int)floor(fmod(ty*256.f,256.f));
+              int txf = (int)FLOOR(fmod(tx*256.f,256.f));
+              int tyf = (int)FLOOR(fmod(ty*256.f,256.f));
               if (txf<0) txf = 256+txf;
               if (tyf<0) tyf = 256+tyf;
               int p1v = ((256-txf)*(256-tyf))>>8; 
