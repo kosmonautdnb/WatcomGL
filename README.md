@@ -15,3 +15,5 @@ This OpenGL "Emulation" is purely in software "slow" and not optimized yet.
 Multithreading is planned (if a multithreading lib for Dos pops up somewhere).
 
 A demo game can be found here: https://github.com/kosmonautdnb/OpenGLDemoGame_DOS
+
+This is part of my "template lib" here: https://github.com/kosmonautdnb/TemplateLib_WatcomC.git
