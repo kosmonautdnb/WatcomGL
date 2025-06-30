@@ -1,6 +1,6 @@
 ## Simple OpenGL "Emulator"
 
-not finished yet. Just link GLIMPL.CPP and include GL.H to your WatcomC project. 
+Just link GLIMPL.CPP and include GL.H to your WatcomC project. 
 
 May also work in other (non Dos) environments.
 
