@@ -823,7 +823,7 @@ double glSeconds();
                            // sets the time to <seconds>
 void glSetTime(double seconds);
                            // convenient, allocation free glTexImage2D for 32bit RGBA
-void glTexturePointer(int width, int height, unsigned int *textureData);
+void glTexturePointer(int width, int height, unsigned int *textureData);  // textureData needs to be bottomLeft to topRight
                            // set a render target (NULL sets screen/default render target)
 void glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height); // remember to use GLViewport,too...
 GLuint glGetTextureWidth(GLuint textureId);

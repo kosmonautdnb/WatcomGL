@@ -1695,22 +1695,28 @@ void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei wid
   input[1]=0xff;
   input[2]=0xff;
   input[3]=0xff;
-  for (int i = 0; i < width*height; i++) {
-    if (pixels != NULL) {
-      input[0] = ((unsigned char*)pixels)[i*formatStride];
-      if (formatStride>=2)
-        input[1] = ((unsigned char*)pixels)[i*formatStride+1];
-      if (formatStride>=3)
-        input[2] = ((unsigned char*)pixels)[i*formatStride+2];
-      if (formatStride>=4)
-        input[3] = ((unsigned char*)pixels)[i*formatStride+3];
+  for (int y = 0; y < height; y++) {
+    int i2 = width*height-(y+1)*width; // textures are flipped read out (source bottom left is tex pixel uv 0.0)
+    int i = y*width;
+    for (int x = 0; x < width; x++) {
+      if (pixels != NULL) {
+        input[0] = ((unsigned char*)pixels)[i2*formatStride];
+        if (formatStride>=2)
+          input[1] = ((unsigned char*)pixels)[i2*formatStride+1];
+        if (formatStride>=3)
+          input[2] = ((unsigned char*)pixels)[i2*formatStride+2];
+        if (formatStride>=4)
+          input[3] = ((unsigned char*)pixels)[i2*formatStride+3];
+      }
+      unsigned int rgba = format == GL_ALPHA ? 0x00ffffff : 0x00000000;
+      if (rIn != -1) rgba |= input[rIn];
+      if (gIn != -1) rgba |= input[gIn]<<8;
+      if (bIn != -1) rgba |= input[bIn]<<16;
+      if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
+      t->data[i] = rgba;
+      i++;
+      i2++;
     }
-    unsigned int rgba = format == GL_ALPHA ? 0x00ffffff : 0x00000000;
-    if (rIn != -1) rgba |= input[rIn];
-    if (gIn != -1) rgba |= input[gIn]<<8;
-    if (bIn != -1) rgba |= input[bIn]<<16;
-    if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
-    t->data[i] = rgba;
   }
 }
 
@@ -1762,27 +1768,31 @@ void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, 
   input[1]=0xff;
   input[2]=0xff;
   input[3]=0xff;
-  for (int i = 0; i < width*height; i++) {
-    if (pixels != NULL) {
-      input[0] = ((unsigned char*)pixels)[i*formatStride];
-      if (formatStride>=2)
-        input[1] = ((unsigned char*)pixels)[i*formatStride+1];
-      if (formatStride>=3)
-        input[2] = ((unsigned char*)pixels)[i*formatStride+2];
-      if (formatStride>=4)
-        input[3] = ((unsigned char*)pixels)[i*formatStride+3];
+  for (int y = 0; y < height; y++) {
+    int i2 = width*height-(y+1)*width; // textures are flipped read out (source bottom left is tex pixel uv 0.0)
+    for (int x = 0; x < width; x++) {
+      if (pixels != NULL) {
+        input[0] = ((unsigned char*)pixels)[i2*formatStride];
+        if (formatStride>=2)
+          input[1] = ((unsigned char*)pixels)[i2*formatStride+1];
+        if (formatStride>=3)
+          input[2] = ((unsigned char*)pixels)[i2*formatStride+2];
+        if (formatStride>=4)
+          input[3] = ((unsigned char*)pixels)[i2*formatStride+3];
+      }
+      unsigned int rgba = format == GL_ALPHA ? 0x00ffffff : 0x00000000;
+      if (rIn != -1) rgba |= input[rIn];
+      if (gIn != -1) rgba |= input[gIn]<<8;
+      if (bIn != -1) rgba |= input[bIn]<<16;
+      if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
+      int x2 = x;
+      int y2 = y;
+      x2 += xoffset;
+      y2 += yoffset;
+      if (x2 >= 0 && y2 >= 0 && x2 < t->width && y2 < t->height)
+        t->data[x2+y2*t->width] = rgba;
+      i2++;
     }
-    unsigned int rgba = format == GL_ALPHA ? 0x00ffffff : 0x00000000;
-    if (rIn != -1) rgba |= input[rIn];
-    if (gIn != -1) rgba |= input[gIn]<<8;
-    if (bIn != -1) rgba |= input[bIn]<<16;
-    if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
-    int x = i % width;
-    int y = i / width;
-    x += xoffset;
-    y += yoffset;
-    if (x >= 0 && y >= 0 && x < t->width && y < t->height)
-      t->data[x+y*t->width] = rgba;
   }
 }
 
@@ -3301,14 +3311,14 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     if (!filtering) {scx = 0; scy = 0;}
 
     tx0 = (v0->textureX*twidth0+scx)*v0w;
-    ty0 = ((1-v0->textureY)*theight0+scy)*v0w;
+    ty0 = ((v0->textureY)*theight0+scy)*v0w;
   
 
     tx1 = (v1->textureX*twidth0+scx)*v1w;
-    ty1 = ((1-v1->textureY)*theight0+scy)*v1w;
+    ty1 = ((v1->textureY)*theight0+scy)*v1w;
 
     tx2 = (v2->textureX*twidth0+scx)*v2w;
-    ty2 = ((1-v2->textureY)*theight0+scy)*v2w;
+    ty2 = ((v2->textureY)*theight0+scy)*v2w;
 
     borderColor = ((int)floor(glClampf(t->borderColorRed*255.f,0.f,255.f)));
     borderColor |= ((int)floor(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
