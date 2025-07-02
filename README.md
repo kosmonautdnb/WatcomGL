@@ -4,7 +4,7 @@ Just link GLIMPL.CPP and include GL.H to your WatcomC project.
 
 May also work in other (non Dos) environments.
 
-Current hot topics: barycentric coordinates cause polygon edges to be calculated incorrectly (in seldom cases).
+Current hot topics: barycentric coordinates cause polygon edges to be calculated incorrectly (in very very seldom cases).
 
 For some fun: link _YELLOW.CPP to see "Yellow Rose of Texas" a 4k by Fit and Bandwagon.
 
