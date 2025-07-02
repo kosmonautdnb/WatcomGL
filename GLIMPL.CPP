@@ -924,19 +924,19 @@ void glEmitVertex() {
           double pointSizeX = glContext.pointSize*0.5*glContext.zoomX;
           double pointSizeY = glContext.pointSize*0.5*glContext.zoomY;
           glVertices[3].textureX = 0;
-          glVertices[3].textureY = 0;
+          glVertices[3].textureY = 1;
           glVertices[3].sx -= pointSizeX;
           glVertices[3].sy -= pointSizeY;
           glVertices[2].textureX = 1;
-          glVertices[2].textureY = 0;
+          glVertices[2].textureY = 1;
           glVertices[2].sx += pointSizeX;
           glVertices[2].sy -= pointSizeY;
           glVertices[1].textureX = 1;
-          glVertices[1].textureY = 1;
+          glVertices[1].textureY = 0;
           glVertices[1].sx += pointSizeX;
           glVertices[1].sy += pointSizeY;
           glVertices[0].textureX = 0;
-          glVertices[0].textureY = 1;
+          glVertices[0].textureY = 0;
           glVertices[0].sx -= pointSizeX;
           glVertices[0].sy += pointSizeY;
           int clipFlags = glClipVertex(&glContext,&glVertices[0]);
@@ -972,6 +972,7 @@ void glAlphaFunc(GLenum func, GLclampf ref) {
 }
 
 void glBegin(GLenum mode) {
+  //if (glContext.beginMode != 0) {glDone();exit(0);}
   glContext.beginMode = mode;
   glCurrentVertexElement = 0;
 }
@@ -3300,14 +3301,14 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     if (!filtering) {scx = 0; scy = 0;}
 
     tx0 = (v0->textureX*twidth0+scx)*v0w;
-    ty0 = (v0->textureY*theight0+scy)*v0w;
+    ty0 = ((1-v0->textureY)*theight0+scy)*v0w;
   
 
     tx1 = (v1->textureX*twidth0+scx)*v1w;
-    ty1 = (v1->textureY*theight0+scy)*v1w;
+    ty1 = ((1-v1->textureY)*theight0+scy)*v1w;
 
     tx2 = (v2->textureX*twidth0+scx)*v2w;
-    ty2 = (v2->textureY*theight0+scy)*v2w;
+    ty2 = ((1-v2->textureY)*theight0+scy)*v2w;
 
     borderColor = ((int)floor(glClampf(t->borderColorRed*255.f,0.f,255.f)));
     borderColor |= ((int)floor(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
