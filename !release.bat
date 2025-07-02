@@ -1,1 +1,1 @@
-copy r:\gltest.exe gltest.exe
+copy r:\_test.exe _test.exe
