@@ -716,7 +716,7 @@ void glZoomX(float zoom); // also non standard, hopefully you don't need it
 void glZoomY(float zoom); // also non standard, hopefully you don't need it
 float glGetZoomX(); // also non standard, hopefully you don't need it
 float glGetZoomY(); // also non standard, hopefully you don't need it
-
+void glExplicitAlpha(bool useExplicitAlpha, GLfloat alpha); // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer")
    // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp)
 bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned int color);
 

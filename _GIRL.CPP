@@ -311,8 +311,8 @@ int main(int argc, char **argv) {
   glDepthFunc(GL_LEQUAL);
   do
   {		
-    tme = (float)clock() / CLOCKS_PER_SEC * 0.25;
-    glClearColor(0.2f,0.4f,0.6f,1.f);
+    tme = (float)clock() / CLOCKS_PER_SEC;
+    glClearColor(0.2f,0.4f,0.6f,0.f);
     glClear(GL_COLOR_BUFFER_BIT|GL_STENCIL_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -321,8 +321,8 @@ int main(int argc, char **argv) {
     glLoadIdentity();
     float r = 0.75;
     gluLookAt(sin(tme)*r,sin(tme*0.3)+1,-cos(tme)*r,0,1,0,0,1,0);
-    float pos[4] = {sin(tme*0.3),cos(tme*0.3),sin(tme*0.1),0};
-    float pos2[4] = {sin(tme*1.3),cos(tme*2.3),sin(tme*3.1),1};
+    float pos[4] = {0,-1,1,0};
+    float pos2[4] = {1,0,0,1};
     float spc[4] = {1,1,1,0};
     float dif[4] = {1,0.6,0.2,0};
     glLightfv(GL_LIGHT0, GL_POSITION,pos);

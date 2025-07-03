@@ -189,6 +189,8 @@ public:
     zoomX = 1.0;
     zoomY = 1.0;
     pushAttribBitsHere = 0;
+    explicitAlpha = 0.f;
+    useExplicitAlpha = false;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -277,6 +279,8 @@ public:
   double zoomX;
   double zoomY;
   unsigned int pushAttribBitsHere;
+  GLfloat explicitAlpha;
+  bool useExplicitAlpha;
 };
 
 _GLContext glContext;
@@ -412,10 +416,15 @@ void glUpdateMatrix() {
 }
 
 int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
-  double x = v->vertexX * context->matrix[0*4+0] + v->vertexY * context->matrix[1*4+0] + v->vertexZ * context->matrix[2*4+0] + v->vertexW * context->matrix[3*4+0];
-  double y = v->vertexX * context->matrix[0*4+1] + v->vertexY * context->matrix[1*4+1] + v->vertexZ * context->matrix[2*4+1] + v->vertexW * context->matrix[3*4+1];
-  double z = v->vertexX * context->matrix[0*4+2] + v->vertexY * context->matrix[1*4+2] + v->vertexZ * context->matrix[2*4+2] + v->vertexW * context->matrix[3*4+2];
-  double w = v->vertexX * context->matrix[0*4+3] + v->vertexY * context->matrix[1*4+3] + v->vertexZ * context->matrix[2*4+3] + v->vertexW * context->matrix[3*4+3];
+  const double *cm = context->matrix;
+  const double vx = v->vertexX;
+  const double vy = v->vertexY;
+  const double vz = v->vertexZ;
+  const double vw = v->vertexW;
+  const double x = vx * cm[0*4+0] + vy * cm[1*4+0] + vz * cm[2*4+0] + vw * cm[3*4+0];
+  const double y = vx * cm[0*4+1] + vy * cm[1*4+1] + vz * cm[2*4+1] + vw * cm[3*4+1];
+  const double z = vx * cm[0*4+2] + vy * cm[1*4+2] + vz * cm[2*4+2] + vw * cm[3*4+2];
+  const double w = vx * cm[0*4+3] + vy * cm[1*4+3] + vz * cm[2*4+3] + vw * cm[3*4+3];
 
   if (clip) {
     if (z < -w) {
@@ -429,20 +438,18 @@ int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   v->sx = x/w;
   v->sy = y/w;
   v->sz = z/w;
-  v->sw = w;
+  v->sw = w; // not 1
 
   v->sx *= (context->viewportX1-context->viewportX0)*0.5*context->zoomX;
   v->sy *= (context->viewportY1-context->viewportY0)*-0.5*context->zoomY;
-  v->sx += (context->viewportX0+context->viewportX1)*0.5;
-  v->sy += (context->viewportY0+context->viewportY1)*0.5;
-  v->sx += glPixelCenterX;
-  v->sy += glPixelCenterY;
+  v->sx += (context->viewportX0+context->viewportX1)*0.5+glPixelCenterX;
+  v->sy += (context->viewportY0+context->viewportY1)*0.5+glPixelCenterY;
   return 0;
 }
 
 void glLightVertex(_GLContext *context, glVertex *v) {
   if (context->isEnabled(GL_LIGHTING)) {
-    double *matrix = context->matrixForMode[GL_MODELVIEW & 1];
+    const double *matrix = context->matrixForMode[GL_MODELVIEW & 1];
     double x = v->vertexX * matrix[0*4+0] + v->vertexY * matrix[1*4+0] + v->vertexZ * matrix[2*4+0] + v->vertexW * matrix[3*4+0];
     double y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
     double z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
@@ -453,14 +460,14 @@ void glLightVertex(_GLContext *context, glVertex *v) {
       z /= w;
     }
     // rotate normal (inversetranspose would be better, or?)
-    double vnx = v->vertexX+v->normalX;
-    double vny = v->vertexY+v->normalY;
-    double vnz = v->vertexZ+v->normalZ;
-    double vnw = v->vertexW;
+    const double vnx = v->vertexX+v->normalX;
+    const double vny = v->vertexY+v->normalY;
+    const double vnz = v->vertexZ+v->normalZ;
+    const double vnw = v->vertexW;
     double nx = vnx * matrix[0*4+0] + vny * matrix[1*4+0] + vnz * matrix[2*4+0] + vnw * matrix[3*4+0];
     double ny = vnx * matrix[0*4+1] + vny * matrix[1*4+1] + vnz * matrix[2*4+1] + vnw * matrix[3*4+1];
     double nz = vnx * matrix[0*4+2] + vny * matrix[1*4+2] + vnz * matrix[2*4+2] + vnw * matrix[3*4+2];
-    double nw = vnx * matrix[0*4+3] + vny * matrix[1*4+3] + vnz * matrix[2*4+3] + vnw * matrix[3*4+3];
+    const double nw = vnx * matrix[0*4+3] + vny * matrix[1*4+3] + vnz * matrix[2*4+3] + vnw * matrix[3*4+3];
     if (nw != 0) { // should never happen
       nx /= nw;
       ny /= nw;
@@ -553,20 +560,20 @@ void glLightVertex(_GLContext *context, glVertex *v) {
 
     for (int i = 0; i < __GL_MAX_LIGHTS__; i++) {
       if (context->isEnabled(GL_LIGHT0+i)) {
-        float lightAmbientRed = context->lightRed[0][i];
-        float lightAmbientGreen = context->lightGreen[0][i];
-        float lightAmbientBlue = context->lightBlue[0][i];
-        float lightDiffuseRed = context->lightRed[1][i];
-        float lightDiffuseGreen = context->lightGreen[1][i];
-        float lightDiffuseBlue = context->lightBlue[1][i];
-        float lightDiffuseAlpha = context->lightAlpha[1][i];
-        float lightSpecularRed = context->lightRed[2][i];
-        float lightSpecularGreen = context->lightGreen[2][i];
-        float lightSpecularBlue =  context->lightBlue[2][i];
-        double lightPositionX = context->lightRed[3][i];
-        double lightPositionY = context->lightGreen[3][i];
-        double lightPositionZ =  context->lightBlue[3][i];
-        double lightPositionW =  context->lightAlpha[3][i];
+        const float lightAmbientRed = context->lightRed[0][i];
+        const float lightAmbientGreen = context->lightGreen[0][i];
+        const float lightAmbientBlue = context->lightBlue[0][i];
+        const float lightDiffuseRed = context->lightRed[1][i];
+        const float lightDiffuseGreen = context->lightGreen[1][i];
+        const float lightDiffuseBlue = context->lightBlue[1][i];
+        const float lightDiffuseAlpha = context->lightAlpha[1][i];
+        const float lightSpecularRed = context->lightRed[2][i];
+        const float lightSpecularGreen = context->lightGreen[2][i];
+        const float lightSpecularBlue =  context->lightBlue[2][i];
+        const double lightPositionX = context->lightRed[3][i];
+        const double lightPositionY = context->lightGreen[3][i];
+        const double lightPositionZ =  context->lightBlue[3][i];
+        const double lightPositionW =  context->lightAlpha[3][i];
         double lVecX = lightPositionX;
         double lVecY = lightPositionY;
         double lVecZ = lightPositionZ;
@@ -584,7 +591,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         double viewZ = z;
         l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
         if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
-        double dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
+        const double dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
         double reflectionX = viewX - dot2NI * normalX;
         double reflectionY = viewY - dot2NI * normalY;
         double reflectionZ = viewZ - dot2NI * normalZ;
@@ -792,9 +799,9 @@ void glEmitVertex() {
             double dy = glVertices[1].sy-glVertices[0].sy;
             double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            double nx = dy * glContext.zoomX;
-            double ny = -dx * glContext.zoomY;
-            double d = glContext.lineWidth*0.5;
+            const double nx = dy * glContext.zoomX;
+            const double ny = -dx * glContext.zoomY;
+            const double d = glContext.lineWidth*0.5;
             glVertices[3].sx += nx*d;
             glVertices[3].sy += ny*d;
             glVertices[2].sx += nx*d;
@@ -834,9 +841,9 @@ void glEmitVertex() {
             double dy = glVertices[1].sy-glVertices[0].sy;
             double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            float nx = dy*glContext.zoomX;
-            float ny = -dx*glContext.zoomY;
-            float d = glContext.lineWidth*0.5;
+            const double nx = dy*glContext.zoomX;
+            const double ny = -dx*glContext.zoomY;
+            const double d = glContext.lineWidth*0.5;
             glVertices[3].sx += nx*d;
             glVertices[3].sy += ny*d;
             glVertices[2].sx += nx*d;
@@ -921,8 +928,8 @@ void glEmitVertex() {
           glVertices[1] = glVertices[0];
           glVertices[2] = glVertices[0];
           glVertices[3] = glVertices[0];
-          double pointSizeX = glContext.pointSize*0.5*glContext.zoomX;
-          double pointSizeY = glContext.pointSize*0.5*glContext.zoomY;
+          const double pointSizeX = glContext.pointSize*0.5*glContext.zoomX;
+          const double pointSizeY = glContext.pointSize*0.5*glContext.zoomY;
           glVertices[3].textureX = 0;
           glVertices[3].textureY = 1;
           glVertices[3].sx -= pointSizeX;
@@ -3444,6 +3451,11 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   const bool normalAlphaBlending = blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD;
   const bool preMultipliedAlpha = blendFuncS == GL_ONE && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD;
   const bool normalAlphaBlendingOrPreMultipliedAlpha = normalAlphaBlending || preMultipliedAlpha;
+  const bool useExplicitAlpha = context->useExplicitAlpha;
+
+  int explicitAlphaValue = (int)floor(context->explicitAlpha * 255.f);
+  if (explicitAlphaValue<0) explicitAlphaValue=0;
+  if (explicitAlphaValue>255) explicitAlphaValue=255;
 
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
@@ -3610,6 +3622,9 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
                 if (maskAlpha) pDest2[3] = k2[3];
               }
             }
+            if (useExplicitAlpha) {
+              ((unsigned char *)pDest)[3] = explicitAlphaValue;
+            }
           }
         }
       }
@@ -3623,8 +3638,16 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
 }
 
 void glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3) {
-  // 12 if ccw
-  // 03
+  //glVertices[3].sx -= pointSizeX;
+  //glVertices[3].sy -= pointSizeY;
+  //glVertices[2].sx += pointSizeX;
+  //glVertices[2].sy -= pointSizeY;
+  //glVertices[1].sx += pointSizeX;
+  //glVertices[1].sy += pointSizeY;
+  //glVertices[0].sx -= pointSizeX;
+  //glVertices[0].sy += pointSizeY;
+  //01
+  //32
   glDrawTriangle(context,v0,v1,v2);
   glDrawTriangle(context,v2,v3,v0);
 }
@@ -4071,6 +4094,11 @@ float glGetZoomX() {
 
 float glGetZoomY() {
   return glContext.zoomY;
+}
+
+void glExplicitAlpha(bool useExplicitAlpha, GLfloat alpha) {
+  glContext.explicitAlpha = alpha;
+  glContext.useExplicitAlpha = useExplicitAlpha;
 }
                                                                                                                                                                          
 float glPixelLastSX = 0;
