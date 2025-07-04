@@ -592,12 +592,12 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
         if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
         const double dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
-        double reflectionX = viewX - dot2NI * normalX;
-        double reflectionY = viewY - dot2NI * normalY;
-        double reflectionZ = viewZ - dot2NI * normalZ;
+        double reflectionX = -viewX + lVecX; // halveVector
+        double reflectionY = -viewY + lVecY;
+        double reflectionZ = -viewZ + lVecZ;
         l = sqrt(reflectionX*reflectionX+reflectionY*reflectionY+reflectionZ*reflectionZ);
         if (l>0.f) {reflectionX/=l; reflectionY /= l; reflectionZ /= l;}
-        double specular = lVecX * reflectionX + lVecY * reflectionY + lVecZ * reflectionZ;
+        double specular = (normalX * reflectionX + normalY * reflectionY + normalZ * reflectionZ);
         if (specular<0.0) specular = 0.0;
         ambientRed += materialAmbientRed*lightAmbientRed;
         ambientGreen += materialAmbientGreen*lightAmbientGreen;
