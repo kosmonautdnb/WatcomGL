@@ -191,6 +191,7 @@ public:
     pushAttribBitsHere = 0;
     explicitAlpha = 0.f;
     useExplicitAlpha = false;
+    separateSpecular = false;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -281,6 +282,7 @@ public:
   unsigned int pushAttribBitsHere;
   GLfloat explicitAlpha;
   bool useExplicitAlpha;
+  bool separateSpecular;
 };
 
 _GLContext glContext;
@@ -294,6 +296,9 @@ typedef struct glVertex {
   GLfloat colorGreen;
   GLfloat colorBlue;
   GLfloat colorAlpha;
+  GLfloat additionalSpecularColorRed;
+  GLfloat additionalSpecularColorGreen;
+  GLfloat additionalSpecularColorBlue;
   GLdouble normalX;
   GLdouble normalY;
   GLdouble normalZ;
@@ -612,6 +617,14 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         specularBlue += materialSpecularBlue*lightSpecularBlue*pow(specular,shininess);
       }
     }
+    if (context->separateSpecular) {
+      v->additionalSpecularColorRed = specularRed;
+      v->additionalSpecularColorGreen = specularGreen;
+      v->additionalSpecularColorBlue = specularBlue;
+      specularRed = 0;
+      specularGreen = 0;
+      specularBlue = 0;
+    }
     v->colorRed = materialEmissionRed + ambientRed + diffuseRed + specularRed;
     v->colorGreen = materialEmissionGreen + ambientGreen + diffuseGreen + specularGreen;
     v->colorBlue = materialEmissionBlue + ambientBlue + diffuseBlue + specularBlue;
@@ -632,6 +645,12 @@ void interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, double f) {
   dest->colorGreen = v0->colorGreen + f * (v1->colorGreen-v0->colorGreen);
   dest->colorBlue = v0->colorBlue + f * (v1->colorBlue-v0->colorBlue);
   dest->colorAlpha = v0->colorAlpha + f * (v1->colorAlpha-v0->colorAlpha);
+
+  if (glContext.separateSpecular) {
+    dest->additionalSpecularColorRed = v0->additionalSpecularColorRed + f * (v1->additionalSpecularColorRed-v0->additionalSpecularColorRed);
+    dest->additionalSpecularColorGreen = v0->additionalSpecularColorGreen + f * (v1->additionalSpecularColorGreen-v0->additionalSpecularColorGreen);
+    dest->additionalSpecularColorBlue = v0->additionalSpecularColorBlue + f * (v1->additionalSpecularColorBlue-v0->additionalSpecularColorBlue);
+   }
 
   dest->normalX = v0->normalX + f * (v1->normalX-v0->normalX);
   dest->normalY = v0->normalY + f * (v1->normalY-v0->normalY);
@@ -769,6 +788,9 @@ void glEmitVertex() {
   v->colorGreen = w->colorGreen;
   v->colorBlue = w->colorBlue;
   v->colorAlpha = w->colorAlpha;
+  v->additionalSpecularColorRed = 0;
+  v->additionalSpecularColorGreen = 0;
+  v->additionalSpecularColorBlue = 0;
   v->normalX = w->normalX;
   v->normalY = w->normalY;
   v->normalZ = w->normalZ;
@@ -1420,6 +1442,17 @@ void glLightfv (GLenum light, GLenum pname, const GLfloat *params) {
     glContext.lightGreen[pname & 3][light - GL_LIGHT0] = params[1];
     glContext.lightBlue[pname & 3][light - GL_LIGHT0] = params[2];
     glContext.lightAlpha[pname & 3][light - GL_LIGHT0] = params[3];
+  }
+}
+
+void glLightModeli(GLenum pname, const GLenum param) {
+  switch(pname) {
+  case GL_LIGHT_MODEL_COLOR_CONTROL: {
+    switch(param) {
+    case GL_SEPARATE_SPECULAR_COLOR: {glContext.separateSpecular = true;} break;
+    case GL_SINGLE_COLOR: {glContext.separateSpecular = false;} break;
+    }
+  } break;
   }
 }
 
@@ -3446,6 +3479,78 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   b2 *= v2w;
   a2 *= v2w;
 
+  double sr0 = v0->additionalSpecularColorRed;
+  double sg0 = v0->additionalSpecularColorGreen;
+  double sb0 = v0->additionalSpecularColorBlue;
+
+  double sr1 = v1->additionalSpecularColorRed;
+  double sg1 = v1->additionalSpecularColorGreen;
+  double sb1 = v1->additionalSpecularColorBlue;
+
+  double sr2 = v2->additionalSpecularColorRed;
+  double sg2 = v2->additionalSpecularColorGreen;
+  double sb2 = v2->additionalSpecularColorBlue;
+
+  int srf,sgf,sbf;
+
+  const bool separateSpecular = context->separateSpecular;
+  bool interpolateSpecular = true;
+  if (separateSpecular) {
+    if (sr0 < 0) sr0 = 0;
+    if (sg0 < 0) sg0 = 0;
+    if (sb0 < 0) sb0 = 0;
+    if (sr0 > 1) sr0 = 1;
+    if (sg0 > 1) sg0 = 1;
+    if (sb0 > 1) sb0 = 1;
+  
+    if (sr1 < 0) sr1 = 0;
+    if (sg1 < 0) sg1 = 0;
+    if (sb1 < 0) sb1 = 0;
+    if (sr1 > 1) sr1 = 1;
+    if (sg1 > 1) sg1 = 1;
+    if (sb1 > 1) sb1 = 1;
+  
+    if (sr2 < 0) sr2 = 0;
+    if (sg2 < 0) sg2 = 0;
+    if (sb2 < 0) sb2 = 0;
+    if (sr2 > 1) sr2 = 1;
+    if (sg2 > 1) sg2 = 1;
+    if (sb2 > 1) sb2 = 1;
+  
+    sr0 *= 255.0;
+    sg0 *= 255.0;
+    sb0 *= 255.0;
+  
+    sr1 *= 255.0;
+    sg1 *= 255.0;
+    sb1 *= 255.0;
+  
+    sr2 *= 255.0;
+    sg2 *= 255.0;
+    sb2 *= 255.0;
+  
+    if ( floor(sr0)==floor(sr1)&&floor(sr1)==floor(sr2)
+      &&floor(sg0)==floor(sg1)&&floor(sg1)==floor(sg2)
+      &&floor(sb0)==floor(sb1)&&floor(sb1)==floor(sb2)) {
+      interpolateSpecular = false;
+      srf = sr0;
+      sgf = sg0;
+      sbf = sb0;
+    }   
+     
+    sr0 *= v0w;
+    sg0 *= v0w;
+    sb0 *= v0w;
+  
+    sr1 *= v1w;
+    sg1 *= v1w;
+    sb1 *= v1w;
+  
+    sr2 *= v2w;
+    sg2 *= v2w;
+    sb2 *= v2w;
+  }
+
   double iw = 0;
   const bool wValue = textured||interpolateColor;
   const bool normalAlphaBlending = blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD;
@@ -3561,6 +3666,22 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
               }
             }
           }
+               
+          if (separateSpecular) {
+            if (interpolateSpecular) {
+              r += (__BARY0__(sr0)+__BARY1__(sr1)+__BARY2__(sr2))*iw;
+              g += (__BARY0__(sg0)+__BARY1__(sg1)+__BARY2__(sg2))*iw;
+              b += (__BARY0__(sb0)+__BARY1__(sb1)+__BARY2__(sb2))*iw;
+            } else {
+              r += srf;
+              g += sgf;
+              b += sbf;
+            }
+            if (r>255) r = 255;
+            if (g>255) g = 255;
+            if (b>255) b = 255;
+          }
+
           bool writePixel = true;
           if (alphaTest) {
             switch(alphaFunction) {

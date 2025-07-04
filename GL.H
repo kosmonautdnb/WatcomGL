@@ -88,6 +88,9 @@ extern "C" {
 #define GL_ZOOM_X 0xD16 // :mad:
 #define GL_ZOOM_Y 0xD17 // :mad:
 
+#define GL_LIGHT_MODEL_COLOR_CONTROL 0x81f8
+#define GL_SINGLE_COLOR 0x81f9
+#define GL_SEPARATE_SPECULAR_COLOR 0x81fa
 
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
@@ -597,6 +600,7 @@ GLAPI void APIENTRY glHint (GLenum target, GLenum mode);
 GLAPI GLboolean APIENTRY glIsEnabled (GLenum cap); // supported
 GLAPI void APIENTRY glLightfv (GLenum light, GLenum pname, const GLfloat *params); // supported
 GLAPI void APIENTRY glLightModelfv (GLenum pname, const GLfloat *params);
+GLAPI void APIENTRY glLightModeli (GLenum pname, const GLenum param); // supported partially (GL_SEPARATE_SPECULAR_COLOR,GL_SINGLE_COLOR)
 GLAPI void APIENTRY glLineStipple (GLint factor, GLushort pattern);
 GLAPI void APIENTRY glLineWidth (GLfloat width); // supported
 GLAPI void APIENTRY glListBase (GLuint base);
