@@ -194,7 +194,7 @@ public:
     separateSpecular = false;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
-  GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
+  __inline GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
   void enableClientState(GLenum prop, bool enable) {;}
   GLubyte *getString(GLenum prop) {return "";}
   GLenum error;
@@ -420,7 +420,7 @@ void glUpdateMatrix() {
   glMatMul(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
 }
 
-int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
+__inline int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   const double *cm = context->matrix;
   const double vx = v->vertexX;
   const double vy = v->vertexY;
@@ -554,14 +554,14 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     double normalX = nx;
     double normalY = ny;
     double normalZ = nz;
-    if (context->isEnabled(GL_NORMALIZE)) {
+    //if (context->isEnabled(GL_NORMALIZE)) {
       float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
       if (l>0.f) {
         normalX/=l;
         normalY/=l;
         normalZ/=l;
       }
-    }
+    //}
 
     for (int i = 0; i < __GL_MAX_LIGHTS__; i++) {
       if (context->isEnabled(GL_LIGHT0+i)) {
@@ -1024,10 +1024,10 @@ void glClear(GLbitfield mask) {
     combineIntoWindow(minX,minY,maxX,maxY,glContext.scissorX0,glContext.scissorY0,glContext.scissorX1,glContext.scissorY1);
   }
   if (mask & GL_COLOR_BUFFER_BIT) {
-    int r = (int)floor(glContext.clearRed*255.f);
-    int g = (int)floor(glContext.clearGreen*255.f);
-    int b = (int)floor(glContext.clearBlue*255.f);
-    int a = (int)floor(glContext.clearAlpha*255.f);
+    int r = (int)FLOOR(glContext.clearRed*255.f);
+    int g = (int)FLOOR(glContext.clearGreen*255.f);
+    int b = (int)FLOOR(glContext.clearBlue*255.f);
+    int a = (int)FLOOR(glContext.clearAlpha*255.f);
     if (r < 0) r = 0;
     if (g < 0) g = 0;
     if (b < 0) b = 0;
@@ -2884,18 +2884,18 @@ __inline double getBary(double x, double y, const glVertex *v0, const glVertex *
 
 #define __POLYMINMAX__\
   int pminx,pminy,pmaxx,pmaxy;\
-  pminx=(int)floor(v0->sx);\
-  pminy=(int)floor(v0->sy);\
-  pmaxx=(int)floor(v0->sx);\
-  pmaxy=(int)floor(v0->sy);\
-  if ((int)floor(v1->sx)<pminx) pminx=(int)floor(v1->sx);\
-  if ((int)floor(v1->sy)<pminy) pminy=(int)floor(v1->sy);\
-  if ((int)floor(v1->sx)>pmaxx) pmaxx=(int)floor(v1->sx);\
-  if ((int)floor(v1->sy)>pmaxy) pmaxy=(int)floor(v1->sy);\
-  if ((int)floor(v2->sx)<pminx) pminx=(int)floor(v2->sx);\
-  if ((int)floor(v2->sy)<pminy) pminy=(int)floor(v2->sy);\
-  if ((int)floor(v2->sx)>pmaxx) pmaxx=(int)floor(v2->sx);\
-  if ((int)floor(v2->sy)>pmaxy) pmaxy=(int)floor(v2->sy);\
+  pminx=(int)FLOOR(v0->sx);\
+  pminy=(int)FLOOR(v0->sy);\
+  pmaxx=(int)FLOOR(v0->sx);\
+  pmaxy=(int)FLOOR(v0->sy);\
+  if ((int)FLOOR(v1->sx)<pminx) pminx=(int)FLOOR(v1->sx);\
+  if ((int)FLOOR(v1->sy)<pminy) pminy=(int)FLOOR(v1->sy);\
+  if ((int)FLOOR(v1->sx)>pmaxx) pmaxx=(int)FLOOR(v1->sx);\
+  if ((int)FLOOR(v1->sy)>pmaxy) pmaxy=(int)FLOOR(v1->sy);\
+  if ((int)FLOOR(v2->sx)<pminx) pminx=(int)FLOOR(v2->sx);\
+  if ((int)FLOOR(v2->sy)<pminy) pminy=(int)FLOOR(v2->sy);\
+  if ((int)FLOOR(v2->sx)>pmaxx) pmaxx=(int)FLOOR(v2->sx);\
+  if ((int)FLOOR(v2->sy)>pmaxy) pmaxy=(int)FLOOR(v2->sy);\
   pmaxx++;\
   pmaxy++;
 
@@ -3360,10 +3360,10 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     tx2 = (v2->textureX*twidth0+scx)*v2w;
     ty2 = ((v2->textureY)*theight0+scy)*v2w;
 
-    borderColor = ((int)floor(glClampf(t->borderColorRed*255.f,0.f,255.f)));
-    borderColor |= ((int)floor(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
-    borderColor |= ((int)floor(glClampf(t->borderColorBlue*255.f,0.f,255.f)))<<16;
-    borderColor |= ((int)floor(glClampf(t->borderColorAlpha*255.f,0.f,255.f)))<<24;
+    borderColor = ((int)FLOOR(glClampf(t->borderColorRed*255.f,0.f,255.f)));
+    borderColor |= ((int)FLOOR(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
+    borderColor |= ((int)FLOOR(glClampf(t->borderColorBlue*255.f,0.f,255.f)))<<16;
+    borderColor |= ((int)FLOOR(glClampf(t->borderColorAlpha*255.f,0.f,255.f)))<<24;
 
     if ((filtering) && (t->minFilter == GL_NEAREST)||(t->minFilter==GL_NEAREST_MIPMAP_NEAREST)||(t->minFilter==GL_NEAREST_MIPMAP_LINEAR)) {
       const float tw = twidth0;
@@ -3382,15 +3382,15 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   int blendFuncS = context->blendFuncSFactor;
   int blendFuncD = context->blendFuncDFactor;
   int blendEquation = context->blendEquation;
-  unsigned int constantColor = ((int)floor(glClampf(context->blendColorRed*255.f,0.f,255.f)));
-  constantColor |= ((int)floor(glClampf(context->blendColorGreen*255.f,0.f,255.f)))<<8;
-  constantColor |= ((int)floor(glClampf(context->blendColorBlue*255.f,0.f,255.f)))<<16;
-  constantColor |= ((int)floor(glClampf(context->blendColorAlpha*255.f,0.f,255.f)))<<24;
+  unsigned int constantColor = ((int)FLOOR(glClampf(context->blendColorRed*255.f,0.f,255.f)));
+  constantColor |= ((int)FLOOR(glClampf(context->blendColorGreen*255.f,0.f,255.f)))<<8;
+  constantColor |= ((int)FLOOR(glClampf(context->blendColorBlue*255.f,0.f,255.f)))<<16;
+  constantColor |= ((int)FLOOR(glClampf(context->blendColorAlpha*255.f,0.f,255.f)))<<24;
   bool writeDepth = context->depthMask;  
   int depthFunction = context->depthFunc;
   bool depthTest = context->isEnabled(GL_DEPTH_TEST);
   int alphaFunction = context->alphaFunc;
-  int alphaRef = (int)floor(context->alphaFuncRef*255.f);
+  int alphaRef = (int)FLOOR(context->alphaFuncRef*255.f);
   bool alphaTest = context->isEnabled(GL_ALPHA_TEST);
 
   // rgba
@@ -3453,10 +3453,10 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
 
   int r,g,b,a,rf,gf,bf,af;
   bool interpolateColor = true;
-  if ( floor(r0)==floor(r1)&&floor(r1)==floor(r2)
-    &&floor(g0)==floor(g1)&&floor(g1)==floor(g2)
-    &&floor(b0)==floor(b1)&&floor(b1)==floor(b2)
-    &&floor(a0)==floor(a1)&&floor(a1)==floor(a2)) {
+  if ( (int)FLOOR(r0)==(int)FLOOR(r1)&&(int)FLOOR(r1)==(int)FLOOR(r2)
+    &&(int)FLOOR(g0)==(int)FLOOR(g1)&&(int)FLOOR(g1)==(int)FLOOR(g2)
+    &&(int)FLOOR(b0)==(int)FLOOR(b1)&&(int)FLOOR(b1)==(int)FLOOR(b2)
+    &&(int)FLOOR(a0)==(int)FLOOR(a1)&&(int)FLOOR(a1)==(int)FLOOR(a2)) {
     interpolateColor = false;
     rf = r0;
     gf = g0;
@@ -3529,9 +3529,9 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     sg2 *= 255.0;
     sb2 *= 255.0;
   
-    if ( floor(sr0)==floor(sr1)&&floor(sr1)==floor(sr2)
-      &&floor(sg0)==floor(sg1)&&floor(sg1)==floor(sg2)
-      &&floor(sb0)==floor(sb1)&&floor(sb1)==floor(sb2)) {
+    if ( (int)FLOOR(sr0)==(int)FLOOR(sr1)&&(int)FLOOR(sr1)==(int)FLOOR(sr2)
+      &&(int)FLOOR(sg0)==(int)FLOOR(sg1)&&(int)FLOOR(sg1)==(int)FLOOR(sg2)
+      &&(int)FLOOR(sb0)==(int)FLOOR(sb1)&&(int)FLOOR(sb1)==(int)FLOOR(sb2)) {
       interpolateSpecular = false;
       srf = sr0;
       sgf = sg0;
@@ -3558,7 +3558,7 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   const bool normalAlphaBlendingOrPreMultipliedAlpha = normalAlphaBlending || preMultipliedAlpha;
   const bool useExplicitAlpha = context->useExplicitAlpha;
 
-  int explicitAlphaValue = (int)floor(context->explicitAlpha * 255.f);
+  int explicitAlphaValue = (int)FLOOR(context->explicitAlpha * 255.f);
   if (explicitAlphaValue<0) explicitAlphaValue=0;
   if (explicitAlphaValue>255) explicitAlphaValue=255;
 
