@@ -596,13 +596,24 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         double viewZ = z;
         l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
         if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
-        const double dot2NI = 2.0*(viewX*normalX+viewY*normalY+viewZ*normalZ);
-        double reflectionX = -viewX + lVecX; // halveVector
-        double reflectionY = -viewY + lVecY;
-        double reflectionZ = -viewZ + lVecZ;
-        l = sqrt(reflectionX*reflectionX+reflectionY*reflectionY+reflectionZ*reflectionZ);
-        if (l>0.f) {reflectionX/=l; reflectionY /= l; reflectionZ /= l;}
-        double specular = (normalX * reflectionX + normalY * reflectionY + normalZ * reflectionZ);
+        double specular;
+        const bool halveVector = false;
+        if (halveVector) {
+          double reflectionX = -viewX + lVecX; // halveVector
+          double reflectionY = -viewY + lVecY;
+          double reflectionZ = -viewZ + lVecZ;
+          l = sqrt(reflectionX*reflectionX+reflectionY*reflectionY+reflectionZ*reflectionZ);
+          if (l>0.f) {reflectionX/=l; reflectionY /= l; reflectionZ /= l;}
+          specular = (normalX * reflectionX + normalY * reflectionY + normalZ * reflectionZ);
+        } else {
+          double dot2NI = 2.0*(-lVecX*normalX+-lVecY*normalY+-lVecZ*normalZ);
+          double reflectionX = -lVecX - dot2NI * normalX;
+          double reflectionY = -lVecY - dot2NI * normalY;
+          double reflectionZ = -lVecZ - dot2NI * normalZ;
+          l = sqrt(reflectionX*reflectionX+reflectionY*reflectionY+reflectionZ*reflectionZ);
+          if (l>0.f) {reflectionX/=l; reflectionY /= l; reflectionZ /= l;}
+          specular = -viewX * reflectionX + -viewY * reflectionY + -viewZ * reflectionZ;
+        }
         if (specular<0.0) specular = 0.0;
         ambientRed += materialAmbientRed*lightAmbientRed;
         ambientGreen += materialAmbientGreen*lightAmbientGreen;
