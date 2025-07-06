@@ -88,9 +88,13 @@ extern "C" {
 #define GL_ZOOM_X 0xD16 // :mad:
 #define GL_ZOOM_Y 0xD17 // :mad:
 
-#define GL_LIGHT_MODEL_COLOR_CONTROL 0x81f8
-#define GL_SINGLE_COLOR 0x81f9
-#define GL_SEPARATE_SPECULAR_COLOR 0x81fa
+#define GL_LIGHT_MODEL_COLOR_CONTROL 0x81f8 //:mad:
+#define GL_SINGLE_COLOR 0x81f9 //:mad:
+#define GL_SEPARATE_SPECULAR_COLOR 0x81fa //:mad:
+
+#define GL_CONSTANT_ATTENUATION 0x1207 //:mad:
+#define GL_LINEAR_ATTENUATION 0x1208 //:mad:
+#define GL_QUADRATIC_ATTENUATION 0x1209 //:mad:
 
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
@@ -588,7 +592,7 @@ GLAPI void APIENTRY glGetColorTableEXT (GLenum target, GLenum format, GLenum typ
 GLAPI void APIENTRY glGetColorTableParameterivEXT (GLenum target, GLenum pname, GLint *params);
 GLAPI void APIENTRY glGetFloatv (GLenum pname, GLfloat *params); // supported
 GLAPI void APIENTRY glGetIntegerv (GLenum pname, GLint *params); // supported
-GLAPI void APIENTRY glGetLightfv (GLenum light, GLenum pname, GLfloat *params);
+GLAPI void APIENTRY glGetLightfv (GLenum light, GLenum pname, GLfloat *params); // supported
 GLAPI void APIENTRY glGetMaterialfv (GLenum face, GLenum pname, GLfloat *params); // supported
 GLAPI void APIENTRY glGetPointerv (GLenum pname, GLvoid * *params);
 GLAPI void APIENTRY glGetPolygonStipple (GLubyte *mask);
@@ -598,6 +602,7 @@ GLAPI void APIENTRY glGetTexParameteriv (GLenum target, GLenum pname, GLint *par
 GLAPI const GLubyte * APIENTRY glGetString (GLenum name);
 GLAPI void APIENTRY glHint (GLenum target, GLenum mode);
 GLAPI GLboolean APIENTRY glIsEnabled (GLenum cap); // supported
+GLAPI void APIENTRY glLightf (GLenum light, GLenum pname, GLfloat param); // supported
 GLAPI void APIENTRY glLightfv (GLenum light, GLenum pname, const GLfloat *params); // supported
 GLAPI void APIENTRY glLightModelfv (GLenum pname, const GLfloat *params);
 GLAPI void APIENTRY glLightModeli (GLenum pname, const GLenum param); // supported partially (GL_SEPARATE_SPECULAR_COLOR,GL_SINGLE_COLOR)

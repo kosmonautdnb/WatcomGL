@@ -171,6 +171,10 @@ public:
       lightGreen[3][i] = 0;
       lightBlue[3][i] = 1;
       lightAlpha[3][i] = 0;
+      // attenuation
+      constantAttenuation[i] = 1;
+      linearAttenuation[i] = 0;
+      quadraticAttenuation[i] = 0;
     }
     for (i = 0; i < GLMAXTEXTUREUNITS; i++) {
       boundTextures[i] = 0;
@@ -283,6 +287,9 @@ public:
   GLfloat explicitAlpha;
   bool useExplicitAlpha;
   bool separateSpecular;
+  GLfloat constantAttenuation[__GL_MAX_LIGHTS__];
+  GLfloat linearAttenuation[__GL_MAX_LIGHTS__];
+  GLfloat quadraticAttenuation[__GL_MAX_LIGHTS__];
 };
 
 _GLContext glContext;
@@ -582,11 +589,18 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         double lVecX = lightPositionX;
         double lVecY = lightPositionY;
         double lVecZ = lightPositionZ;
+        double attenuation = context->constantAttenuation[i]; // directionals have no distance based attenuation
         if (fabs(lightPositionW)>0.0) {
           lVecX-=x;
           lVecY-=y;
           lVecZ-=z;
+          const double d = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
+          attenuation = context->constantAttenuation[i]+context->linearAttenuation[i]*d+context->quadraticAttenuation[i]*d*d;
         }
+        if (attenuation > 0.0) 
+          attenuation = 1.0/attenuation; 
+        else 
+          attenuation = 0.0;
         double l = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
         if (l>0.0) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
         double diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
@@ -618,14 +632,16 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         ambientRed += materialAmbientRed*lightAmbientRed;
         ambientGreen += materialAmbientGreen*lightAmbientGreen;
         ambientBlue += materialAmbientBlue*lightAmbientBlue;
+        diffuse *= attenuation;
         diffuseRed += materialDiffuseRed*lightDiffuseRed*diffuse;
         diffuseGreen += materialDiffuseGreen*lightDiffuseGreen*diffuse;
         diffuseBlue += materialDiffuseBlue*lightDiffuseBlue*diffuse;
         double shininess = materialShininessRed;
         if (shininess < 0.001) shininess = 0.001;
-        specularRed += materialSpecularRed*lightSpecularRed*pow(specular,shininess);
-        specularGreen += materialSpecularGreen*lightSpecularGreen*pow(specular,shininess);
-        specularBlue += materialSpecularBlue*lightSpecularBlue*pow(specular,shininess);
+        specular = pow(specular,shininess) * attenuation;
+        specularRed += materialSpecularRed*lightSpecularRed*specular;
+        specularGreen += materialSpecularGreen*lightSpecularGreen*specular;
+        specularBlue += materialSpecularBlue*lightSpecularBlue*specular;
       }
     }
     if (context->separateSpecular) {
@@ -1414,6 +1430,23 @@ GLenum glGetError() {
   return glContext.error;
 }
 
+void glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
+  switch(pname) {
+  case GL_CONSTANT_ATTENUATION: {params[0]=glContext.constantAttenuation[light-GL_LIGHT0];} break;
+  case GL_LINEAR_ATTENUATION: {params[0]=glContext.linearAttenuation[light-GL_LIGHT0];} break;
+  case GL_QUADRATIC_ATTENUATION: {params[0]=glContext.quadraticAttenuation[light-GL_LIGHT0];} break;
+  case GL_POSITION:
+  case GL_DIFFUSE:
+  case GL_SPECULAR:
+  case GL_AMBIENT: {
+      params[0] = glContext.lightRed[pname & 3][light - GL_LIGHT0];
+      params[1] = glContext.lightGreen[pname & 3][light - GL_LIGHT0];
+      params[2] = glContext.lightBlue[pname & 3][light - GL_LIGHT0];
+      params[3] = glContext.lightAlpha[pname & 3][light - GL_LIGHT0];
+    }; break;
+  }
+}
+
 const GLubyte *glGetString(GLenum name) {
   return glContext.getString(name);
 }
@@ -1422,7 +1455,21 @@ GLboolean glIsEnabled(GLenum cap) {
   return glContext.isEnabled(cap);
 }  
 
-void glLightfv (GLenum light, GLenum pname, const GLfloat *params) {
+void glLightf(GLenum light, GLenum pname, GLfloat param) {
+  switch(pname) {
+  case GL_CONSTANT_ATTENUATION: {glContext.constantAttenuation[light - GL_LIGHT0] = param; return;} break;
+  case GL_LINEAR_ATTENUATION: {glContext.linearAttenuation[light - GL_LIGHT0] = param; return;} break;
+  case GL_QUADRATIC_ATTENUATION: {glContext.quadraticAttenuation[light - GL_LIGHT0] = param; return;} break;
+  }
+}
+
+void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
+  switch(pname) {
+  case GL_CONSTANT_ATTENUATION: {glContext.constantAttenuation[light - GL_LIGHT0] = params[0]; return;} break;
+  case GL_LINEAR_ATTENUATION: {glContext.linearAttenuation[light - GL_LIGHT0] = params[0]; return;} break;
+  case GL_QUADRATIC_ATTENUATION: {glContext.quadraticAttenuation[light - GL_LIGHT0] = params[0]; return;} break;
+  }
+
   if (pname == GL_POSITION) {
     double lx = params[0];
     double ly = params[1];
