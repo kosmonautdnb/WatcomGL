@@ -32,8 +32,6 @@ unsigned int *glFrameBuffer0 = NULL;
 unsigned int *glStencilBuffer0 = NULL;
 float *glDepthBuffer0 = NULL;
 
-
-
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
 #define __GL_MAX_LIGHTS__ (2)
@@ -196,6 +194,8 @@ public:
     explicitAlpha = 0.f;
     useExplicitAlpha = false;
     separateSpecular = false;
+    texGenS = GL_SPHERE_MAP_2; // actually GL_EYE_LINEAR
+    texGenT = GL_SPHERE_MAP_2; // actually GL_EYE_LINEAR
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   __inline GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -290,6 +290,8 @@ public:
   GLfloat constantAttenuation[__GL_MAX_LIGHTS__];
   GLfloat linearAttenuation[__GL_MAX_LIGHTS__];
   GLfloat quadraticAttenuation[__GL_MAX_LIGHTS__];
+  GLenum texGenS;
+  GLenum texGenT;
 };
 
 _GLContext glContext;
@@ -457,6 +459,40 @@ __inline int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
   v->sx += (context->viewportX0+context->viewportX1)*0.5+glPixelCenterX;
   v->sy += (context->viewportY0+context->viewportY1)*0.5+glPixelCenterY;
   return 0;
+}
+
+void fixSphereMapUV(_GLContext *context, float &tx0, float &ty0, float &tx1, float &ty1) {
+  if (context->texGenS == GL_SPHERE_MAP_2) {
+    if (tx1-tx0>0.5) tx1-=1.0;
+    if (tx1-tx0<-0.5) tx1+=1.0;
+    if (ty1-ty0>0.5) ty1-=1.0;
+    if (ty1-ty0<-0.5) ty1+=1.0;
+  }
+}
+
+void glTexGen_(_GLContext *context, glVertex *v, double x, double y, double z, double normalX, double normalY, double normalZ) {
+  // normal comes already normalized // glTexGen is done per vertex what most likely is wrong
+  double vx = x;
+  double vy = y;
+  double vz = z;
+  const double l = sqrt(vx*vx+vy*vy+vz*vz);
+  if (l > 0.0) {                               
+    vx /= l;
+    vy /= l;
+    vz /= l;
+  }
+  const double dot2NI = 2.0*(vx*normalX+vy*normalY+vz*normalZ);
+  const double reflectionX = vx - dot2NI * normalX;
+  const double reflectionY = vy - dot2NI * normalY;
+  const double reflectionZ = vz - dot2NI * normalZ;
+  switch(context->texGenS) {
+  case GL_SPHERE_MAP: {v->textureX = reflectionX*0.5+0.5;} break;
+  case GL_SPHERE_MAP_2: {v->textureX = atan2(reflectionZ,reflectionX)/(2.0*PI)+0.5;} break;
+  }
+  switch(context->texGenT) {
+  case GL_SPHERE_MAP: {v->textureY = reflectionY*0.5+0.5;} break;
+  case GL_SPHERE_MAP_2: {v->textureY = acos(-reflectionY)/PI;} break;
+  }
 }
 
 void glLightVertex(_GLContext *context, glVertex *v) {
@@ -656,6 +692,51 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     v->colorGreen = materialEmissionGreen + ambientGreen + diffuseGreen + specularGreen;
     v->colorBlue = materialEmissionBlue + ambientBlue + diffuseBlue + specularBlue;
     v->colorAlpha = materialDiffuseAlpha;
+    if (context->isEnabled(GL_TEXTURE_GEN_S)||context->isEnabled(GL_TEXTURE_GEN_T)) {
+      glTexGen_(context,v,x,y,z,normalX,normalY,normalZ);
+    }
+  } else {
+    if (context->isEnabled(GL_TEXTURE_GEN_S)||context->isEnabled(GL_TEXTURE_GEN_T)) {
+      const double *matrix = context->matrixForMode[GL_MODELVIEW & 1];
+      double x = v->vertexX * matrix[0*4+0] + v->vertexY * matrix[1*4+0] + v->vertexZ * matrix[2*4+0] + v->vertexW * matrix[3*4+0];
+      double y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
+      double z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
+      double w = v->vertexX * matrix[0*4+3] + v->vertexY * matrix[1*4+3] + v->vertexZ * matrix[2*4+3] + v->vertexW * matrix[3*4+3];
+      if (w != 0) { // should never happen
+        x /= w;
+        y /= w;
+        z /= w;
+      }
+      // rotate normal (inversetranspose would be better, or?)
+      const double vnx = v->vertexX+v->normalX;
+      const double vny = v->vertexY+v->normalY;
+      const double vnz = v->vertexZ+v->normalZ;
+      const double vnw = v->vertexW;
+      double nx = vnx * matrix[0*4+0] + vny * matrix[1*4+0] + vnz * matrix[2*4+0] + vnw * matrix[3*4+0];
+      double ny = vnx * matrix[0*4+1] + vny * matrix[1*4+1] + vnz * matrix[2*4+1] + vnw * matrix[3*4+1];
+      double nz = vnx * matrix[0*4+2] + vny * matrix[1*4+2] + vnz * matrix[2*4+2] + vnw * matrix[3*4+2];
+      const double nw = vnx * matrix[0*4+3] + vny * matrix[1*4+3] + vnz * matrix[2*4+3] + vnw * matrix[3*4+3];
+      if (nw != 0) { // should never happen
+        nx /= nw;
+        ny /= nw;
+        nz /= nw;
+      }
+      nx -= x;
+      ny -= y;
+      nz -= z;
+      double normalX = nx;
+      double normalY = ny;
+      double normalZ = nz;
+      //if (context->isEnabled(GL_NORMALIZE)) {
+        float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
+        if (l>0.f) {
+          normalX/=l;
+          normalY/=l;
+          normalZ/=l;
+        }
+      //}
+      glTexGen_(context,v,x,y,z,normalX,normalY,normalZ);
+    }
   }
 }
 
@@ -1754,6 +1835,13 @@ void glTexEnvi (GLenum target, GLenum pname, GLint param) {
     case GL_TEXTURE_ENV_MODE: {
       t->texEnvMode = param;
     } break;
+  }
+}
+
+void glTexGeni (GLenum coord, GLenum pname, GLint param) {
+  switch(coord) {
+  case GL_S: {glContext.texGenS = param;} break;
+  case GL_T: {glContext.texGenT = param;} break;
   }
 }
 
@@ -3340,6 +3428,8 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
 #define __CLIP_FAR_PLANE__ if (v0->sz>1.0&&v1->sz>1.0&&v2->sz>1.0) return;
 
 void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
+  bool forceWrapRepeat = false;
+
   if (context->isEnabled(GL_CULL_FACE)) {
     if (context->forceNoCull==0) {
       bool backFacing = glCCW(v0,v1,v2);
@@ -3408,15 +3498,32 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
     double scy = glTexelCenterY;
     if (!filtering) {scx = 0; scy = 0;}
 
-    tx0 = (v0->textureX*twidth0+scx)*v0w;
-    ty0 = ((v0->textureY)*theight0+scy)*v0w;
+
+    tx0 = v0->textureX;
+    ty0 = v0->textureY;
   
 
-    tx1 = (v1->textureX*twidth0+scx)*v1w;
-    ty1 = ((v1->textureY)*theight0+scy)*v1w;
+    tx1 = v1->textureX;
+    ty1 = v1->textureY;
 
-    tx2 = (v2->textureX*twidth0+scx)*v2w;
-    ty2 = ((v2->textureY)*theight0+scy)*v2w;
+    tx2 = v2->textureX;
+    ty2 = v2->textureY;
+
+    if (context->isEnabled(GL_TEXTURE_GEN_S)||context->isEnabled(GL_TEXTURE_GEN_T)) {
+      fixSphereMapUV(context, tx0,ty0,tx1,ty1);
+      fixSphereMapUV(context, tx0,ty0,tx2,ty2);
+      forceWrapRepeat = true;
+    }
+
+    tx0 = (tx0*twidth0+scx)*v0w;
+    ty0 = (ty0*theight0+scy)*v0w;
+  
+
+    tx1 = (tx1*twidth0+scx)*v1w;
+    ty1 = (ty1*theight0+scy)*v1w;
+
+    tx2 = (tx2*twidth0+scx)*v2w;
+    ty2 = (ty2*theight0+scy)*v2w;
 
     borderColor = ((int)FLOOR(glClampf(t->borderColorRed*255.f,0.f,255.f)));
     borderColor |= ((int)FLOOR(glClampf(t->borderColorGreen*255.f,0.f,255.f)))<<8;
@@ -3620,6 +3727,9 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   if (explicitAlphaValue<0) explicitAlphaValue=0;
   if (explicitAlphaValue>255) explicitAlphaValue=255;
 
+  const unsigned int wrapS = forceWrapRepeat ? GL_REPEAT : t->wrapS;
+  const unsigned int wrapT = forceWrapRepeat ? GL_REPEAT : t->wrapT;
+
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
   __PAINTPOLYQUAD_BEGINX__
@@ -3641,12 +3751,12 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
           if (textured) {
             float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw;
             float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw;
-            int tix0 = textureWrap(tx, twidth0, t->wrapS);
-            int tiy0 = textureWrap(ty, theight0, t->wrapT);
+            int tix0 = textureWrap(tx, twidth0, wrapS);
+            int tiy0 = textureWrap(ty, theight0, wrapT);
             unsigned int rgba = 0xffffffff;
             if (filtering) {
-              int tix1 = textureWrap(tx+1, twidth0, t->wrapS);
-              int tiy1 = textureWrap(ty+1, theight0, t->wrapT);
+              int tix1 = textureWrap(tx+1, twidth0, wrapS);
+              int tiy1 = textureWrap(ty+1, theight0, wrapT);
               int txf = (int)FLOOR(fmod(tx*256.f,256.f));
               int tyf = (int)FLOOR(fmod(ty*256.f,256.f));
               if (txf<0) txf = 256+txf;

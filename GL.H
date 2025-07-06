@@ -96,6 +96,19 @@ extern "C" {
 #define GL_LINEAR_ATTENUATION 0x1208 //:mad:
 #define GL_QUADRATIC_ATTENUATION 0x1209 //:mad:
 
+#define GL_S 0x2000 // :mad:
+#define GL_T 0x2001 // :mad:
+#define GL_R 0x2002 // :mad:
+#define GL_Q 0x2003 // :mad:
+#define GL_SPHERE_MAP 0x2402 // :mad:
+#define GL_SPHERE_MAP_2 0x2403 // :mad:
+#define GL_TEXTURE_GEN_MODE 0x2500 // :mad:
+#define GL_TEXTURE_GEN_S 0x0c60 // :mad: glEnable
+#define GL_TEXTURE_GEN_T 0x0c61 // :mad: glEnable
+#define GL_TEXTURE_GEN_R 0x0c62 // :mad: glEnable
+#define GL_TEXTURE_GEN_Q 0x0c63 // :mad: glEnable
+
+
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
 typedef unsigned int GLbitfield;
@@ -171,7 +184,7 @@ typedef void (*_GLfuncptr)(void);
 /* #define GL_LEQUAL                         0x0203 */
 /* #define GL_ALWAYS                         0x0207 */
 
-/* EnableCap */
+/* EnableCap glEnable */
 #define GL_LIGHTING                       0x0B50
 #define GL_TEXTURE_2D                     0x0DE1
 #define GL_CULL_FACE                      0x0B44
@@ -640,6 +653,7 @@ GLAPI void APIENTRY glStencilOp (GLenum fail, GLenum zfail, GLenum zpass);
 GLAPI void APIENTRY glTexCoordPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 GLAPI void APIENTRY glTexEnvfv (GLenum target, GLenum pname, const GLfloat *params);
 GLAPI void APIENTRY glTexEnvi (GLenum target, GLenum pname, GLint param);
+GLAPI void APIENTRY glTexGeni (GLenum coord, GLenum pname, GLint param); // supported partially and only per vertex (GL_S,GL_T:...:GL_SPHERE_MAP,GL_SPHERE_MAP_2)
 GLAPI void APIENTRY glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels); // supported
 GLAPI void APIENTRY glTexParameteri (GLenum target, GLenum pname, GLint param); // supported
 GLAPI void APIENTRY glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels); // supported
