@@ -686,7 +686,14 @@ GLAPI GLint APIENTRY gluInvertMatrixf(const float *m, float *dest); // supported
 GLAPI GLint APIENTRY gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ); // supported
 GLAPI GLint APIENTRY gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *objX, GLdouble *objY, GLdouble *objZ); // supported
 GLAPI GLint APIENTRY gluInvertMatrix(const double *m, double *dest); // supported
+GLAPI void APIENTRY glNormal3d(GLdouble nx, GLdouble ny, GLdouble nz); // supported
+GLAPI void APIENTRY glNormal3dv(const GLdouble *v); // supported
+GLAPI void APIENTRY glVertex2d(GLdouble x, GLdouble y); // :mad: // supported
+GLAPI void APIENTRY glVertex2dv(const GLdouble *v); // supported
 GLAPI void APIENTRY glVertex3d(GLdouble x, GLdouble y, GLdouble z); // :mad: // supported
+GLAPI void APIENTRY glVertex3dv (const GLdouble *v); // supported
+GLAPI void APIENTRY glVertex4d(GLdouble x, GLdouble y, GLdouble z); // :mad: // supported
+GLAPI void APIENTRY glVertex4dv (const GLdouble *v); // supported
 GLAPI void APIENTRY glTexCoord1d(GLdouble x); // :mad: // supported
 GLAPI void APIENTRY glTexCoord1f(GLfloat x); // :mad: // supported
 GLAPI void APIENTRY glTexCoord2d(GLdouble x, GLdouble y); // :mad: // supported

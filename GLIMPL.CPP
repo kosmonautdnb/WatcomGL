@@ -85,8 +85,10 @@ public:
     pointSize = 0;
     polygonOffsetFactor = 0;
     polygonOffsetUnits = 0;
-    memcpy(matrixForMode[0],identityMatrix,sizeof(matrixForMode));
-    memcpy(matrixForMode[1],identityMatrix,sizeof(matrixForMode));
+    memcpy(matrixForMode[0],identityMatrix,4*4*sizeof(double));
+    memcpy(matrixForMode[1],identityMatrix,4*4*sizeof(double));
+    memcpy(inverseMatrixForMode[0],identityMatrix,4*4*sizeof(double));
+    memcpy(inverseMatrixForMode[1],identityMatrix,4*4*sizeof(double));
     memcpy(matrix,identityMatrix,sizeof(matrixForMode));
     matrixModeNr = 0;
     lineStippleFactor = 0;
@@ -196,6 +198,7 @@ public:
     separateSpecular = false;
     texGenS = GL_SPHERE_MAP_2; // actually GL_EYE_LINEAR
     texGenT = GL_SPHERE_MAP_2; // actually GL_EYE_LINEAR
+    needNewInverseModelView = false;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   __inline GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -226,6 +229,7 @@ public:
   GLfloat polygonOffsetFactor;
   GLfloat polygonOffsetUnits;
   GLdouble matrixForMode[2][4*4];
+  GLdouble inverseMatrixForMode[2][4*4]; // use glGetInverseModelView
   GLdouble matrix[4*4];
   GLint matrixModeNr;
   GLfloat lineStippleFactor;
@@ -292,6 +296,7 @@ public:
   GLfloat quadraticAttenuation[__GL_MAX_LIGHTS__];
   GLenum texGenS;
   GLenum texGenT;
+  bool needNewInverseModelView;
 };
 
 _GLContext glContext;
@@ -376,6 +381,15 @@ void glDeleteTexture(GLuint i) {
   }
 }
 
+double *glGetInverseModelView(_GLContext *context) {
+  if (context->needNewInverseModelView) {
+    context->needNewInverseModelView = false;
+    memcpy(glContext.inverseMatrixForMode[GL_MODELVIEW & 1],glContext.matrixForMode[GL_MODELVIEW & 1],4*4*sizeof(double));
+    gluInvertMatrix(glContext.inverseMatrixForMode[GL_MODELVIEW & 1],glContext.inverseMatrixForMode[GL_MODELVIEW & 1]);
+  }
+  return glContext.inverseMatrixForMode[GL_MODELVIEW & 1];
+}
+
 void combineIntoWindow(GLint &x0, GLint &y0, GLint &x1, GLint &y1,GLint nx0, GLint ny0, GLint nx1, GLint ny1) {
   x0 = nx0<x0?x0:nx0;
   y0 = ny0<y0?y0:ny0;
@@ -427,6 +441,7 @@ void glMatMul(const GLdouble *ma, const GLdouble *mb, GLdouble *r) {
 
 void glUpdateMatrix() {
   glMatMul(glContext.matrixForMode[GL_PROJECTION & 1],glContext.matrixForMode[GL_MODELVIEW & 1],glContext.matrix);
+  glContext.needNewInverseModelView = true;
 }
 
 __inline int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
@@ -462,16 +477,18 @@ __inline int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
 }
 
 void fixSphereMapUV(_GLContext *context, float &tx0, float &ty0, float &tx1, float &ty1) {
-  if (context->texGenS == GL_SPHERE_MAP_2) {
+  if (context->isEnabled(GL_TEXTURE_GEN_S)&&(context->texGenS == GL_SPHERE_MAP_2||context->texGenS == GL_SPHERE_MAP)) {
     if (tx1-tx0>0.5) tx1-=1.0;
     if (tx1-tx0<-0.5) tx1+=1.0;
+  }
+  if (context->isEnabled(GL_TEXTURE_GEN_T)&&(context->texGenT == GL_SPHERE_MAP_2||context->texGenT == GL_SPHERE_MAP)) {
     if (ty1-ty0>0.5) ty1-=1.0;
     if (ty1-ty0<-0.5) ty1+=1.0;
   }
 }
 
 void glTexGen_(_GLContext *context, glVertex *v, double x, double y, double z, double normalX, double normalY, double normalZ) {
-  // normal comes already normalized // glTexGen is done per vertex what most likely is wrong
+  // glTexGen is done per vertex what most likely is wrong
   double vx = x;
   double vy = y;
   double vz = z;
@@ -481,10 +498,18 @@ void glTexGen_(_GLContext *context, glVertex *v, double x, double y, double z, d
     vy /= l;
     vz /= l;
   }
+  const double l2 = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
+  if (l2 > 0.0) {
+    normalX /= l2;
+    normalY /= l2;
+    normalZ /= l2;
+  }
+
   const double dot2NI = 2.0*(vx*normalX+vy*normalY+vz*normalZ);
-  const double reflectionX = vx - dot2NI * normalX;
-  const double reflectionY = vy - dot2NI * normalY;
-  const double reflectionZ = vz - dot2NI * normalZ;
+  double reflectionX = vx - dot2NI * normalX;
+  double reflectionY = vy - dot2NI * normalY;
+  double reflectionZ = vz - dot2NI * normalZ;
+
   switch(context->texGenS) {
   case GL_SPHERE_MAP: {v->textureX = reflectionX*0.5+0.5;} break;
   case GL_SPHERE_MAP_2: {v->textureX = atan2(reflectionZ,reflectionX)/(2.0*PI)+0.5;} break;
@@ -692,51 +717,10 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     v->colorGreen = materialEmissionGreen + ambientGreen + diffuseGreen + specularGreen;
     v->colorBlue = materialEmissionBlue + ambientBlue + diffuseBlue + specularBlue;
     v->colorAlpha = materialDiffuseAlpha;
-    if (context->isEnabled(GL_TEXTURE_GEN_S)||context->isEnabled(GL_TEXTURE_GEN_T)) {
-      glTexGen_(context,v,x,y,z,normalX,normalY,normalZ);
-    }
-  } else {
-    if (context->isEnabled(GL_TEXTURE_GEN_S)||context->isEnabled(GL_TEXTURE_GEN_T)) {
-      const double *matrix = context->matrixForMode[GL_MODELVIEW & 1];
-      double x = v->vertexX * matrix[0*4+0] + v->vertexY * matrix[1*4+0] + v->vertexZ * matrix[2*4+0] + v->vertexW * matrix[3*4+0];
-      double y = v->vertexX * matrix[0*4+1] + v->vertexY * matrix[1*4+1] + v->vertexZ * matrix[2*4+1] + v->vertexW * matrix[3*4+1];
-      double z = v->vertexX * matrix[0*4+2] + v->vertexY * matrix[1*4+2] + v->vertexZ * matrix[2*4+2] + v->vertexW * matrix[3*4+2];
-      double w = v->vertexX * matrix[0*4+3] + v->vertexY * matrix[1*4+3] + v->vertexZ * matrix[2*4+3] + v->vertexW * matrix[3*4+3];
-      if (w != 0) { // should never happen
-        x /= w;
-        y /= w;
-        z /= w;
-      }
-      // rotate normal (inversetranspose would be better, or?)
-      const double vnx = v->vertexX+v->normalX;
-      const double vny = v->vertexY+v->normalY;
-      const double vnz = v->vertexZ+v->normalZ;
-      const double vnw = v->vertexW;
-      double nx = vnx * matrix[0*4+0] + vny * matrix[1*4+0] + vnz * matrix[2*4+0] + vnw * matrix[3*4+0];
-      double ny = vnx * matrix[0*4+1] + vny * matrix[1*4+1] + vnz * matrix[2*4+1] + vnw * matrix[3*4+1];
-      double nz = vnx * matrix[0*4+2] + vny * matrix[1*4+2] + vnz * matrix[2*4+2] + vnw * matrix[3*4+2];
-      const double nw = vnx * matrix[0*4+3] + vny * matrix[1*4+3] + vnz * matrix[2*4+3] + vnw * matrix[3*4+3];
-      if (nw != 0) { // should never happen
-        nx /= nw;
-        ny /= nw;
-        nz /= nw;
-      }
-      nx -= x;
-      ny -= y;
-      nz -= z;
-      double normalX = nx;
-      double normalY = ny;
-      double normalZ = nz;
-      //if (context->isEnabled(GL_NORMALIZE)) {
-        float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
-        if (l>0.f) {
-          normalX/=l;
-          normalY/=l;
-          normalZ/=l;
-        }
-      //}
-      glTexGen_(context,v,x,y,z,normalX,normalY,normalZ);
-    }
+  }
+  if (context->isEnabled(GL_TEXTURE_GEN_S)||context->isEnabled(GL_TEXTURE_GEN_T)) {
+    const double *matrix2 = glGetInverseModelView(context);
+    glTexGen_(context,v,v->vertexX-matrix2[3*4+0],v->vertexY-matrix2[3*4+1],v->vertexZ-matrix2[3*4+2],v->normalX,v->normalY,v->normalZ);
   }
 }
 
@@ -2045,10 +2029,57 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
   glContext.viewportY1 = glFrameBufferHeight-y;
 }
 
+void glNormal3d(GLdouble x, GLdouble y, GLdouble z) {
+  glContext.normalX = x;
+  glContext.normalY = y;
+  glContext.normalZ = z;
+}
+
+void glNormal3dv(const GLdouble *p) {
+  glContext.normalX = p[0];
+  glContext.normalY = p[1];
+  glContext.normalZ = p[2];
+}
+
+void glVertex2d(GLdouble x, GLdouble y) {
+  glContext.vertexX = x;
+  glContext.vertexY = y;
+  glEmitVertex();
+}
+
+void glVertex2dv(const GLdouble *p) {
+  glContext.vertexX = p[0];
+  glContext.vertexY = p[1];
+  glEmitVertex();
+}
+
 void glVertex3d(GLdouble x, GLdouble y, GLdouble z) {
   glContext.vertexX = x;
   glContext.vertexY = y;
   glContext.vertexZ = z;
+  glEmitVertex();
+}
+
+void glVertex3dv(const GLdouble *p) {
+  glContext.vertexX = p[0];
+  glContext.vertexY = p[1];
+  glContext.vertexZ = p[2];
+  glEmitVertex();
+}
+
+void glVertex4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w) {
+  glContext.vertexX = x;
+  glContext.vertexY = y;
+  glContext.vertexZ = z;
+  glContext.vertexW = w;
+  glEmitVertex();
+}
+
+void glVertex4dv(const GLdouble *p) {
+  glContext.vertexX = p[0];
+  glContext.vertexY = p[1];
+  glContext.vertexZ = p[2];
+  glContext.vertexW = p[3];
   glEmitVertex();
 }
 
