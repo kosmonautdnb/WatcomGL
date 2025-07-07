@@ -513,12 +513,12 @@ void glTexGen_(_GLContext *context, glVertex *v, double x, double y, double z, d
   switch(context->texGenS) {
   case GL_SPHERE_MAP: {v->textureX = reflectionX*0.5+0.5;} break;
   case GL_SPHERE_MAP_ATAN2: {v->textureX = atan2(reflectionZ,reflectionX)/(2.0*PI)+0.5;} break;
-  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureX = reflectionX/(reflectionZ+2.0)*0.5+0.5;} break;
+  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureX = reflectionX/(fabs(reflectionZ)+1.0)*0.5+0.5;} break;
   }
   switch(context->texGenT) {
   case GL_SPHERE_MAP: {v->textureY = reflectionY*0.5+0.5;} break;
   case GL_SPHERE_MAP_ATAN2: {v->textureY = acos(-reflectionY)/PI;} break;
-  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureY = reflectionY/(reflectionZ+2.0)*0.5+0.5;} break;
+  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureY = reflectionY/(fabs(reflectionZ)+1.0)*0.5+0.5;} break;
   }
 }
 
