@@ -101,7 +101,8 @@ extern "C" {
 #define GL_R 0x2002 // :mad:
 #define GL_Q 0x2003 // :mad:
 #define GL_SPHERE_MAP 0x2402 // :mad:
-#define GL_SPHERE_MAP_2 0x2403 // :mad:
+#define GL_SPHERE_MAP_ATAN2 0x2403 // :mad:
+#define GL_SPHERE_MAP_DUAL_PARABOLOID 0x2404 // :mad:
 #define GL_TEXTURE_GEN_MODE 0x2500 // :mad:
 #define GL_TEXTURE_GEN_S 0x0c60 // :mad: glEnable
 #define GL_TEXTURE_GEN_T 0x0c61 // :mad: glEnable

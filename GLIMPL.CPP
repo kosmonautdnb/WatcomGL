@@ -89,7 +89,7 @@ public:
     memcpy(matrixForMode[1],identityMatrix,4*4*sizeof(double));
     memcpy(inverseMatrixForMode[0],identityMatrix,4*4*sizeof(double));
     memcpy(inverseMatrixForMode[1],identityMatrix,4*4*sizeof(double));
-    memcpy(matrix,identityMatrix,sizeof(matrixForMode));
+    memcpy(matrix,identityMatrix,4*4*sizeof(double));
     matrixModeNr = 0;
     lineStippleFactor = 0;
     lineStipplePattern = 0;
@@ -196,8 +196,8 @@ public:
     explicitAlpha = 0.f;
     useExplicitAlpha = false;
     separateSpecular = false;
-    texGenS = GL_SPHERE_MAP_2; // actually GL_EYE_LINEAR
-    texGenT = GL_SPHERE_MAP_2; // actually GL_EYE_LINEAR
+    texGenS = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
+    texGenT = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
     needNewInverseModelView = false;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
@@ -477,11 +477,11 @@ __inline int glTransformVertex(_GLContext *context, glVertex *v, bool clip) {
 }
 
 void fixSphereMapUV(_GLContext *context, float &tx0, float &ty0, float &tx1, float &ty1) {
-  if (context->isEnabled(GL_TEXTURE_GEN_S)&&(context->texGenS == GL_SPHERE_MAP_2||context->texGenS == GL_SPHERE_MAP)) {
+  if (context->isEnabled(GL_TEXTURE_GEN_S)&&(context->texGenS == GL_SPHERE_MAP_DUAL_PARABOLOID||context->texGenS == GL_SPHERE_MAP_ATAN2||context->texGenS == GL_SPHERE_MAP)) {
     if (tx1-tx0>0.5) tx1-=1.0;
     if (tx1-tx0<-0.5) tx1+=1.0;
   }
-  if (context->isEnabled(GL_TEXTURE_GEN_T)&&(context->texGenT == GL_SPHERE_MAP_2||context->texGenT == GL_SPHERE_MAP)) {
+  if (context->isEnabled(GL_TEXTURE_GEN_T)&&(context->texGenT == GL_SPHERE_MAP_DUAL_PARABOLOID||context->texGenT == GL_SPHERE_MAP_ATAN2||context->texGenT == GL_SPHERE_MAP)) {
     if (ty1-ty0>0.5) ty1-=1.0;
     if (ty1-ty0<-0.5) ty1+=1.0;
   }
@@ -512,11 +512,13 @@ void glTexGen_(_GLContext *context, glVertex *v, double x, double y, double z, d
 
   switch(context->texGenS) {
   case GL_SPHERE_MAP: {v->textureX = reflectionX*0.5+0.5;} break;
-  case GL_SPHERE_MAP_2: {v->textureX = atan2(reflectionZ,reflectionX)/(2.0*PI)+0.5;} break;
+  case GL_SPHERE_MAP_ATAN2: {v->textureX = atan2(reflectionZ,reflectionX)/(2.0*PI)+0.5;} break;
+  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureX = reflectionX/(reflectionZ+2.0)*0.5+0.5;} break;
   }
   switch(context->texGenT) {
   case GL_SPHERE_MAP: {v->textureY = reflectionY*0.5+0.5;} break;
-  case GL_SPHERE_MAP_2: {v->textureY = acos(-reflectionY)/PI;} break;
+  case GL_SPHERE_MAP_ATAN2: {v->textureY = acos(-reflectionY)/PI;} break;
+  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureY = reflectionY/(reflectionZ+2.0)*0.5+0.5;} break;
   }
 }
 
