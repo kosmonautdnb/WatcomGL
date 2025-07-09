@@ -668,6 +668,10 @@ GLAPI void APIENTRY glVertex4fv (const GLfloat *v); // supported
 GLAPI void APIENTRY glVertexPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 GLAPI void APIENTRY glViewport (GLint x, GLint y, GLsizei width, GLsizei height); // supported
 
+GLAPI void APIENTRY glColor3d (GLdouble red, GLdouble green, GLdouble blue); // :mad: // supported
+GLAPI void APIENTRY glColor3dv (const GLdouble *v); // :mad: // supported
+GLAPI void APIENTRY glColor4d (GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha); // :mad: // supported
+GLAPI void APIENTRY glColor4dv (const GLdouble *v); // :mad: // supported
 GLAPI void APIENTRY glColor3f (GLfloat red, GLfloat green, GLfloat blue); // :mad: // supported
 GLAPI void APIENTRY glColor3fv (const GLfloat *v); // :mad: // supported
 GLAPI void APIENTRY glColor3ub (GLubyte red, GLubyte green, GLubyte blue); // :mad: // supported

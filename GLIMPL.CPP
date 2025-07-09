@@ -1163,6 +1163,18 @@ void glClearStencil(GLint s) {
   glContext.clearStencil = s;
 }
 
+void glColor3d(GLdouble red, GLdouble green, GLdouble blue) {
+  glContext.colorRed = red;
+  glContext.colorGreen = green;
+  glContext.colorBlue = blue;
+}
+
+void glColor3dv(const GLdouble *v) {
+  glContext.colorRed = v[0];
+  glContext.colorGreen = v[1];
+  glContext.colorBlue = v[2];
+}
+
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
   glContext.colorRed = red;
   glContext.colorGreen = green;
@@ -1181,6 +1193,19 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
   glContext.colorBlue = (float)blue / 255.f;
 }
 
+void glColor4d (GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha) {
+  glContext.colorRed = red;
+  glContext.colorGreen = green;
+  glContext.colorBlue = blue;
+  glContext.colorAlpha = alpha;
+}
+
+void glColor4dv (const GLdouble *v) {
+  glContext.colorRed = v[0];
+  glContext.colorGreen = v[1];
+  glContext.colorBlue = v[2];
+  glContext.colorAlpha = v[3];
+}
 
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
   glContext.colorRed = red;
