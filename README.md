@@ -26,7 +26,7 @@ while(true) {
 &emsp;double time = glSeconds(); // rather bad granularity of 18.1 hz  
 &emsp;glClearColor(0.25,0.5,1.0,0.0);  
 &emsp;glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);  
-&emsp; .. Render something ..
+&emsp; .. Render something ..  
 &emsp;glRefresh(); // important  
 }  
 glDone();  
