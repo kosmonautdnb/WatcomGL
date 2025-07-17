@@ -11,5 +11,5 @@ A demo game can be found here: https://github.com/kosmonautdnb/OpenGLDemoGame_DO
 
 This is part of my "template lib" here: https://github.com/kosmonautdnb/TemplateLib_WatcomC.git  
 
-If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional alternative:  
+If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional option:  
 https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ
