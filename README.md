@@ -30,7 +30,7 @@ void main() {
 &emsp;glDone();  
 }
 
-## Mesa OpenGL for DJGPP
+## OSMesa OpenGL for DJGPP
 If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional software OpenGL option:  
 https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ  
 Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa6.5.3, in 2007, though.  
