@@ -2,7 +2,6 @@
 
 Just link GLIMPL.CPP and include GL.H to your WatcomC++ project.  
 
-May also work in other (non Dos / non WatcomC++) environments.  
 For some fun: link _YELLOW.CPP to see "Yellow Rose of Texas" a 4k by Fit and Bandwagon.  
 
 This OpenGL "Emulation" is purely in software "slow" and not optimized yet.  
