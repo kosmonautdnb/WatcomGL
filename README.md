@@ -18,7 +18,7 @@ Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa
 You can find the Mesa libraries in the comments of this video:  
 https://www.youtube.com/watch?v=vkUwT9U1GzA
 
-## Typical usage:
+## Typical usage of WatcomGL:
 #include "gl.h"  
 
 void main() {  
