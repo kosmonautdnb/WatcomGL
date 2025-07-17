@@ -12,4 +12,5 @@ A demo game can be found here: https://github.com/kosmonautdnb/OpenGLDemoGame_DO
 This is part of my "template lib" here: https://github.com/kosmonautdnb/TemplateLib_WatcomC.git  
 
 If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional software OpenGL option:  
-https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ
+https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ  
+DJGPP was removed from support as of Mesa6.5.3, though.
