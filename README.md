@@ -18,14 +18,14 @@ Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa
 ## Typical usage:
 
 if (!glVesa(640,480,32))  // try to use Vesa 640x480x32 + Linear Frame Buffer  
-  glVGA(); // use 320x200 with emulated 8192 Colors  
+&emspglVGA(); // use 320x200 with emulated 8192 Colors  
 
 while(true) {  
-  int key = glNextKey(); if (key == GL_VK_ESCAPE) break;  
-  double mouseX, mouseY; glNextMouseDelta(&mouseX,&mouseY); int mouseButtons = glMouseButtons();  
-  double time = glSeconds(); // rather bad granularity of 18.1 hz  
-  glClearColor(0.25,0.5,1.0,0.0);  
-  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);  
-  glRefresh(); // important  
+&emspint key = glNextKey(); if (key == GL_VK_ESCAPE) break;  
+&emspdouble mouseX, mouseY; glNextMouseDelta(&mouseX,&mouseY); int mouseButtons = glMouseButtons();  
+&emspdouble time = glSeconds(); // rather bad granularity of 18.1 hz  
+&emspglClearColor(0.25,0.5,1.0,0.0);  
+&emspglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);  
+&emspglRefresh(); // important  
 }  
 glDone();  
