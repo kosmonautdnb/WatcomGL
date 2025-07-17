@@ -1,4 +1,5 @@
-# Software OpenGL "emulation" for DOS/WatcomC++
+# Software OpenGL "emulation"  
+for DOS/WatcomC++
 
 Just include and link:  
   GL.H  
