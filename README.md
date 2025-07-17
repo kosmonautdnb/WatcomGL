@@ -1,6 +1,6 @@
 ## Software OpenGL for DOS/WatcomC++
 
-Just include and link  
+Just include and link:  
   GL.H  
   GLIMPL.CPP  
 in your WatcomC++ project.  
