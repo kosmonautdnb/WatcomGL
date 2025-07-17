@@ -10,3 +10,6 @@ For some fun: link _YELLOW.CPP to see "Yellow Rose of Texas" a 4k by Fit and Ban
 A demo game can be found here: https://github.com/kosmonautdnb/OpenGLDemoGame_DOS  
 
 This is part of my "template lib" here: https://github.com/kosmonautdnb/TemplateLib_WatcomC.git  
+
+If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional alternative:  
+https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ
