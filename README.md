@@ -16,7 +16,6 @@ https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ
 Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa6.5.3, in 2007, though.
 
 ## Typical usage:
-
 #include "gl.h"  
 
 if (!glVesa(640,480,32))  // try to use Vesa 640x480x32 + Linear Frame Buffer  
