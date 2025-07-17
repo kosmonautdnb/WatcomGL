@@ -19,17 +19,17 @@ Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa
 #include "gl.h"  
 
 void main() {  
-if (!glVesa(640,480,32))  // try to use Vesa 640x480x32 + Linear Frame Buffer  
-&emsp;glVGA(); // use 320x200 with pseudo 8192 Colors  
+&emsp;if (!glVesa(640,480,32))  // try to use Vesa 640x480x32 + Linear Frame Buffer  
+&emsp;&emsp;glVGA(); // use 320x200 with pseudo 8192 Colors  
 
-while(true) {  
-&emsp;int key = glNextKey(); if (key == GL_VK_ESCAPE) break;  
-&emsp;double mouseX, mouseY; glNextMouseDelta(&mouseX,&mouseY); int mouseButtons = glMouseButtons();  
-&emsp;double time = glSeconds(); // rather bad granularity of 18.1 hz  
-&emsp;glClearColor(0.25,0.5,1.0,0.0);  
-&emsp;glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);  
-&emsp; .. Render something ..  
-&emsp;glRefresh(); // important  
-}  
-glDone();  
+&emsp;while(true) {  
+&emsp;&emsp;int key = glNextKey(); if (key == GL_VK_ESCAPE) break;  
+&emsp;&emsp;double mouseX, mouseY; glNextMouseDelta(&mouseX,&mouseY); int mouseButtons = glMouseButtons();  
+&emsp;&emsp;double time = glSeconds(); // rather bad granularity of 18.1 hz  
+&emsp;&emsp;glClearColor(0.25,0.5,1.0,0.0);  
+&emsp;&emsp;glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);  
+&emsp;&emsp; .. Render something ..  
+&emsp;&emsp;glRefresh(); // important  
+&emsp;}  
+&emsp;glDone();  
 }
