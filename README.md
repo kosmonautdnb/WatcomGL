@@ -18,6 +18,7 @@ Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa
 ## Typical usage:
 #include "gl.h"  
 
+void main() {  
 if (!glVesa(640,480,32))  // try to use Vesa 640x480x32 + Linear Frame Buffer  
 &emsp;glVGA(); // use 320x200 with pseudo 8192 Colors  
 
@@ -31,3 +32,4 @@ while(true) {
 &emsp;glRefresh(); // important  
 }  
 glDone();  
+}
