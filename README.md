@@ -7,8 +7,9 @@ in your WatcomC++ project.
 
 For some fun: link _YELLOW.CPP to see "Yellow Rose of Texas" a 4k by Fit and Bandwagon.  
 
-A WatcomGL demo game: https://github.com/kosmonautdnb/OpenGLDemoGame_DOS  
-A WatcomC library collection: https://github.com/kosmonautdnb/WatcomLibs  
+WatcomGL demo game: https://github.com/kosmonautdnb/OpenGLDemoGame_DOS  
+
+WatcomC library collection: https://github.com/kosmonautdnb/WatcomLibs  
 
 ## Typical usage
 #include "gl.h"  
