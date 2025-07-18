@@ -11,6 +11,7 @@ WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game
 
 WatcomC library collection: https://github.com/kosmonautdnb/WatcomLibs  
 
+Needs a fairly fast FreeDOS/DOS machine.
 ## Typical usage
 #include "gl.h"  
 
