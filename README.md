@@ -9,7 +9,7 @@ For some fun: link _YELLOW.CPP to see "Yellow Rose of Texas" a 4k by Fit and Ban
 
 A demo game can be found here: https://github.com/kosmonautdnb/OpenGLDemoGame_DOS  
 
-A WatcomC library project: https://github.com/kosmonautdnb/WatcomLibs
+Some WatcomC libraries: https://github.com/kosmonautdnb/WatcomLibs
 
 ## Typical usage
 #include "gl.h"  
