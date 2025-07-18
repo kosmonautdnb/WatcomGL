@@ -34,5 +34,5 @@ void main() {
 If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional software OpenGL option:  
 https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ  
 Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa6.5.3, in 2007, though.  
-You can find the Mesa libraries in the comments of this video (not by me):  
+You can find the compiled Mesa libraries in the comments of this video (not by me):  
 https://www.youtube.com/watch?v=vkUwT9U1GzA
