@@ -23,13 +23,13 @@ unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
 unsigned int *glFrameBuffer = NULL;
-unsigned int *glStencilBuffer = NULL; // not supported
+//unsigned int *glStencilBuffer = NULL; // not supported
 float *glDepthBuffer = NULL;
 
 int glFrameBufferWidth0 = 0;
 int glFrameBufferHeight0 = 0;
 unsigned int *glFrameBuffer0 = NULL;
-unsigned int *glStencilBuffer0 = NULL;
+//unsigned int *glStencilBuffer0 = NULL;
 float *glDepthBuffer0 = NULL;
 
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
@@ -1140,12 +1140,12 @@ void glClear(GLbitfield mask) {
       for (int x = minX; x < maxX; x++)
         glDepthBuffer[x+y*glFrameBufferWidth] = glContext.clearDepth; // clamping?
   }
-  if ((mask & GL_STENCIL_BUFFER_BIT) && (glStencilBuffer != NULL)) {
-    unsigned int k = glContext.clearStencil;
-    for (int y = minY; y < maxY; y++)
-      for (int x = minX; x < maxX; x++)
-        glStencilBuffer[x+y*glFrameBufferWidth] = k;
-  }
+  //if ((mask & GL_STENCIL_BUFFER_BIT) && (glStencilBuffer != NULL)) {
+  //  unsigned int k = glContext.clearStencil;
+  //  for (int y = minY; y < maxY; y++)
+  //    for (int x = minX; x < maxX; x++)
+  //      glStencilBuffer[x+y*glFrameBufferWidth] = k;
+  //}
 }
 
 void glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
@@ -4263,17 +4263,14 @@ GLboolean glVesa(int xRes,int yRes, int bPP) {
       glFrameBufferHeight = yRes;
       glFrameBufferDedicated = (unsigned int*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
       glFrameBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
-      glStencilBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
       glDepthBuffer = new float[glFrameBufferWidth*glFrameBufferHeight];
       memset(glFrameBufferDedicated,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       glFrameBufferWidth0 = glFrameBufferWidth;
       glFrameBufferHeight0 = glFrameBufferHeight;
       glFrameBuffer0 = glFrameBuffer;
       glDepthBuffer0 = glDepthBuffer;
-      glStencilBuffer0 = glStencilBuffer;
       glSetupMouse();
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
@@ -4365,22 +4362,35 @@ GLboolean glVGA() {
   glFrameBufferWidth = xRes;
   glFrameBufferHeight = yRes;
   glFrameBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
-  glStencilBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
   glDepthBuffer = new float[glFrameBufferWidth*glFrameBufferHeight];
   memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-  memset(glStencilBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
   memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
   glFrameBufferWidth0 = glFrameBufferWidth;
   glFrameBufferHeight0 = glFrameBufferHeight;
   glFrameBuffer0 = glFrameBuffer;
   glDepthBuffer0 = glDepthBuffer;
-  glStencilBuffer0 = glStencilBuffer;
   glSetupMouse();
   glStartClock = clock();
   glViewport(0,0,xRes,yRes);
   for (int i = 0; i < 256; i++) {
     hiRedTab[i] = 128+(((i>>4)&15)<<3);
   }
+  return true;
+}
+GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height) {
+  glFrameBufferWidth = width;
+  glFrameBufferHeight = height;
+  glFrameBuffer = frameBuffer;
+  glDepthBuffer = depthBuffer;
+  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+  memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+  glFrameBufferWidth0 = glFrameBufferWidth;
+  glFrameBufferHeight0 = glFrameBufferHeight;
+  glFrameBuffer0 = glFrameBuffer;
+  glDepthBuffer0 = glDepthBuffer;
+  glSetupMouse();
+  glStartClock = clock();
+  glViewport(0,0,width,height);
   return true;
 }
 void glRefreshHiColor() {
@@ -4411,9 +4421,9 @@ void glRefresh() {
   }
 }
 void glDone() {
-  delete[] glFrameBuffer0;
-  delete[] glDepthBuffer0;
-  delete[] glStencilBuffer0;
+  if (glFrameBuffer0!=NULL) delete[] glFrameBuffer0;
+  if (glDepthBuffer0!=NULL) delete[] glDepthBuffer0;
+  //if (glSencilBuffer0!=NULL) delete[] glStencilBuffer0;
   if (!hiColor) unmapPhysical((unsigned int)glFrameBufferDedicated);
   setBiosGraphicsMode(glGraphicsModeToRestore);
 }
@@ -4597,13 +4607,11 @@ void glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint w
     glFrameBufferWidth = glFrameBufferWidth0;
     glFrameBufferHeight = glFrameBufferHeight0;
     glFrameBuffer = glFrameBuffer0;
-    glStencilBuffer = glStencilBuffer0;
     glDepthBuffer = glDepthBuffer0;
   } else {
     glFrameBufferWidth = width;
     glFrameBufferHeight = height;
     glFrameBuffer = frameBufferOrNULL;
-    glStencilBuffer = NULL;
     glDepthBuffer = depthBuffer;
   }
 }

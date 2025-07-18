@@ -723,6 +723,8 @@ GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad: // supported
 }
 #endif
 
+// ADDITIONS BY ME
+
 extern double glPixelCenterX; // -0.5 (screenX += glPixelCenterX)
 extern double glPixelCenterY; // -0.5
 extern double glTexelCenterX; // -0.5 (texCoord += glTexelCenterX)
@@ -734,11 +736,13 @@ extern unsigned int *glFrameBuffer;
 extern unsigned int *glStencilBuffer;
 extern float *glDepthBuffer;
 
-// ADDITIONS BY ME
                           // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors
 GLboolean glVesa(int xRes,int yRes, int bPP);
+                          // 320x200 with 6 bit green + 3 bit blue + 4 bit red 320x400 so to say (green on one line, blue+red on the other, 200*2=400 lines)
+GLboolean glVGA(); // may return true even if it's not supported (it's a fallback for no vesa320x200x32)
+                          // to Setup direct rendering to a buffer+depth buffer // look also at glSetRenderTarget()
+GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height); // buffers will be deleted at glDone()
                           // to be called in a loop, copies the frameBuffer to the screen and updates per frame stuff
-GLboolean glVGA(); // 320x200x13bit may return true even if it's not supported (it's a fallback for no vesa320x200x32)
 void glRefresh();
                           // can be called to close the vesa mode and clean up opengl again
 void glDone();
