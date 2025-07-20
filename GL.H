@@ -108,6 +108,11 @@ extern "C" {
 #define GL_TEXTURE_GEN_T 0x0c61 // :mad: glEnable
 #define GL_TEXTURE_GEN_R 0x0c62 // :mad: glEnable
 #define GL_TEXTURE_GEN_Q 0x0c63 // :mad: glEnable
+#define GL_LIGHT_MODEL_TWO_SIDE 0x0b52 // :mad:
+#define GL_POINT 0x1b00 // :mad:
+#define GL_LINE 0x1b01 // :mad:
+#define GL_FILL 0x1b02 // :mad:
+
 
 
 typedef unsigned int GLenum;
@@ -570,6 +575,7 @@ GLAPI void APIENTRY glCallLists (GLsizei n, GLenum type, const GLvoid *lists);
 GLAPI void APIENTRY glClear (GLbitfield mask); // supported
 GLAPI void APIENTRY glClearColor (GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // supported
 GLAPI void APIENTRY glClearDepthf (GLclampf depth); // supported
+GLAPI void APIENTRY glClearDepth (GLclampf depth); // supported
 GLAPI void APIENTRY glClearStencil (GLint s);
 GLAPI void APIENTRY glClientActiveTexture (GLenum texture);
 GLAPI void APIENTRY glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha); // supported
@@ -619,14 +625,15 @@ GLAPI GLboolean APIENTRY glIsEnabled (GLenum cap); // supported
 GLAPI void APIENTRY glLightf (GLenum light, GLenum pname, GLfloat param); // supported
 GLAPI void APIENTRY glLightfv (GLenum light, GLenum pname, const GLfloat *params); // supported
 GLAPI void APIENTRY glLightModelfv (GLenum pname, const GLfloat *params);
-GLAPI void APIENTRY glLightModeli (GLenum pname, const GLenum param); // supported partially (GL_SEPARATE_SPECULAR_COLOR,GL_SINGLE_COLOR)
+GLAPI void APIENTRY glLightModeli (GLenum pname, const GLenum param); // supported partially (GL_SEPARATE_SPECULAR_COLOR,GL_SINGLE_COLOR,GL_LIGHT_MODEL_TWO_SIDE)
+GLAPI void APIENTRY glLightModelf (GLenum pname, const GLfloat param); // supported partially (GL_LIGHT_MODEL_TWO_SIDE)
 GLAPI void APIENTRY glLineStipple (GLint factor, GLushort pattern);
 GLAPI void APIENTRY glLineWidth (GLfloat width); // supported
 GLAPI void APIENTRY glListBase (GLuint base);
 GLAPI void APIENTRY glLoadIdentity (void); // supported
 GLAPI void APIENTRY glLoadMatrixf (const GLfloat *m); // supported
-GLAPI void APIENTRY glMaterialf (GLenum face, GLenum pname, GLfloat param); // supported
-GLAPI void APIENTRY glMaterialfv (GLenum face, GLenum pname, const GLfloat *params); // supported
+GLAPI void APIENTRY glMaterialf (GLenum face, GLenum pname, GLfloat param); // supported (only GL_FRONT)
+GLAPI void APIENTRY glMaterialfv (GLenum face, GLenum pname, const GLfloat *params); // supported (only GL_FRONT)
 GLAPI void APIENTRY glMatrixMode (GLenum mode); // supported
 GLAPI void APIENTRY glMultMatrixf (const GLfloat *m); // supported
 GLAPI void APIENTRY glMultiTexCoord2f (GLenum target, GLfloat s, GLfloat t);
@@ -638,6 +645,7 @@ GLAPI void APIENTRY glNormalPointer (GLenum type, GLsizei stride, const GLvoid *
 GLAPI void APIENTRY glOrthof (GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar); // supported
 GLAPI void APIENTRY glPixelStorei (GLenum pname, GLint param);
 GLAPI void APIENTRY glPointSize (GLfloat size); // supported
+GLAPI void APIENTRY glPolygonMode (GLenum face, GLenum mode); // supported (only GL_FRONT)
 GLAPI void APIENTRY glPolygonOffset (GLfloat factor, GLfloat units);
 GLAPI void APIENTRY glPolygonStipple (const GLubyte *mask);
 GLAPI void APIENTRY glPopMatrix (void); // supported

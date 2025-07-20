@@ -199,6 +199,8 @@ public:
     texGenS = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
     texGenT = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
     needNewInverseModelView = false;
+    twoSidedLighting = false;
+    wireframe = false;
   }
   void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
   __inline GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
@@ -297,6 +299,8 @@ public:
   GLenum texGenS;
   GLenum texGenT;
   bool needNewInverseModelView;
+  bool twoSidedLighting;
+  bool wireframe;
 };
 
 _GLContext glContext;
@@ -667,6 +671,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         double l = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
         if (l>0.0) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
         double diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
+        if (context->twoSidedLighting) diffuse = fabs(diffuse);
         if (diffuse<0) diffuse = 0;
         double viewX = x;
         double viewY = y;
@@ -874,6 +879,25 @@ void drawClippedLine(_GLContext *context, glVertex *v0a, glVertex *v1a)  {
     glDrawQuad(context,&vertices[0],&vertices[1],&vertices[2],&vertices[3]);
 }
 
+void glSetVertex(glVertex *w) {
+  _GLContext *v = &glContext;
+  v->colorRed = w->colorRed;
+  v->colorGreen = w->colorGreen;
+  v->colorBlue = w->colorBlue;
+  v->colorAlpha = w->colorAlpha;
+  v->normalX = w->normalX;
+  v->normalY = w->normalY;
+  v->normalZ = w->normalZ;
+  v->vertexX = w->vertexX;
+  v->vertexY = w->vertexY;
+  v->vertexZ = w->vertexZ;
+  v->vertexW = w->vertexW;
+  v->textureX = w->textureX;
+  v->textureY = w->textureY;
+  v->textureZ = w->textureZ;
+  v->textureW = w->textureW;
+}
+
 
 void glEmitVertex() {
   glVertex *v = &glVertices[glCurrentVertexElement];
@@ -985,6 +1009,22 @@ void glEmitVertex() {
     } break;
     case GL_TRIANGLES: {
       if (glCurrentVertexElement==3) {
+        if (glContext.wireframe) {
+          glVertex vs[3];
+          vs[0] = glVertices[0];
+          vs[1] = glVertices[1];
+          vs[2] = glVertices[2];
+          glContext.beginMode = GL_LINES; glCurrentVertexElement = 0;
+          glSetVertex(&vs[0]);glEmitVertex();
+          glSetVertex(&vs[1]);glEmitVertex();
+          glSetVertex(&vs[1]);glEmitVertex();
+          glSetVertex(&vs[2]);glEmitVertex();
+          glSetVertex(&vs[2]);glEmitVertex();
+          glSetVertex(&vs[0]);glEmitVertex();
+          glSetVertex(&vs[2]);
+          glContext.beginMode = GL_TRIANGLES; glCurrentVertexElement = 0;
+          break;
+        }
         int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1],true);
@@ -1010,6 +1050,25 @@ void glEmitVertex() {
     } break;
     case GL_QUADS: {
       if (glCurrentVertexElement==4) {
+        if (glContext.wireframe) {
+          glVertex vs[4];
+          vs[0] = glVertices[0];
+          vs[1] = glVertices[1];
+          vs[2] = glVertices[2];
+          vs[3] = glVertices[3];
+          glContext.beginMode = GL_LINES; glCurrentVertexElement = 0;
+          glSetVertex(&vs[0]);glEmitVertex();
+          glSetVertex(&vs[1]);glEmitVertex();
+          glSetVertex(&vs[1]);glEmitVertex();
+          glSetVertex(&vs[2]);glEmitVertex();
+          glSetVertex(&vs[2]);glEmitVertex();
+          glSetVertex(&vs[3]);glEmitVertex();
+          glSetVertex(&vs[3]);glEmitVertex();
+          glSetVertex(&vs[0]);glEmitVertex();
+          glSetVertex(&vs[3]);
+          glContext.beginMode = GL_QUADS; glCurrentVertexElement = 0;
+          break;
+        }
         int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1],true);
@@ -1156,6 +1215,10 @@ void glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
 }
 
 void glClearDepthf(GLclampf depth) {
+  glContext.clearDepth = depth;
+}
+
+void glClearDepth(GLclampf depth) {
   glContext.clearDepth = depth;
 }
 
@@ -1603,6 +1666,13 @@ void glLightModeli(GLenum pname, const GLenum param) {
     case GL_SINGLE_COLOR: {glContext.separateSpecular = false;} break;
     }
   } break;
+  case GL_LIGHT_MODEL_TWO_SIDE: {glContext.twoSidedLighting = (int)param!=0;} break;
+  }
+}
+
+void glLightModelf(GLenum pname, const GLfloat param) {
+  switch(pname) {
+  case GL_LIGHT_MODEL_TWO_SIDE: {glContext.twoSidedLighting = param!=0.f;} break;
   }
 }
 
@@ -1690,6 +1760,10 @@ void glMultMatrixf (const GLfloat *m) {
 
 void glPointSize (GLfloat size) {
   glContext.pointSize = size;
+}
+
+void glPolygonMode (GLenum face, GLenum mode) {
+  glContext.wireframe = mode == GL_LINE;
 }
 
 void glPolygonOffset (GLfloat factor, GLfloat units) {
