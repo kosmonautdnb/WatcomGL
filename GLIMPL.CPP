@@ -3018,7 +3018,7 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
   matrix2[7]=0.0;
   matrix2[8]=0.0;
   matrix2[9]=0.0;
-  matrix2[10]=2.0/temp4;
+  matrix2[10]=-2.0/temp4;
   matrix2[11]=0.0;
   matrix2[12]=(-right-left)/temp2;
   matrix2[13]=(-top-bottom)/temp3;
