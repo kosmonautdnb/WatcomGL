@@ -17,8 +17,8 @@
 
 double glPixelCenterX = -0.5;
 double glPixelCenterY = -0.5;
-double glTexelCenterX = -0.5f;
-double glTexelCenterY = -0.5f;
+double glTexelCenterX = -0.5;
+double glTexelCenterY = -0.5;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
@@ -3148,6 +3148,7 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
 // -----------
 // -----------
 // -----------
+static bool dontPaint = false;
 float glSign(float v) {
   return v < 0 ? -1 : (v > 0 ? 1 : 0);
 }
@@ -3155,7 +3156,7 @@ __inline double getBary(double x, double y, const glVertex *v0, const glVertex *
   double nx = v2->sy - v1->sy;
   double ny = -(v2->sx - v1->sx);
   double l = (v0->sx-v1->sx)*nx + (v0->sy-v1->sy)*ny;
-  if (fabs(l)<0.001) l = 0.001;
+  if (fabs(l)<0.001) {l = 0.001;dontPaint=true;}
   double p = (x-v1->sx)*nx + (y-v1->sy)*ny;
   return (p/l); // actually it must have been g/l and nx and ny been normalized
 }
@@ -3862,8 +3863,10 @@ void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) 
   const unsigned int wrapS = forceWrapRepeat ? GL_REPEAT : t->wrapS;
   const unsigned int wrapT = forceWrapRepeat ? GL_REPEAT : t->wrapT;
 
+  dontPaint = false;
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
+  if (dontPaint) return;
   __PAINTPOLYQUAD_BEGINX__
       if (bary0>=0&&bary1>=0&&bary2>=0) {
         double zp = __BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z);
