@@ -632,6 +632,7 @@ GLAPI void APIENTRY glLineWidth (GLfloat width); // supported
 GLAPI void APIENTRY glListBase (GLuint base);
 GLAPI void APIENTRY glLoadIdentity (void); // supported
 GLAPI void APIENTRY glLoadMatrixf (const GLfloat *m); // supported
+GLAPI void APIENTRY glLoadMatrixd (const GLdouble *m); // supported
 GLAPI void APIENTRY glMaterialf (GLenum face, GLenum pname, GLfloat param); // supported (only GL_FRONT)
 GLAPI void APIENTRY glMaterialfv (GLenum face, GLenum pname, const GLfloat *params); // supported (only GL_FRONT)
 GLAPI void APIENTRY glMatrixMode (GLenum mode); // supported

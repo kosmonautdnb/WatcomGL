@@ -1695,6 +1695,11 @@ void glLoadMatrixf (const GLfloat *m) {
   glUpdateMatrix();
 }
 
+void glLoadMatrixd (const GLdouble *m) {
+  for (int i = 0; i < 4*4; i++) glContext.matrixForMode[glContext.matrixModeNr][i] = m[i];
+  glUpdateMatrix();
+}
+
 void glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz) {
   glContext.normalX = nx;
   glContext.normalY = ny;
