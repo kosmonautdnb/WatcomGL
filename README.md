@@ -64,6 +64,6 @@ https://github.com/erysdren/TinyGL.git
 - Additional GLU Functions For Setting Up Matrices
 - Vertex Based Spherical Environment Mapping
 - glPushMatrix/glPopMatrix
-- glPolygonMode For Wireframe Rendering Of polygons
+- glPolygonMode For Wireframe Rendering Of Polygons
 - Possible Two Sided Lighting
 - Complete Fixed Function OpenGL Pipeline
