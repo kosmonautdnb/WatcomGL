@@ -41,3 +41,22 @@ https://www.youtube.com/watch?v=vkUwT9U1GzA
 ## TinyGL
 There is a also the TinyGL project. Which seems to do the same. I don't know anything about it maybe it's rendering is a lot faster (but they implemented a lot less), however here is the link:  
 https://github.com/erysdren/TinyGL.git  
+
+# Features
+- Vesa Calls For 32Bit Graphics Modes
+- Optional Fallback to VGA Mode With 320x200 And 8192 Simulated Colors
+- Z-Buffer: 32 Bit Float  
+- FrameBuffer: 32 Bit RGBA (8 Bit per Channel)  
+- All OpenGL Blending / Transparency Modes  
+- Alpha Test  
+- Color Channel Masked Writing  
+- Bilinear Texture Filtering  
+- Nearest Point Texture Filtering  
+- GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS  
+- glVertex3f and alikes (also glVertex3d and alikes)  
+- 2 Lights for additional lighting  
+- Option for Separate Specular Addition  
+- Perspective Correct Gouraud and Texture Mapping  
+- Z Clipping on Nearplane  
+- all OpenGL Texture Repeat Modes  
+- OpenGL Material and Light Pipeline  
