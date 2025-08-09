@@ -62,4 +62,5 @@ https://github.com/erysdren/TinyGL.git
 - Z Clipping On Nearplane  
 - All OpenGL Texture Repeat Modes  
 - Additional GLU Functions For Setting Up Matrices
+- (OpenGL) Vertex Based Spherical Environment Mapping  
 - Complete Fixed Function OpenGL Pipeline
