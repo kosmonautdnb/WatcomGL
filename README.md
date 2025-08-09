@@ -44,18 +44,19 @@ https://github.com/erysdren/TinyGL.git
 
 # Features
 - Vesa Calls For 32Bit Graphics Modes
-- Optional Fallback to VGA Mode With 320x200 And 8192 Simulated Colors
+- Optional Fallback To VGA Mode With 320x200 And 8192 Simulated Colors
 - Z-Buffer: 32 Bit Float  
-- FrameBuffer: 32 Bit RGBA (8 Bit per Channel)  
+- FrameBuffer: 32 Bit RGBA (8 Bit Per Channel)  
 - GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS  
-- glVertex3f and alikes (also glVertex3d and alikes)  
+- glVertex3f And Alikes (Also glVertex3d And Alikes)  
 - Bilinear Texture Filtering And Nearest Point Texture Filtering  
 - Perspective Correct Gouraud And Texture Mapping  
 - All OpenGL Blending / Transparency Modes  
 - Alpha Test  
 - Color Channel Masking  
 - OpenGL Material And Light / Coloring Pipeline  
-- 2 Lights for Additional lighting  
+- 2 Lights For Additional lighting  
 - Option For Separate Specular Addition  
 - Z Clipping On Nearplane  
 - All OpenGL Texture Repeat Modes  
+- Additional GLU Functions For Setting Up Matrices
