@@ -47,16 +47,15 @@ https://github.com/erysdren/TinyGL.git
 - Optional Fallback to VGA Mode With 320x200 And 8192 Simulated Colors
 - Z-Buffer: 32 Bit Float  
 - FrameBuffer: 32 Bit RGBA (8 Bit per Channel)  
-- All OpenGL Blending / Transparency Modes  
-- Alpha Test  
-- Color Channel Masked Writing  
-- Bilinear Texture Filtering  
-- Nearest Point Texture Filtering  
 - GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS  
 - glVertex3f and alikes (also glVertex3d and alikes)  
-- 2 Lights for additional lighting  
-- Option for Separate Specular Addition  
-- Perspective Correct Gouraud and Texture Mapping  
-- Z Clipping on Nearplane  
-- all OpenGL Texture Repeat Modes  
-- OpenGL Material and Light Pipeline  
+- Bilinear Texture Filtering And Nearest Point Texture Filtering  
+- Perspective Correct Gouraud And Texture Mapping  
+- All OpenGL Blending / Transparency Modes  
+- Alpha Test  
+- Color Channel Masking  
+- OpenGL Material And Light / Coloring Pipeline  
+- 2 Lights for Additional lighting  
+- Option For Separate Specular Addition  
+- Z Clipping On Nearplane  
+- All OpenGL Texture Repeat Modes  
