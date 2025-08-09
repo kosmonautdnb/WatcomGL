@@ -43,6 +43,8 @@ There is a also the TinyGL project. Which seems to do the same. I don't know any
 https://github.com/erysdren/TinyGL.git  
 
 # Features
+- Header Compatible With OpenGL
+- MIT License For Ease Of Use
 - Vesa2.0 Calls For 32Bit Graphics Modes
 - Optional Fallback To VGA Mode With 320x200 And 8192 Simulated Colors
 - Z-Buffer: 32 Bit Float  
