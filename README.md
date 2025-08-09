@@ -37,3 +37,7 @@ https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ
 Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa6.5.3, in 2007, though.  
 You can find the compiled Mesa libraries in the comments of this video (video not by me):  
 https://www.youtube.com/watch?v=vkUwT9U1GzA
+
+## TinyGL
+There is a also the TinyGL project. Which seems to do the same. I don't know anything about it, however here is the link:  
+https://github.com/erysdren/TinyGL.git  
