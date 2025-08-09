@@ -39,5 +39,5 @@ You can find the compiled Mesa libraries in the comments of this video (video no
 https://www.youtube.com/watch?v=vkUwT9U1GzA
 
 ## TinyGL
-There is a also the TinyGL project. Which seems to do the same. I don't know anything about it maybe it's rendering is a lot faster, however here is the link:  
+There is a also the TinyGL project. Which seems to do the same. I don't know anything about it maybe it's rendering is a lot faster (but they implemented a lot less), however here is the link:  
 https://github.com/erysdren/TinyGL.git  
