@@ -734,17 +734,9 @@ GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad: // supported
 
 // ADDITIONS BY ME
 
-extern double glPixelCenterX; // -0.5 (screenX += glPixelCenterX)
-extern double glPixelCenterY; // -0.5
-extern double glTexelCenterX; // -0.5 (texCoord += glTexelCenterX)
-extern double glTexelCenterY; // -0.5
-extern int glFrameBufferWidth;
-extern int glFrameBufferHeight;
-extern double glMonitorAspectRatio;
-extern unsigned int *glFrameBuffer;
-extern unsigned int *glStencilBuffer;
-extern float *glDepthBuffer;
-
+// ------------------------
+// ------------------------
+// ------------------------
                           // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors
 GLboolean glVesa(int xRes,int yRes, int bPP);
                           // 320x200 with 6 bit green + 3 bit blue + 4 bit red 320x400 so to say (green on one line, blue+red on the other, 200*2=400 lines)
@@ -756,17 +748,65 @@ void glRefresh();
                           // can be called to close the vesa mode and clean up opengl again
 void glDone();
 
-  // some non standard pixel zoom for all the functions (maybe you don't need that)
-  // actually just for GL_POINTS and GL_LINES (so they have propper width/height on e.g. a non 4:3 screen
+// ------------------------
+// ------------------------
+// ------------------------
+
+                           // gets the next pressed key from the keyboard buffer (GL_VK_xxxx)
+unsigned short glNextKey();
+                           // gets the current mouse delta and prepares for a new mouse delta (mousePos+=delta)
+void glNextMouseDelta(double *deltaX, double *deltaY);
+                           // gets the current mouseButtons (& GL_MOUSE_BUTTON_xxxx)
+char glMouseButtons();
+                           // gets the currently pressed special keys
+void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey);
+                           // tells the seconds ellapsed since the start of OpenGL (glVesa()) (granularity seems to be 18.2 fps, maybe better use speaker.hpp)
+double glSeconds();
+                           // sets the time to <seconds>
+void glSetTime(double seconds);
+                           // convenient, allocation free glTexImage2D for 32bit RGBA
+void glTexturePointer(int width, int height, unsigned int *textureData);  // textureData needs to be bottomLeft to topRight
+                           // set a render target (NULL sets screen/default render target)
+void glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height); // remember to use GLViewport,too...
+
+GLuint glGetTextureWidth(GLuint textureId);
+
+GLuint glGetTextureHeight(GLuint textureId);
+
+GLuint *glGetTexturePointer(GLuint textureId); // textures are upside down in ram
+
+// ------------------------
+// ------------------------
+// ------------------------
+
+// Maybe you don't need that..
+// actually just for GL_POINTS and GL_LINES (so they have propper quadratic width/height on a non 4:3 screen)
+
 void glSetMonitorAspectRatio(float aspect); // e.g. 16.0/9.0 (default 1.0, maybe use only if you draw pointssprites, non standard stuff) modifies zoomX and zoomY
+
 double glGetMonitorAspectRatio(); // hopefully not needed, maybe you can make all with glFrustum/glOrtho and so on without the extra aspect
+
 void glZoomX(float zoom); // also non standard, hopefully you don't need it
+
 void glZoomY(float zoom); // also non standard, hopefully you don't need it
+
 float glGetZoomX(); // also non standard, hopefully you don't need it
+
 float glGetZoomY(); // also non standard, hopefully you don't need it
-void glExplicitAlpha(bool useExplicitAlpha, GLfloat alpha); // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer")
-   // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp)
+
+// ------------------------
+// ------------------------
+// ------------------------
+
+                      // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer")
+void glExplicitAlpha(bool useExplicitAlpha, GLfloat alpha);
+
+                      // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp)
 bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned int color);
+
+// ------------------------
+// ------------------------
+// ------------------------
 
 #define GL_VK_NONE 0
 #define GL_VK_ESCAPE 27
@@ -855,26 +895,172 @@ bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned i
 #define GL_VK_X_CTRL 24
 #define GL_VK_PLUS_CTRL 29
 
+// ------------------------
+// ------------------------
+// ------------------------
+
 #define GL_MOUSE_BUTTON_LEFT 1
 #define GL_MOUSE_BUTTON_RIGHT 2
 
-                           // gets the next pressed key from the keyboard buffer (GL_VK_xxxx)
-unsigned short glNextKey();
-                           // gets the current mouse delta and prepares for a new mouse delta (mousePos+=delta)
-void glNextMouseDelta(double *deltaX, double *deltaY);
-                           // gets the current mouseButtons (& GL_MOUSE_BUTTON_xxxx)
-char glMouseButtons();
-                           // gets the currently pressed special keys
-void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey);
-                           // tells the seconds ellapsed since the start of OpenGL (glVesa()) (granularity seems to be 18.2 fps, maybe better use speaker.hpp)
-double glSeconds();
-                           // sets the time to <seconds>
-void glSetTime(double seconds);
-                           // convenient, allocation free glTexImage2D for 32bit RGBA
-void glTexturePointer(int width, int height, unsigned int *textureData);  // textureData needs to be bottomLeft to topRight
-                           // set a render target (NULL sets screen/default render target)
-void glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height); // remember to use GLViewport,too...
-GLuint glGetTextureWidth(GLuint textureId);
-GLuint glGetTextureHeight(GLuint textureId);
-GLuint *glGetTexturePointer(GLuint textureId);
+// ------------------------
+// ------------------------
+// ------------------------
+
+extern double glPixelCenterX; // -0.5 (screenX += glPixelCenterX)
+extern double glPixelCenterY; // -0.5
+extern double glTexelCenterX; // -0.5 (texCoord += glTexelCenterX)
+extern double glTexelCenterY; // -0.5
+extern int glFrameBufferWidth;
+extern int glFrameBufferHeight;
+extern int glFrameBufferBytesPerPixel;
+extern double glMonitorAspectRatio;
+extern unsigned int *glFrameBuffer;
+extern unsigned int *glStencilBuffer;
+extern float *glDepthBuffer;
+
+// ------------------------
+// ------------------------
+// ------------------------
+// .. triangle renderer plugin ..
+// currently only glSetTriangleDrawer(glDrawTrianglePrecise);
+// it's a good idea to use the gl.. Functions to change the _GLContext
+// this is just if you would need to implement your own triangle renderer
+// ------------------------
+// ------------------------
+// ------------------------
+#define __GL_MAX_LIGHTS__ 2
+#define GLMAXTEXTUREUNITS 8
+class _GLContext {
+public:
+  _GLContext();
+  void enable(GLenum prop, bool enable);
+  GLboolean isEnabled(GLenum prop);
+  GLenum error;
+  GLint viewportX0;
+  GLint viewportY0;
+  GLsizei viewportX1;
+  GLsizei viewportY1;
+  GLclampf clearRed;
+  GLclampf clearGreen;
+  GLclampf clearBlue;
+  GLclampf clearAlpha;
+  GLclampf clearDepth;
+  GLint clearStencil;
+  GLenum activeTexture;
+  GLenum alphaFunc;
+  GLfloat alphaFuncRef;
+  GLenum blendFuncSFactor;
+  GLenum blendFuncDFactor;
+  GLenum cullFaceMode;
+  GLenum depthFunc;
+  GLboolean depthMask;
+  GLclampf depthRangeZNear;
+  GLclampf depthRangeZFar;
+  GLfloat pointSize;
+  GLfloat polygonOffsetFactor;
+  GLfloat polygonOffsetUnits;
+  GLdouble matrixForMode[2][4*4];
+  GLdouble inverseMatrixForMode[2][4*4]; // use glGetInverseModelView
+  GLdouble matrix[4*4];
+  GLint matrixModeNr;
+  GLfloat lineStippleFactor;
+  GLshort lineStipplePattern;
+  GLfloat lineWidth;
+  GLint scissorX0;
+  GLint scissorY0;
+  GLint scissorX1;
+  GLint scissorY1;
+  GLenum shadeMode;
+  GLenum stencilFunc;
+  GLint stencilFuncRef;
+  GLuint stencilFuncMask;
+  GLuint stencilMask;
+  GLenum stencilOpFail;
+  GLenum stencilOpZFail;
+  GLenum stencilOpZPass;
+  GLfloat colorRed;
+  GLfloat colorGreen;
+  GLfloat colorBlue;
+  GLfloat colorAlpha;
+  GLdouble normalX;
+  GLdouble normalY;
+  GLdouble normalZ;
+  GLdouble vertexX;
+  GLdouble vertexY;
+  GLdouble vertexZ;
+  GLdouble vertexW;
+  GLdouble textureX;
+  GLdouble textureY;
+  GLdouble textureZ;
+  GLdouble textureW;
+  GLenum beginMode;
+  GLboolean enabledCaps[256];
+  GLdouble lightRed[4][__GL_MAX_LIGHTS__];
+  GLdouble lightGreen[4][__GL_MAX_LIGHTS__];
+  GLdouble lightBlue[4][__GL_MAX_LIGHTS__];
+  GLdouble lightAlpha[4][__GL_MAX_LIGHTS__];
+  GLenum colorMaterial;
+  GLfloat materialRed[5];
+  GLfloat materialGreen[5];
+  GLfloat materialBlue[5];
+  GLfloat materialAlpha[5];
+  GLuint boundTextures[GLMAXTEXTUREUNITS];
+  GLfloat blendColorRed;
+  GLfloat blendColorGreen;
+  GLfloat blendColorBlue;
+  GLfloat blendColorAlpha;
+  GLenum blendEquation;
+  GLenum frontFace;
+  GLboolean maskRed;
+  GLboolean maskGreen;
+  GLboolean maskBlue;
+  GLboolean maskAlpha;
+  int forceNoCull;
+  double zoomX;
+  double zoomY;
+  unsigned int pushAttribBitsHere;
+  GLfloat explicitAlpha;
+  bool useExplicitAlpha;
+  bool separateSpecular;
+  GLfloat constantAttenuation[__GL_MAX_LIGHTS__];
+  GLfloat linearAttenuation[__GL_MAX_LIGHTS__];
+  GLfloat quadraticAttenuation[__GL_MAX_LIGHTS__];
+  GLenum texGenS;
+  GLenum texGenT;
+  bool needNewInverseModelView;
+  bool twoSidedLighting;
+  bool wireframe;
+};
+extern _GLContext glContext;
+typedef struct glVertex {
+  GLfloat colorRed;
+  GLfloat colorGreen;
+  GLfloat colorBlue;
+  GLfloat colorAlpha;
+  GLfloat additionalSpecularColorRed; // extra pass for specular (GL_SEPARATE_SPECULAR_COLOR)
+  GLfloat additionalSpecularColorGreen;
+  GLfloat additionalSpecularColorBlue;
+  GLdouble normalX;
+  GLdouble normalY;
+  GLdouble normalZ;
+  GLdouble vertexX;
+  GLdouble vertexY;
+  GLdouble vertexZ;
+  GLdouble vertexW;
+  GLdouble textureX;
+  GLdouble textureY;
+  GLdouble textureZ;
+  GLdouble textureW;
+  double sx,sy,sz,sw; // screen x,y,z and w (y is top to bottom) z for zbuffer and w for perspective correct interpolation // just nearplane clipping was performed internally
+} glVertex;
+// ------------------------
+// ------------------------
+// ------------------------
+typedef void (*TriangleDrawer)(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
+void glDrawTrianglePrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
+void glSetTriangleDrawer(TriangleDrawer drawer);
+// ------------------------
+// ------------------------
+// ------------------------
+
 #endif // __gl_h__

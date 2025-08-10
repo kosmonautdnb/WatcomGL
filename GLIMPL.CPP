@@ -22,6 +22,7 @@ double glTexelCenterY = -0.5;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
 int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
+int glFrameBufferBytesPerPixel = 4;
 unsigned int *glFrameBuffer = NULL;
 //unsigned int *glStencilBuffer = NULL; // not supported
 float *glDepthBuffer = NULL;
@@ -34,10 +35,8 @@ float *glDepthBuffer0 = NULL;
 
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
-#define __GL_MAX_LIGHTS__ (2)
 #define __GL_MAX_TEXTURE_SIZE__ (1024)
 #define GLMAXTEXTURES 1024
-#define GLMAXTEXTUREUNITS 8
 #define __MATRIX_STACK_SIZE__ 16
 #define __ATTRIB_STACK_SIZE__ 4
 
@@ -57,251 +56,152 @@ __inline int glMaxi(int a, int x) {
   return a > x ? a : x;
 }
 
-class _GLContext {
-public:
-  _GLContext() {
-    int i;
-    error = 0;
-    viewportX0 = 0;
-    viewportY0 = 0;
-    viewportX1 = 0;
-    viewportY1 = 0;
-    clearRed = 0;
-    clearGreen = 0;
-    clearBlue = 0;
-    clearAlpha = 0;
-    clearDepth = 1.f;
-    clearStencil = 0;
-    activeTexture = 0;
-    alphaFunc = 0;
-    alphaFuncRef = 0;
-    blendFuncSFactor = GL_ONE;
-    blendFuncDFactor = GL_ZERO;
-    cullFaceMode = GL_BACK;
-    depthFunc = GL_LESS;
-    depthMask = true;
-    depthRangeZNear = 0;
-    depthRangeZFar = 1;
-    pointSize = 0;
-    polygonOffsetFactor = 0;
-    polygonOffsetUnits = 0;
-    memcpy(matrixForMode[0],identityMatrix,4*4*sizeof(double));
-    memcpy(matrixForMode[1],identityMatrix,4*4*sizeof(double));
-    memcpy(inverseMatrixForMode[0],identityMatrix,4*4*sizeof(double));
-    memcpy(inverseMatrixForMode[1],identityMatrix,4*4*sizeof(double));
-    memcpy(matrix,identityMatrix,4*4*sizeof(double));
-    matrixModeNr = 0;
-    lineStippleFactor = 0;
-    lineStipplePattern = 0;
-    lineWidth = 1;
-    scissorX0 = 0;
-    scissorY0 = 0;
-    scissorX1 = 0;
-    scissorY1 = 0;
-    shadeMode = 0;
-    stencilFunc = 0;
-    stencilFuncRef = 0;
-    stencilFuncMask = 0;
-    stencilMask = 0;
-    stencilOpFail = 0;
-    stencilOpZFail = 0;
-    stencilOpZPass = 0;
-    colorRed = 1.f;
-    colorGreen = 1.f;
-    colorBlue = 1.f;
-    colorAlpha = 1.f;
-    normalX = 0.0;
-    normalY = 0.0;
-    normalZ = 0.0;
-    vertexX = 1.0;
-    vertexY = 1.0;
-    vertexZ = 1.0;
-    vertexW = 1.0;
-    textureX = 0.0;
-    textureY = 0.0;
-    textureZ = 0.0;
-    textureW = 0.0;
-    beginMode = 0;
-    colorMaterial = GL_AMBIENT_AND_DIFFUSE;
+_GLContext::_GLContext() {
+  int i;
+  error = 0;
+  viewportX0 = 0;
+  viewportY0 = 0;
+  viewportX1 = 0;
+  viewportY1 = 0;
+  clearRed = 0;
+  clearGreen = 0;
+  clearBlue = 0;
+  clearAlpha = 0;
+  clearDepth = 1.f;
+  clearStencil = 0;
+  activeTexture = 0;
+  alphaFunc = 0;
+  alphaFuncRef = 0;
+  blendFuncSFactor = GL_ONE;
+  blendFuncDFactor = GL_ZERO;
+  cullFaceMode = GL_BACK;
+  depthFunc = GL_LESS;
+  depthMask = true;
+  depthRangeZNear = 0;
+  depthRangeZFar = 1;
+  pointSize = 0;
+  polygonOffsetFactor = 0;
+  polygonOffsetUnits = 0;
+  memcpy(matrixForMode[0],identityMatrix,4*4*sizeof(double));
+  memcpy(matrixForMode[1],identityMatrix,4*4*sizeof(double));
+  memcpy(inverseMatrixForMode[0],identityMatrix,4*4*sizeof(double));
+  memcpy(inverseMatrixForMode[1],identityMatrix,4*4*sizeof(double));
+  memcpy(matrix,identityMatrix,4*4*sizeof(double));
+  matrixModeNr = 0;
+  lineStippleFactor = 0;
+  lineStipplePattern = 0;
+  lineWidth = 1;
+  scissorX0 = 0;
+  scissorY0 = 0;
+  scissorX1 = 0;
+  scissorY1 = 0;
+  shadeMode = 0;
+  stencilFunc = 0;
+  stencilFuncRef = 0;
+  stencilFuncMask = 0;
+  stencilMask = 0;
+  stencilOpFail = 0;
+  stencilOpZFail = 0;
+  stencilOpZPass = 0;
+  colorRed = 1.f;
+  colorGreen = 1.f;
+  colorBlue = 1.f;
+  colorAlpha = 1.f;
+  normalX = 0.0;
+  normalY = 0.0;
+  normalZ = 0.0;
+  vertexX = 1.0;
+  vertexY = 1.0;
+  vertexZ = 1.0;
+  vertexW = 1.0;
+  textureX = 0.0;
+  textureY = 0.0;
+  textureZ = 0.0;
+  textureW = 0.0;
+  beginMode = 0;
+  colorMaterial = GL_AMBIENT_AND_DIFFUSE;
 
+  // ambient
+  materialRed[0] = 0;
+  materialGreen[0] = 0;
+  materialBlue[0] = 0;
+  materialAlpha[0] = 1;
+  // diffuse
+  materialRed[1] = 1;
+  materialGreen[1] = 1;
+  materialBlue[1] = 1;
+  materialAlpha[1] = 1;
+  // specular
+  materialRed[2] = 0;
+  materialGreen[2] = 0;
+  materialBlue[2] = 0;
+  materialAlpha[2] = 1;
+  // emission
+  materialRed[3] = 0;
+  materialGreen[3] = 0;
+  materialBlue[3] = 0;
+  materialAlpha[3] = 1;
+  // shininess
+  materialRed[4] = 1;
+  materialGreen[4] = 1;
+  materialBlue[4] = 1;
+  materialAlpha[4] = 1;
+
+  for (i = 0;  i < __GL_MAX_LIGHTS__; i++) {
     // ambient
-    materialRed[0] = 0;
-    materialGreen[0] = 0;
-    materialBlue[0] = 0;
-    materialAlpha[0] = 1;
+    lightRed[0][i] = 0;
+    lightGreen[0][i] = 0;
+    lightBlue[0][i] = 0;
+    lightAlpha[0][i] = 0;
     // diffuse
-    materialRed[1] = 1;
-    materialGreen[1] = 1;
-    materialBlue[1] = 1;
-    materialAlpha[1] = 1;
+    lightRed[1][i] = 1;
+    lightGreen[1][i] = 1;
+    lightBlue[1][i] = 1;
+    lightAlpha[1][i] = 1;
     // specular
-    materialRed[2] = 0;
-    materialGreen[2] = 0;
-    materialBlue[2] = 0;
-    materialAlpha[2] = 1;
-    // emission
-    materialRed[3] = 0;
-    materialGreen[3] = 0;
-    materialBlue[3] = 0;
-    materialAlpha[3] = 1;
-    // shininess
-    materialRed[4] = 1;
-    materialGreen[4] = 1;
-    materialBlue[4] = 1;
-    materialAlpha[4] = 1;
-
-    for (i = 0;  i < __GL_MAX_LIGHTS__; i++) {
-      // ambient
-      lightRed[0][i] = 0;
-      lightGreen[0][i] = 0;
-      lightBlue[0][i] = 0;
-      lightAlpha[0][i] = 0;
-      // diffuse
-      lightRed[1][i] = 1;
-      lightGreen[1][i] = 1;
-      lightBlue[1][i] = 1;
-      lightAlpha[1][i] = 1;
-      // specular
-      lightRed[2][i] = 0;
-      lightGreen[2][i] = 0;
-      lightBlue[2][i] = 0;
-      lightAlpha[2][i] = 0;
-      // position
-      lightRed[3][i] = 0;
-      lightGreen[3][i] = 0;
-      lightBlue[3][i] = 1;
-      lightAlpha[3][i] = 0;
-      // attenuation
-      constantAttenuation[i] = 1;
-      linearAttenuation[i] = 0;
-      quadraticAttenuation[i] = 0;
-    }
-    for (i = 0; i < GLMAXTEXTUREUNITS; i++) {
-      boundTextures[i] = 0;
-    }
-    blendColorRed = 0;
-    blendColorGreen = 0;
-    blendColorBlue = 0;
-    blendColorAlpha = 1;
-    blendEquation = GL_FUNC_ADD;
-    frontFace = GL_CCW;
-    maskRed = true;
-    maskGreen = true;
-    maskBlue = true;
-    maskAlpha = true;
-    forceNoCull = 0;
-    zoomX = 1.0;
-    zoomY = 1.0;
-    pushAttribBitsHere = 0;
-    explicitAlpha = 0.f;
-    useExplicitAlpha = false;
-    separateSpecular = false;
-    texGenS = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
-    texGenT = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
-    needNewInverseModelView = false;
-    twoSidedLighting = false;
-    wireframe = false;
+    lightRed[2][i] = 0;
+    lightGreen[2][i] = 0;
+    lightBlue[2][i] = 0;
+    lightAlpha[2][i] = 0;
+    // position
+    lightRed[3][i] = 0;
+    lightGreen[3][i] = 0;
+    lightBlue[3][i] = 1;
+    lightAlpha[3][i] = 0;
+    // attenuation
+    constantAttenuation[i] = 1;
+    linearAttenuation[i] = 0;
+    quadraticAttenuation[i] = 0;
   }
-  void enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
-  __inline GLboolean isEnabled(GLenum prop) {return enabledCaps[prop&255];}
-  void enableClientState(GLenum prop, bool enable) {;}
-  GLubyte *getString(GLenum prop) {return "";}
-  GLenum error;
-  GLint viewportX0;
-  GLint viewportY0;
-  GLsizei viewportX1;
-  GLsizei viewportY1;
-  GLclampf clearRed;
-  GLclampf clearGreen;
-  GLclampf clearBlue;
-  GLclampf clearAlpha;
-  GLclampf clearDepth;
-  GLint clearStencil;
-  GLenum activeTexture;
-  GLenum alphaFunc;
-  GLfloat alphaFuncRef;
-  GLenum blendFuncSFactor;
-  GLenum blendFuncDFactor;
-  GLenum cullFaceMode;
-  GLenum depthFunc;
-  GLboolean depthMask;
-  GLclampf depthRangeZNear;
-  GLclampf depthRangeZFar;
-  GLfloat pointSize;
-  GLfloat polygonOffsetFactor;
-  GLfloat polygonOffsetUnits;
-  GLdouble matrixForMode[2][4*4];
-  GLdouble inverseMatrixForMode[2][4*4]; // use glGetInverseModelView
-  GLdouble matrix[4*4];
-  GLint matrixModeNr;
-  GLfloat lineStippleFactor;
-  GLshort lineStipplePattern;
-  GLfloat lineWidth;
-  GLint scissorX0;
-  GLint scissorY0;
-  GLint scissorX1;
-  GLint scissorY1;
-  GLenum shadeMode;
-  GLenum stencilFunc;
-  GLint stencilFuncRef;
-  GLuint stencilFuncMask;
-  GLuint stencilMask;
-  GLenum stencilOpFail;
-  GLenum stencilOpZFail;
-  GLenum stencilOpZPass;
-  GLfloat colorRed;
-  GLfloat colorGreen;
-  GLfloat colorBlue;
-  GLfloat colorAlpha;
-  GLdouble normalX;
-  GLdouble normalY;
-  GLdouble normalZ;
-  GLdouble vertexX;
-  GLdouble vertexY;
-  GLdouble vertexZ;
-  GLdouble vertexW;
-  GLdouble textureX;
-  GLdouble textureY;
-  GLdouble textureZ;
-  GLdouble textureW;
-  GLenum beginMode;
-  GLboolean enabledCaps[256];
-  GLdouble lightRed[4][__GL_MAX_LIGHTS__];
-  GLdouble lightGreen[4][__GL_MAX_LIGHTS__];
-  GLdouble lightBlue[4][__GL_MAX_LIGHTS__];
-  GLdouble lightAlpha[4][__GL_MAX_LIGHTS__];
-  GLenum colorMaterial;
-  GLfloat materialRed[5];
-  GLfloat materialGreen[5];
-  GLfloat materialBlue[5];
-  GLfloat materialAlpha[5];
-  GLuint boundTextures[GLMAXTEXTUREUNITS];
-  GLfloat blendColorRed;
-  GLfloat blendColorGreen;
-  GLfloat blendColorBlue;
-  GLfloat blendColorAlpha;
-  GLenum blendEquation;
-  GLenum frontFace;
-  GLboolean maskRed;
-  GLboolean maskGreen;
-  GLboolean maskBlue;
-  GLboolean maskAlpha;
-  int forceNoCull;
-  double zoomX;
-  double zoomY;
-  unsigned int pushAttribBitsHere;
-  GLfloat explicitAlpha;
-  bool useExplicitAlpha;
-  bool separateSpecular;
-  GLfloat constantAttenuation[__GL_MAX_LIGHTS__];
-  GLfloat linearAttenuation[__GL_MAX_LIGHTS__];
-  GLfloat quadraticAttenuation[__GL_MAX_LIGHTS__];
-  GLenum texGenS;
-  GLenum texGenT;
-  bool needNewInverseModelView;
-  bool twoSidedLighting;
-  bool wireframe;
-};
+  for (i = 0; i < GLMAXTEXTUREUNITS; i++) {
+    boundTextures[i] = 0;
+  }
+  blendColorRed = 0;
+  blendColorGreen = 0;
+  blendColorBlue = 0;
+  blendColorAlpha = 1;
+  blendEquation = GL_FUNC_ADD;
+  frontFace = GL_CCW;
+  maskRed = true;
+  maskGreen = true;
+  maskBlue = true;
+  maskAlpha = true;
+  forceNoCull = 0;
+  zoomX = 1.0;
+  zoomY = 1.0;
+  pushAttribBitsHere = 0;
+  explicitAlpha = 0.f;
+  useExplicitAlpha = false;
+  separateSpecular = false;
+  texGenS = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
+  texGenT = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
+  needNewInverseModelView = false;
+  twoSidedLighting = false;
+  wireframe = false;
+}
+
+void _GLContext::enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
+GLboolean _GLContext::isEnabled(GLenum prop) {return enabledCaps[prop&255];}
 
 _GLContext glContext;
 GLdouble glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
@@ -309,32 +209,13 @@ GLint glMatrixStackPos = 0;
 _GLContext glAttribStack[__ATTRIB_STACK_SIZE__];
 GLint glAttribStackPos = 0;
 
-typedef struct glVertex {
-  GLfloat colorRed;
-  GLfloat colorGreen;
-  GLfloat colorBlue;
-  GLfloat colorAlpha;
-  GLfloat additionalSpecularColorRed;
-  GLfloat additionalSpecularColorGreen;
-  GLfloat additionalSpecularColorBlue;
-  GLdouble normalX;
-  GLdouble normalY;
-  GLdouble normalZ;
-  GLdouble vertexX;
-  GLdouble vertexY;
-  GLdouble vertexZ;
-  GLdouble vertexW;
-  GLdouble textureX;
-  GLdouble textureY;
-  GLdouble textureZ;
-  GLdouble textureW;
-  double sx,sy,sz,sw;
-} glVertex;
-
 glVertex glVertices[4];
 int glCurrentVertexElement = 0;
 
-void glDrawTriangle(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2);
+TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
+void glSetTriangleDrawer(TriangleDrawer drawer) {
+  glDrawTriangle = drawer;
+}
 void glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
 typedef struct glTexture {
@@ -1189,11 +1070,13 @@ void glClear(GLbitfield mask) {
     if (g > 255) g = 255;
     if (b > 255) b = 255;
     if (a > 255) a = 255;
-    unsigned int rgba = r|(g<<8)|(b<<16)|(a<<24);
-    for (int y = minY; y < maxY; y++)
-      for (int x = minX; x < maxX; x++)
-        glFrameBuffer[x+y*glFrameBufferWidth] = rgba;
-  }
+    if (glFrameBufferBytesPerPixel==4) {
+      unsigned int rgba = r|(g<<8)|(b<<16)|(a<<24);
+      for (int y = minY; y < maxY; y++)
+        for (int x = minX; x < maxX; x++)
+          glFrameBuffer[x+y*glFrameBufferWidth] = rgba;
+    }
+  }    
   if (mask & GL_DEPTH_BUFFER_BIT) {
     for (int y = minY; y < maxY; y++)
       for (int x = minX; x < maxX; x++)
@@ -1342,7 +1225,7 @@ void glDisable(GLenum cap) {
 }
 
 void glDisableClientState(GLenum array) {
-  glContext.enableClientState(array, false);
+//  glContext.enableClientState(array, false);
 }
 
 void glEnable(GLenum cap) {
@@ -1350,7 +1233,7 @@ void glEnable(GLenum cap) {
 }
 
 void glEnableClientState(GLenum array) {
-  glContext.enableClientState(array, true);
+//  glContext.enableClientState(array, true);
 }
 
 void glEnd() {
@@ -1603,7 +1486,7 @@ void glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
 }
 
 const GLubyte *glGetString(GLenum name) {
-  return glContext.getString(name);
+  return "";
 }
 
 GLboolean glIsEnabled(GLenum cap) {
@@ -3565,7 +3448,7 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
 
 #define __CLIP_FAR_PLANE__ if (v0->sz>1.0&&v1->sz>1.0&&v2->sz>1.0) return;
 
-void glDrawTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
+void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   bool forceWrapRepeat = false;
 
   if (context->isEnabled(GL_CULL_FACE)) {
@@ -4464,7 +4347,7 @@ GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLui
   glFrameBufferHeight = height;
   glFrameBuffer = frameBuffer;
   glDepthBuffer = depthBuffer;
-  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
+  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*glFrameBufferBytesPerPixel);
   memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
   glFrameBufferWidth0 = glFrameBufferWidth;
   glFrameBufferHeight0 = glFrameBufferHeight;
