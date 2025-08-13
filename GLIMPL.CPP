@@ -3796,10 +3796,10 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
     f0 = 1 - f0;
     f1 = 1 - f1;
     f2 = 1 - f2;
+    if (f0<1.0/256.0&&f1<1.0/256.0&&f2<1.0/256.0) {textured = false; interpolateColor = false;}
     f0 *= v0w; // fadeout colors by this
     f1 *= v1w;
     f2 *= v2w;
-    if (f0==0.0&&f1==0.0&&f2==0.0) {textured = false; interpolateColor = false;}
   }
 
 
