@@ -27,9 +27,14 @@ extern "C" {
 #endif
 
 
-#define GL_FOG 0 // :mad:
-#define GL_FOG_COLOR 0 // :mad:
-#define GL_FOG_DENSITY 0 // :mad:
+#define GL_FOG 0x0b64 //gl_enable 0x0b60(would override 0x0c60) // :mad:
+#define GL_FOG_DENSITY 0x0b62 // :mad:
+#define GL_FOG_START  0x0b63 // :mad:
+#define GL_FOG_END 0x0b64 // :mad:
+#define GL_FOG_MODE 0x0b65 // :mad:
+#define GL_FOG_COLOR 0x0b66 // :mad:
+#define GL_EXP 0x0800 // :mad:
+#define GL_EXP2 0x0801 // :mad:
 #define GL_RGBA8 0 // :mad:
 #define GL_ALL_ATTRIB_BITS 0 // :mad:
 #define GL_TEXTURE_BASE_LEVEL  0x2804 // :mad:
@@ -601,6 +606,9 @@ GLAPI void APIENTRY glEnd (void); // supported
 GLAPI void APIENTRY glEndList (void);
 GLAPI void APIENTRY glFinish (void); // supported
 GLAPI void APIENTRY glFlush (void); // supported
+GLAPI void APIENTRY glFogfv(GLenum pname, GLfloat *params); // :mad: supported
+GLAPI void APIENTRY glFogf(GLenum pname, GLfloat param); // :mad: supported
+GLAPI void APIENTRY glFogi(GLenum pname, GLint param); // :mad: supported
 GLAPI void APIENTRY glFrontFace (GLenum mode); // supported
 GLAPI void APIENTRY glFrustumf (GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar); // supported
 GLAPI GLuint APIENTRY glGenLists (GLsizei range);
@@ -720,8 +728,6 @@ GLAPI void APIENTRY glPushAttrib(GLbitfield mask); // :mad: // supported (mask n
 GLAPI void APIENTRY glPopAttrib(); // :mad: // supported
 GLAPI void APIENTRY gluOrtho2D(float left, float right, float bottom, float top); // :mad: // supported
 GLAPI void APIENTRY glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar); // :mad: // supported
-GLAPI void APIENTRY glFogf(GLenum pname, GLfloat param); // :mad: // supported
-GLAPI void APIENTRY glFogfv(GLenum pname, GLfloat *params); // :mad: // supported
 GLAPI void APIENTRY glDeleteTextures (GLsizei n, GLuint *textures); // :mad: // supported
 GLAPI void APIENTRY glTexParameterfv (GLenum target, GLenum pname, GLfloat *param); // :mad: // supported
 GLAPI void APIENTRY glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad: // supported
@@ -1030,6 +1036,11 @@ public:
   bool needNewInverseModelView;
   bool twoSidedLighting;
   bool wireframe;
+  GLfloat fogStart;
+  GLfloat fogEnd;
+  GLfloat fogColor[4];
+  GLfloat fogDensity;
+  GLenum fogMode;
 };
 extern _GLContext glContext;
 typedef struct glVertex {

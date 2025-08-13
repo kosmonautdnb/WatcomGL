@@ -198,6 +198,15 @@ _GLContext::_GLContext() {
   needNewInverseModelView = false;
   twoSidedLighting = false;
   wireframe = false;
+
+  fogStart = 0.0;
+  fogEnd = 1.0;
+  fogColor[0] = 0;
+  fogColor[1] = 0;
+  fogColor[2] = 0;
+  fogColor[3] = 0;
+  fogDensity = 1.0;
+  fogMode = GL_EXP;
 }
 
 void _GLContext::enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
@@ -1246,6 +1255,34 @@ void glFinish() {
 void glFlush() {
 }
 
+void glFogfv(GLenum pname, GLfloat *params) {
+  switch(pname) {
+  case GL_FOG_COLOR: {memcpy(glContext.fogColor,params,4*sizeof(GLfloat));} break;
+  case GL_FOG_START: {glContext.fogStart = params[0];} break;
+  case GL_FOG_END: {glContext.fogEnd = params[0];} break;
+  case GL_FOG_DENSITY: {glContext.fogDensity = params[0];} break;
+  case GL_FOG_MODE: {glContext.fogMode = params[0];} break;
+  }
+}
+
+void glFogf(GLenum pname, GLfloat param) {
+  switch(pname) {
+  case GL_FOG_START: {glContext.fogStart = param;} break;
+  case GL_FOG_END: {glContext.fogEnd = param;} break;
+  case GL_FOG_DENSITY: {glContext.fogDensity = param;} break;
+  case GL_FOG_MODE: {glContext.fogMode = param;} break;
+  }
+}
+
+void glFogi(GLenum pname, GLint param) {
+  switch(pname) {
+  case GL_FOG_START: {glContext.fogStart = param;} break;
+  case GL_FOG_END: {glContext.fogEnd = param;} break;
+  case GL_FOG_DENSITY: {glContext.fogDensity = param;} break;
+  case GL_FOG_MODE: {glContext.fogMode = param;} break;
+  }
+}
+
 void glGenTextures (GLsizei n, GLuint *textures) {
   for(int i = 0; i < n; i++) {
     textures[i] = glNewTexture();
@@ -1275,6 +1312,11 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
   case GL_DEPTH_RANGE: {params[0]=(int)floor(glContext.depthRangeZNear);params[1]=(int)floor(glContext.depthRangeZFar);} break;
   case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
   case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FOG_COLOR: {params[0]=glContext.fogColor[0];params[1]=glContext.fogColor[1];params[2]=glContext.fogColor[2];params[3]=glContext.fogColor[3];} break;
+  case GL_FOG_START: {params[0]=glContext.fogStart;} break;
+  case GL_FOG_END: { params[0]=glContext.fogEnd;} break;
+  case GL_FOG_DENSITY: {params[0]=glContext.fogDensity;} break;
+  case GL_FOG_MODE: {params[0]=glContext.fogMode;} break;
   case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
   case GL_GREEN_BITS: {*params=8;} break;
   case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
@@ -1328,6 +1370,11 @@ void glGetDoublev (GLenum pname, GLdouble *params) {
   case GL_DEPTH_RANGE: {params[0]=glContext.depthRangeZNear;params[1]=glContext.depthRangeZFar;} break;
   case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
   case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FOG_COLOR: {params[0]=glContext.fogColor[0];params[1]=glContext.fogColor[1];params[2]=glContext.fogColor[2];params[3]=glContext.fogColor[3];} break;
+  case GL_FOG_START: {params[0]=glContext.fogStart;} break;
+  case GL_FOG_END: { params[0]=glContext.fogEnd;} break;
+  case GL_FOG_DENSITY: {params[0]=glContext.fogDensity;} break;
+  case GL_FOG_MODE: {params[0]=glContext.fogMode;} break;
   case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
   case GL_GREEN_BITS: {*params=8;} break;
   case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
@@ -1381,6 +1428,11 @@ void glGetFloatv (GLenum pname, GLfloat *params) {
   case GL_DEPTH_RANGE: {params[0]=glContext.depthRangeZNear;params[1]=glContext.depthRangeZFar;} break;
   case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
   case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FOG_COLOR: {params[0]=glContext.fogColor[0];params[1]=glContext.fogColor[1];params[2]=glContext.fogColor[2];params[3]=glContext.fogColor[3];} break;
+  case GL_FOG_START: {params[0]=glContext.fogStart;} break;
+  case GL_FOG_END: { params[0]=glContext.fogEnd;} break;
+  case GL_FOG_DENSITY: {params[0]=glContext.fogDensity;} break;
+  case GL_FOG_MODE: {params[0]=glContext.fogMode;} break;
   case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
   case GL_GREEN_BITS: {*params=8;} break;
   case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
@@ -1434,6 +1486,11 @@ void glGetIntegerv (GLenum pname, GLint *params) {
   case GL_DEPTH_RANGE: {params[0]=(int)floor(glContext.depthRangeZNear);params[1]=(int)floor(glContext.depthRangeZFar);} break;
   case GL_DEPTH_TEST: {*params=glIsEnabled(GL_DEPTH_TEST);} break;
   case GL_DEPTH_WRITEMASK: {*params=glContext.depthMask;} break;
+  case GL_FOG_COLOR: {params[0]=glContext.fogColor[0];params[1]=glContext.fogColor[1];params[2]=glContext.fogColor[2];params[3]=glContext.fogColor[3];} break;
+  case GL_FOG_START: {params[0]=glContext.fogStart;} break;
+  case GL_FOG_END: { params[0]=glContext.fogEnd;} break;
+  case GL_FOG_DENSITY: {params[0]=glContext.fogDensity;} break;
+  case GL_FOG_MODE: {params[0]=glContext.fogMode;} break;
   case GL_FRONT_FACE: {*params=glContext.cullFaceMode == GL_BACK ? 1 : 0;} break;
   case GL_GREEN_BITS: {*params=8;} break;
   case GL_LIGHT0: {*params=glIsEnabled(GL_LIGHT0);} break;
@@ -2128,12 +2185,6 @@ void glPopAttrib() {
   glAttribStackPos--;
   memcpy(&glContext,&glAttribStack[glAttribStackPos], sizeof(_GLContext));
   glUpdateMatrix();
-}
-
-void glFogf(GLenum pname, GLfloat param) {
-}
-
-void glFogfv(GLenum pname, GLfloat *params) {
 }
 
 void glTexParameterfv (GLenum target, GLenum pname, GLfloat *param) {
@@ -3446,6 +3497,10 @@ __inline unsigned int doBlend(unsigned int dest, unsigned int source, int source
   return Sr|(Sg<<8)|(Sb<<16)|(Sa<<24);
 }
 
+__inline double __clamp__(double v, double a, double b) {
+  return v<a?a:(v>b?b:v);
+}
+
 #define __CLIP_FAR_PLANE__ if (v0->sz>1.0&&v1->sz>1.0&&v2->sz>1.0) return;
 
 void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
@@ -3677,9 +3732,80 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
   double sg2 = v2->additionalSpecularColorGreen;
   double sb2 = v2->additionalSpecularColorBlue;
 
+
+  const bool fogging = context->isEnabled(GL_FOG);
+  double f0=0,f1=0,f2=0;
+  if (fogging) {
+    if (!context->separateSpecular) {
+      sr0 = 0;
+      sg0 = 0;
+      sb0 = 0;
+      sr1 = 0;
+      sg1 = 0;
+      sb1 = 0;
+      sr2 = 0;
+      sg2 = 0;
+      sb2 = 0;
+    }
+    double *cm = glContext.matrixForMode[GL_MODELVIEW & 1]; // for eyespace z
+    double fz0 = v0->vertexX * cm[0*4+2] + v0->vertexY * cm[1*4+2] + v0->vertexZ * cm[2*4+2] + v0->vertexW * cm[3*4+2];
+    double fw0 = v0->vertexX * cm[0*4+3] + v0->vertexY * cm[1*4+3] + v0->vertexZ * cm[2*4+3] + v0->vertexW * cm[3*4+3];
+    double fz1 = v1->vertexX * cm[0*4+2] + v1->vertexY * cm[1*4+2] + v1->vertexZ * cm[2*4+2] + v1->vertexW * cm[3*4+2];
+    double fw1 = v1->vertexX * cm[0*4+3] + v1->vertexY * cm[1*4+3] + v1->vertexZ * cm[2*4+3] + v1->vertexW * cm[3*4+3];
+    double fz2 = v2->vertexX * cm[0*4+2] + v2->vertexY * cm[1*4+2] + v2->vertexZ * cm[2*4+2] + v2->vertexW * cm[3*4+2];
+    double fw2 = v2->vertexX * cm[0*4+3] + v2->vertexY * cm[1*4+3] + v2->vertexZ * cm[2*4+3] + v2->vertexW * cm[3*4+3];
+    if (fw0!=0.0) fz0/=fw0;
+    if (fw1!=0.0) fz1/=fw1;
+    if (fw2!=0.0) fz2/=fw2;
+    fz0 = fabs(fz0);
+    fz1 = fabs(fz1);
+    fz2 = fabs(fz2);
+    if (context->fogMode==GL_LINEAR) {
+      double fogLength = context->fogEnd-context->fogStart;
+      if (fogLength!=0.0) {
+        f0 = (context->fogEnd-fz0)/fogLength;
+        f1 = (context->fogEnd-fz1)/fogLength;
+        f2 = (context->fogEnd-fz2)/fogLength;
+      }
+    }
+    if (context->fogMode==GL_EXP) {
+      f0 = exp(-context->fogDensity*fz0);
+      f1 = exp(-context->fogDensity*fz1);
+      f2 = exp(-context->fogDensity*fz2);
+    }
+    if (context->fogMode==GL_EXP2) {
+      f0 = context->fogDensity*fz0;
+      f1 = context->fogDensity*fz1;
+      f2 = context->fogDensity*fz2;
+      f0 = exp(-f0*f0);
+      f1 = exp(-f1*f1);
+      f2 = exp(-f2*f2);
+    }
+    f0 = 1.0-__clamp__(f0,0.0,1.0);
+    f1 =  1.0-__clamp__(f1,0.0,1.0);
+    f2 = 1.0-__clamp__(f2,0.0,1.0);
+    sr0 = sr0*(1-f0)+context->fogColor[0]*f0;
+    sg0 = sg0*(1-f0)+context->fogColor[1]*f0;
+    sb0 = sb0*(1-f0)+context->fogColor[2]*f0;
+    sr1 = sr1*(1-f1)+context->fogColor[0]*f1;
+    sg1 = sg1*(1-f1)+context->fogColor[1]*f1;
+    sb1 = sb1*(1-f1)+context->fogColor[2]*f1;
+    sr2 = sr2*(1-f2)+context->fogColor[0]*f2;
+    sg2 = sg2*(1-f2)+context->fogColor[1]*f2;
+    sb2 = sb2*(1-f2)+context->fogColor[2]*f2;
+    f0 = 1 - f0;
+    f1 = 1 - f1;
+    f2 = 1 - f2;
+    f0 *= v0w; // fadeout colors by this
+    f1 *= v1w;
+    f2 *= v2w;
+    if (f0==0.0&&f1==0.0&&f2==0.0) {textured = false; interpolateColor = false;}
+  }
+
+
   int srf,sgf,sbf;
 
-  const bool separateSpecular = context->separateSpecular;
+  const bool separateSpecular = context->separateSpecular||fogging;
   bool interpolateSpecular = true;
   if (separateSpecular) {
     if (sr0 < 0) sr0 = 0;
@@ -3859,6 +3985,12 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
           }
                
           if (separateSpecular) {
+            if (fogging) {
+              const double f = (__BARY0__(f0)+__BARY1__(f1)+__BARY2__(f2))*iw;
+              r *= f;
+              g *= f;
+              b *= f;
+            }
             if (interpolateSpecular) {
               r += (__BARY0__(sr0)+__BARY1__(sr1)+__BARY2__(sr2))*iw;
               g += (__BARY0__(sg0)+__BARY1__(sg1)+__BARY2__(sg2))*iw;
