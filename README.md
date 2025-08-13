@@ -62,6 +62,7 @@ https://github.com/erysdren/TinyGL.git
 - Z Clipping On Nearplane  
 - All OpenGL Texture Repeat Modes  
 - Additional GLU Functions For Setting Up Matrices
+- All Fogging Modes
 - Vertex Based Spherical Environment Mapping
 - glPushMatrix/glPopMatrix
 - glPolygonMode For Wireframe Rendering Of Polygons
