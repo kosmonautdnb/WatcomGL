@@ -718,12 +718,20 @@ GLAPI void APIENTRY glVertex4d(GLdouble x, GLdouble y, GLdouble z); // :mad: // 
 GLAPI void APIENTRY glVertex4dv (const GLdouble *v); // supported
 GLAPI void APIENTRY glTexCoord1d(GLdouble x); // :mad: // supported
 GLAPI void APIENTRY glTexCoord1f(GLfloat x); // :mad: // supported
+GLAPI void APIENTRY glTexCoord1dv(const GLdouble *v); // :mad: // supported
+GLAPI void APIENTRY glTexCoord1fv(const GLfloat *v); // :mad: // supported
 GLAPI void APIENTRY glTexCoord2d(GLdouble x, GLdouble y); // :mad: // supported
 GLAPI void APIENTRY glTexCoord2f(GLfloat x, GLfloat y); // :mad: // supported
+GLAPI void APIENTRY glTexCoord2dv(const GLdouble *v); // :mad: // supported
+GLAPI void APIENTRY glTexCoord2fv(const GLfloat *v); // :mad: // supported
 GLAPI void APIENTRY glTexCoord3d(GLdouble x, GLdouble y, GLdouble z); // :mad: // supported
 GLAPI void APIENTRY glTexCoord3f(GLfloat x, GLfloat y, GLfloat z); // :mad: // supported
+GLAPI void APIENTRY glTexCoord3dv(const GLdouble *v); // :mad: // supported
+GLAPI void APIENTRY glTexCoord3fv(const GLfloat *v); // :mad: // supported
 GLAPI void APIENTRY glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w); // :mad: // supported
 GLAPI void APIENTRY glTexCoord4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w); // :mad: // supported
+GLAPI void APIENTRY glTexCoord4dv(const GLdouble *v); // :mad: // supported
+GLAPI void APIENTRY glTexCoord4fv(const GLfloat *v); // :mad: // supported
 GLAPI void APIENTRY glPushAttrib(GLbitfield mask); // :mad: // supported (mask not supported)
 GLAPI void APIENTRY glPopAttrib(); // :mad: // supported
 GLAPI void APIENTRY gluOrtho2D(float left, float right, float bottom, float top); // :mad: // supported

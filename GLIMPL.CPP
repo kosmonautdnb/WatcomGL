@@ -2173,6 +2173,38 @@ void glTexCoord4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w) {
   glContext.textureW = w;
 }
 
+void glTexCoord1dv(const GLdouble *v) {
+  glTexCoord1d(v[0]);
+}
+
+void glTexCoord1fv(const GLfloat *v) {
+  glTexCoord1f(v[0]);
+}
+
+void glTexCoord2dv(const GLdouble *v) {
+  glTexCoord2d(v[0],v[1]);
+}
+
+void glTexCoord2fv(const GLfloat *v) {
+  glTexCoord2f(v[0],v[1]);
+}
+
+void glTexCoord3dv(const GLdouble *v) {
+  glTexCoord3d(v[0],v[1],v[2]);
+}
+
+void glTexCoord3fv(const GLfloat *v) {
+  glTexCoord3f(v[0],v[1],v[2]);
+}
+
+void glTexCoord4dv(const GLdouble *v) {
+  glTexCoord4d(v[0],v[1],v[2],v[3]);
+}
+
+void glTexCoord4fv(const GLfloat *v) {
+  glTexCoord4f(v[0],v[1],v[2],v[3]);
+}
+
 void glPushAttrib(GLbitfield mask) {
   // mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
   glContext.pushAttribBitsHere = mask; // maybe evaluate at glPopAttrib later
