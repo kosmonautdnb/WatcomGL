@@ -1,1 +1,0 @@
-copy r:\_test.exe _test.exe
