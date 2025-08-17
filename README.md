@@ -7,8 +7,6 @@ in your WatcomC++ project.
 
 For some fun: link _YELLOW.CPP to see "Yellow Rose of Texas" a 4k by Fit and Bandwagon.  
 
-This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
-
 WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
 WatcomC library collection: https://github.com/kosmonautdnb/WatcomLibs  
@@ -70,3 +68,5 @@ https://github.com/erysdren/TinyGL.git
 - glPolygonMode For Wireframe Rendering Of Polygons
 - Possible Two Sided Lighting
 - Complete Fixed Function OpenGL Pipeline
+
+This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
