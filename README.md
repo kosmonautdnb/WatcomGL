@@ -3,7 +3,7 @@
 #### Just include and link:  
   GL.H  
   GLIMPL.CPP  
-#### in your WatcomC++ project.  
+#### to your WatcomC++ project.  
 
 For some fun: link _YELLOW.CPP to see "Yellow Rose of Texas" a 4k by Fit and Bandwagon.  
 
