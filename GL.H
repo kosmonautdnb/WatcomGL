@@ -1072,6 +1072,29 @@ typedef struct glVertex {
   GLdouble textureW;
   double sx,sy,sz,sw; // screen x,y,z and w (y is top to bottom) z for zbuffer and w for perspective correct interpolation // just nearplane clipping was performed internally
 } glVertex;
+typedef struct glTexture {
+  GLuint name;
+  GLuint width;
+  GLuint height;
+  GLuint *data;
+  GLuint baseLevel;
+  GLuint lodBias;
+  GLuint magFilter;
+  GLuint maxLevel;
+  GLuint maxLod;
+  GLuint minFilter;
+  GLuint minLod;
+  GLuint wrapS;
+  GLuint wrapT;
+  GLuint wrapR;
+  GLfloat borderColorRed;
+  GLfloat borderColorGreen;
+  GLfloat borderColorBlue;
+  GLfloat borderColorAlpha;
+  GLuint texEnvMode;
+} glTexture;
+#define GLMAXTEXTURES 1024
+extern glTexture glTextures[GLMAXTEXTURES]; // you can load textures without OpenGL beeing initialized before (e.g. glTexImage2D)
 // ------------------------
 // ------------------------
 // ------------------------

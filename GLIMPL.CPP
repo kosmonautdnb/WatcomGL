@@ -35,8 +35,6 @@ float *glDepthBuffer0 = NULL;
 
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 
-#define __GL_MAX_TEXTURE_SIZE__ (1024)
-#define GLMAXTEXTURES 1024
 #define __MATRIX_STACK_SIZE__ 16
 #define __ATTRIB_STACK_SIZE__ 4
 
@@ -227,30 +225,7 @@ void glSetTriangleDrawer(TriangleDrawer drawer) {
 }
 void glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
-typedef struct glTexture {
-  GLuint name;
-  GLuint width;
-  GLuint height;
-  GLuint *data;
-  GLuint baseLevel;
-  GLuint lodBias;
-  GLuint magFilter;
-  GLuint maxLevel;
-  GLuint maxLod;
-  GLuint minFilter;
-  GLuint minLod;
-  GLuint wrapS;
-  GLuint wrapT;
-  GLuint wrapR;
-  GLfloat borderColorRed;
-  GLfloat borderColorGreen;
-  GLfloat borderColorBlue;
-  GLfloat borderColorAlpha;
-  GLuint texEnvMode;
-} glTexture;
-glTexture glTextures[GLMAXTEXTURES] = {
-  {0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}
-};
+glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
 
 GLuint glNewTexture() {
   for (int i = 1; i < GLMAXTEXTURES; i++) {
@@ -4364,7 +4339,6 @@ void *glVesaPointer(const void *d) {
 // --------------------------------------
 void glSetupMouse();
 double glStartClock;
-
 GLboolean glVesa(int xRes,int yRes, int bPP) {
   glGraphicsModeToRestore = getBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
