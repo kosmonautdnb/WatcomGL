@@ -1678,6 +1678,11 @@ void glMultMatrixf (const GLfloat *m) {
   glUpdateMatrix();
 }
 
+void glMultMatrixd (const GLdouble *m) {
+  glMatMul(glContext.matrixForMode[glContext.matrixModeNr],m,glContext.matrixForMode[glContext.matrixModeNr]);
+  glUpdateMatrix();
+}
+
 void glPointSize (GLfloat size) {
   glContext.pointSize = size;
 }
@@ -1799,6 +1804,34 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z) {
   matrix[7] *= (double)y;
   matrix[11] *= (double)z;
   glUpdateMatrix();
+}
+
+void glScalefv(GLfloat *v) {
+  glScalef(v[0],v[1],v[2]);
+}
+
+void glScaled(GLdouble x, GLdouble y, GLdouble z) {
+  double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  matrix[0] *= (double)x;
+  matrix[4] *= (double)y;
+  matrix[8] *= (double)z;
+
+  matrix[1] *= (double)x;
+  matrix[5] *= (double)y;
+  matrix[9] *= (double)z;
+
+  matrix[2] *= (double)x;
+  matrix[6] *= (double)y;
+  matrix[10] *= (double)z;
+
+  matrix[3] *= (double)x;
+  matrix[7] *= (double)y;
+  matrix[11] *= (double)z;
+  glUpdateMatrix();
+}
+
+void glScaledv(GLfloat *v) {
+  glScaled(v[0],v[1],v[2]);
 }
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
@@ -1999,6 +2032,20 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
   double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
   glhTranslate(matrix,x,y,z);
   glUpdateMatrix();
+}
+
+void glTranslatefv(GLfloat *v) {
+  glTranslatef(v[0],v[1],v[2]);
+}
+
+void glTranslated(GLdouble x, GLdouble y, GLdouble z) {
+  double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
+  glhTranslate(matrix,x,y,z);
+  glUpdateMatrix();
+}
+
+void glTranslatedv(GLdouble *v) {
+  glTranslated(v[0],v[1],v[2]);
 }
 
 void glVertex2f (GLfloat x, GLfloat y) {
