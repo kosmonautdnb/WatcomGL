@@ -1830,7 +1830,7 @@ void glScaled(GLdouble x, GLdouble y, GLdouble z) {
   glUpdateMatrix();
 }
 
-void glScaledv(GLfloat *v) {
+void glScaledv(GLdouble *v) {
   glScaled(v[0],v[1],v[2]);
 }
 
