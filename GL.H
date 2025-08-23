@@ -664,9 +664,9 @@ GLAPI void APIENTRY glRasterPos3f (GLfloat x, GLfloat y, GLfloat z);
 GLAPI void APIENTRY glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels); // supported
 GLAPI void APIENTRY glRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z); // supported
 GLAPI void APIENTRY glScalef (GLfloat x, GLfloat y, GLfloat z); // supported
-GLAPI void APIENTRY glScalefv (GLfloat *v); // supported
+GLAPI void APIENTRY glScalefv (const GLfloat *v); // supported
 GLAPI void APIENTRY glScaled (GLdouble x, GLdouble y, GLdouble z); // supported
-GLAPI void APIENTRY glScaledv (GLdouble *v); // supported
+GLAPI void APIENTRY glScaledv (const GLdouble *v); // supported
 GLAPI void APIENTRY glScissor (GLint x, GLint y, GLsizei width, GLsizei height); // supported
 GLAPI void APIENTRY glShadeModel (GLenum mode);
 GLAPI void APIENTRY glStencilFunc (GLenum func, GLint ref, GLuint mask);
@@ -680,9 +680,9 @@ GLAPI void APIENTRY glTexImage2D (GLenum target, GLint level, GLint internalform
 GLAPI void APIENTRY glTexParameteri (GLenum target, GLenum pname, GLint param); // supported
 GLAPI void APIENTRY glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels); // supported
 GLAPI void APIENTRY glTranslatef (GLfloat x, GLfloat y, GLfloat z); // supported
-GLAPI void APIENTRY glTranslatefv (GLfloat *v); // supported
+GLAPI void APIENTRY glTranslatefv (const GLfloat *v); // supported
 GLAPI void APIENTRY glTranslated (GLdouble x, GLdouble y, GLdouble z); // supported
-GLAPI void APIENTRY glTranslatedv (GLdouble *v); // supported
+GLAPI void APIENTRY glTranslatedv (const GLdouble *v); // supported
 GLAPI void APIENTRY glVertex2f (GLfloat x, GLfloat y); // supported
 GLAPI void APIENTRY glVertex2fv (const GLfloat *v); // supported
 GLAPI void APIENTRY glVertex3f (GLfloat x, GLfloat y, GLfloat z); // supported

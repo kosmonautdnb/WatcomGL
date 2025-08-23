@@ -1806,7 +1806,7 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z) {
   glUpdateMatrix();
 }
 
-void glScalefv(GLfloat *v) {
+void glScalefv(const GLfloat *v) {
   glScalef(v[0],v[1],v[2]);
 }
 
@@ -1830,7 +1830,7 @@ void glScaled(GLdouble x, GLdouble y, GLdouble z) {
   glUpdateMatrix();
 }
 
-void glScaledv(GLdouble *v) {
+void glScaledv(const GLdouble *v) {
   glScaled(v[0],v[1],v[2]);
 }
 
@@ -2034,7 +2034,7 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
   glUpdateMatrix();
 }
 
-void glTranslatefv(GLfloat *v) {
+void glTranslatefv(const GLfloat *v) {
   glTranslatef(v[0],v[1],v[2]);
 }
 
@@ -2044,7 +2044,7 @@ void glTranslated(GLdouble x, GLdouble y, GLdouble z) {
   glUpdateMatrix();
 }
 
-void glTranslatedv(GLdouble *v) {
+void glTranslatedv(const GLdouble *v) {
   glTranslated(v[0],v[1],v[2]);
 }
 
