@@ -781,8 +781,10 @@ bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
     double nx = ay*bz - az*by;
     double ny = az*bx - ax*bz;
     double nz = ax*by - ay*bx;
-    double *m = glContext.matrixForMode[GL_MODELVIEW & 1];
-    double d = m[4*0+2]*nx+m[4*1+2]*ny+m[4*2+2]*nz;
+    //double *m = glContext.matrixForMode[GL_MODELVIEW & 1];
+    //double d = m[4*0+2]*nx+m[4*1+2]*ny+m[4*2+2]*nz; // this transpose just works for orthogonal matrices
+    double *m = glGetInverseModelView(&glContext); // maybe the inverse is better here
+    double d = m[4*2+0]*nx+m[4*2+1]*ny+m[4*2+2]*nz;
     currentBackFacing = d < 0; // used only for coloring currently
   }
   return false;
