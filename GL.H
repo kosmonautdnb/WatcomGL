@@ -1020,11 +1020,12 @@ public:
   GLdouble lightGreen[4][__GL_MAX_LIGHTS__];
   GLdouble lightBlue[4][__GL_MAX_LIGHTS__];
   GLdouble lightAlpha[4][__GL_MAX_LIGHTS__];
-  GLenum colorMaterial;
-  GLfloat materialRed[5];
-  GLfloat materialGreen[5];
-  GLfloat materialBlue[5];
-  GLfloat materialAlpha[5];
+  GLenum colorMaterial[2];
+  GLenum colorMaterialFace;
+  GLfloat materialRed[2][5];
+  GLfloat materialGreen[2][5];
+  GLfloat materialBlue[2][5];
+  GLfloat materialAlpha[2][5];
   GLuint boundTextures[GLMAXTEXTUREUNITS];
   GLfloat blendColorRed;
   GLfloat blendColorGreen;

@@ -34,6 +34,7 @@ unsigned int *glFrameBuffer0 = NULL;
 float *glDepthBuffer0 = NULL;
 
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
+bool currentBackFacing = false;
 
 #define __MATRIX_STACK_SIZE__ 16
 #define __ATTRIB_STACK_SIZE__ 4
@@ -117,33 +118,36 @@ _GLContext::_GLContext() {
   textureZ = 0.0;
   textureW = 0.0;
   beginMode = 0;
-  colorMaterial = GL_AMBIENT_AND_DIFFUSE;
 
-  // ambient
-  materialRed[0] = 0;
-  materialGreen[0] = 0;
-  materialBlue[0] = 0;
-  materialAlpha[0] = 1;
-  // diffuse
-  materialRed[1] = 1;
-  materialGreen[1] = 1;
-  materialBlue[1] = 1;
-  materialAlpha[1] = 1;
-  // specular
-  materialRed[2] = 0;
-  materialGreen[2] = 0;
-  materialBlue[2] = 0;
-  materialAlpha[2] = 1;
-  // emission
-  materialRed[3] = 0;
-  materialGreen[3] = 0;
-  materialBlue[3] = 0;
-  materialAlpha[3] = 1;
-  // shininess
-  materialRed[4] = 1;
-  materialGreen[4] = 1;
-  materialBlue[4] = 1;
-  materialAlpha[4] = 1;
+  colorMaterialFace = GL_FRONT;
+  for (i = 0; i < 2; i++) {
+    colorMaterial[i] = GL_AMBIENT_AND_DIFFUSE;
+    // ambient
+    materialRed[i][0] = 0;
+    materialGreen[i][0] = 0;
+    materialBlue[i][0] = 0;
+    materialAlpha[i][0] = 1;
+    // diffuse
+    materialRed[i][1] = 1;
+    materialGreen[i][1] = 1;
+    materialBlue[i][1] = 1;
+    materialAlpha[i][1] = 1;
+    // specular
+    materialRed[i][2] = 0;
+    materialGreen[i][2] = 0;
+    materialBlue[i][2] = 0;
+    materialAlpha[i][2] = 1;
+    // emission
+    materialRed[i][3] = 0;
+    materialGreen[i][3] = 0;
+    materialBlue[i][3] = 0;
+    materialAlpha[i][3] = 1;
+    // shininess
+    materialRed[i][4] = 1;
+    materialGreen[i][4] = 1;
+    materialBlue[i][4] = 1;
+    materialAlpha[i][4] = 1;
+  }
 
   for (i = 0;  i < __GL_MAX_LIGHTS__; i++) {
     // ambient
@@ -432,26 +436,27 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     float specularGreen = 0;
     float specularBlue = 0;
 
-    float materialAmbientRed = context->materialRed[0];
-    float materialAmbientGreen = context->materialGreen[0];
-    float materialAmbientBlue = context->materialBlue[0];
-    float materialDiffuseRed = context->materialRed[1];
-    float materialDiffuseGreen = context->materialGreen[1];
-    float materialDiffuseBlue = context->materialBlue[1];
-    float materialDiffuseAlpha = context->materialAlpha[1];
-    float materialSpecularRed = context->materialRed[2];
-    float materialSpecularGreen = context->materialGreen[2];
-    float materialSpecularBlue = context->materialBlue[2];
-    float materialEmissionRed = context->materialRed[3];
-    float materialEmissionGreen = context->materialGreen[3];
-    float materialEmissionBlue = context->materialBlue[3];
-    float materialShininessRed = context->materialRed[4];
-    float materialShininessGreen = context->materialGreen[4];
-    float materialShininessBlue = context->materialBlue[4];
+    int face = currentBackFacing ? 1:0;
+    float materialAmbientRed = context->materialRed[face][0];
+    float materialAmbientGreen = context->materialGreen[face][0];
+    float materialAmbientBlue = context->materialBlue[face][0];
+    float materialDiffuseRed = context->materialRed[face][1];
+    float materialDiffuseGreen = context->materialGreen[face][1];
+    float materialDiffuseBlue = context->materialBlue[face][1];
+    float materialDiffuseAlpha = context->materialAlpha[face][1];
+    float materialSpecularRed = context->materialRed[face][2];
+    float materialSpecularGreen = context->materialGreen[face][2];
+    float materialSpecularBlue = context->materialBlue[face][2];
+    float materialEmissionRed = context->materialRed[face][3];
+    float materialEmissionGreen = context->materialGreen[face][3];
+    float materialEmissionBlue = context->materialBlue[face][3];
+    float materialShininessRed = context->materialRed[face][4];
+    float materialShininessGreen = context->materialGreen[face][4];
+    float materialShininessBlue = context->materialBlue[face][4];
 
 
     if (context->isEnabled(GL_COLOR_MATERIAL)) {
-      switch(glContext.colorMaterial) {
+      switch(glContext.colorMaterial[face]) {
         case GL_AMBIENT: {
           materialAmbientRed = v->colorRed;
           materialAmbientGreen = v->colorGreen;
@@ -536,7 +541,9 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         double l = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
         if (l>0.0) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
         double diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
-        if (context->twoSidedLighting) diffuse = fabs(diffuse);
+        if (context->twoSidedLighting) {
+          diffuse = fabs(diffuse);
+        }
         if (diffuse<0) diffuse = 0;
         double viewX = x;
         double viewY = y;
@@ -763,8 +770,26 @@ void glSetVertex(glVertex *w) {
   v->textureW = w->textureW;
 }
 
+bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
+  if (glContext.twoSidedLighting) {
+    double ax = v1.vertexX-v0.vertexX;
+    double ay = v1.vertexY-v0.vertexY;
+    double az = v1.vertexZ-v0.vertexZ;
+    double bx = v2.vertexX-v0.vertexX;
+    double by = v2.vertexY-v0.vertexY;
+    double bz = v2.vertexZ-v0.vertexZ;
+    double nx = ay*bz - az*by;
+    double ny = az*bx - ax*bz;
+    double nz = ax*by - ay*bx;
+    double *m = glContext.matrixForMode[GL_MODELVIEW & 1];
+    double d = m[4*0+2]*nx+m[4*1+2]*ny+m[4*2+2]*nz;
+    currentBackFacing = d < 0; // used only for coloring currently
+  }
+  return false;
+}
 
 void glEmitVertex() {
+  currentBackFacing = false;
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
   v->colorRed = w->colorRed;
@@ -890,6 +915,7 @@ void glEmitVertex() {
           glContext.beginMode = GL_TRIANGLES; glCurrentVertexElement = 0;
           break;
         }
+        if (backFaceCalc(glVertices[0],glVertices[1],glVertices[2])) {glCurrentVertexElement = 0;break;}
         int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1],true);
@@ -934,6 +960,7 @@ void glEmitVertex() {
           glContext.beginMode = GL_QUADS; glCurrentVertexElement = 0;
           break;
         }
+        if (backFaceCalc(glVertices[0],glVertices[1],glVertices[2])) {glCurrentVertexElement = 0;break;}
         int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1],true);
@@ -1179,7 +1206,13 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 }
 
 void glColorMaterial(GLenum face, GLenum pname) {
-  glContext.colorMaterial = pname;
+  int f0 = 0; int f1 = 1;
+  if (face == GL_FRONT) {f0=0;f1=1;}
+  if (face == GL_BACK) {f0=1;f1=2;}
+  if (face == GL_FRONT_AND_BACK) {f0=0;f1=2;}
+  glContext.colorMaterialFace = face;
+  for (int f = f0; f < f1; f++)
+    glContext.colorMaterial[f] = pname;
 }
 
 void glCullFace(GLenum mode) {
@@ -1276,8 +1309,8 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
   case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
   case GL_BLUE_BITS: {*params=8;} break;
   case GL_COLOR_CLEAR_VALUE: {params[0]=(int)floor(glContext.clearRed);params[1]=(int)floor(glContext.clearGreen);params[2]=(int)floor(glContext.clearBlue);params[3]=(int)floor(glContext.clearAlpha);} break;
-  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
-  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterialFace;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial[glContext.colorMaterialFace==GL_BACK?1:0];} break;
   case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
   case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
   case GL_CURRENT_NORMAL: {params[0]=(int)floor(glContext.normalX);params[1]=(int)floor(glContext.normalY);params[2]=(int)floor(glContext.normalZ);} break;
@@ -1334,8 +1367,8 @@ void glGetDoublev (GLenum pname, GLdouble *params) {
   case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
   case GL_BLUE_BITS: {*params=8;} break;
   case GL_COLOR_CLEAR_VALUE: {params[0]=glContext.clearRed;params[1]=glContext.clearGreen;params[2]=glContext.clearBlue;params[3]=glContext.clearAlpha;} break;
-  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
-  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterialFace;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial[glContext.colorMaterialFace==GL_BACK?1:0];} break;
   case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
   case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
   case GL_CURRENT_NORMAL: {params[0]=glContext.normalX;params[1]=glContext.normalY;params[2]=glContext.normalZ;} break;
@@ -1392,8 +1425,8 @@ void glGetFloatv (GLenum pname, GLfloat *params) {
   case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
   case GL_BLUE_BITS: {*params=8;} break;
   case GL_COLOR_CLEAR_VALUE: {params[0]=glContext.clearRed;params[1]=glContext.clearGreen;params[2]=glContext.clearBlue;params[3]=glContext.clearAlpha;} break;
-  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
-  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterialFace;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial[glContext.colorMaterialFace==GL_BACK?1:0];} break;
   case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
   case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
   case GL_CURRENT_NORMAL: {params[0]=glContext.normalX;params[1]=glContext.normalY;params[2]=glContext.normalZ;} break;
@@ -1450,8 +1483,8 @@ void glGetIntegerv (GLenum pname, GLint *params) {
   case GL_BLEND_SRC: {*params=glContext.blendFuncSFactor;} break;
   case GL_BLUE_BITS: {*params=8;} break;
   case GL_COLOR_CLEAR_VALUE: {params[0]=(int)floor(glContext.clearRed);params[1]=(int)floor(glContext.clearGreen);params[2]=(int)floor(glContext.clearBlue);params[3]=(int)floor(glContext.clearAlpha);} break;
-  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterial;} break;
-  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial;} break;
+  case GL_COLOR_MATERIAL_FACE: {*params=glContext.colorMaterialFace;} break;
+  case GL_COLOR_MATERIAL_PARAMETER: {*params=glContext.colorMaterial[glContext.colorMaterialFace==GL_BACK?1:0];} break;
   case GL_CULL_FACE: {*params=glIsEnabled(GL_CULL_FACE);} break;
   case GL_CULL_FACE_MODE: {*params=glContext.cullFaceMode;} break;
   case GL_CURRENT_NORMAL: {params[0]=(int)floor(glContext.normalX);params[1]=(int)floor(glContext.normalY);params[2]=(int)floor(glContext.normalZ);} break;
@@ -1640,32 +1673,38 @@ void glMaterialf(GLenum face, GLenum pname, GLfloat param) {
 }
 
 void glMaterialfv (GLenum face, GLenum pname, const GLfloat *params) {
-  switch(pname) {
-    case GL_AMBIENT: {
-      glContext.materialRed[0] = params[0];
-      glContext.materialGreen[0] = params[1];
-      glContext.materialBlue[0] = params[2];
-    } break;
-    case GL_DIFFUSE: {
-      glContext.materialRed[1] = params[0];
-      glContext.materialGreen[1] = params[1];
-      glContext.materialBlue[1] = params[2];
-    } break;
-    case GL_SPECULAR: {
-      glContext.materialRed[2] = params[0];
-      glContext.materialGreen[2] = params[1];
-      glContext.materialBlue[2] = params[2];
-    } break;
-    case GL_EMISSION: {
-      glContext.materialRed[3] = params[0];
-      glContext.materialGreen[3] = params[1];
-      glContext.materialBlue[3] = params[2];
-    } break;
-    case GL_SHININESS: {
-      glContext.materialRed[4] = params[0];
-      glContext.materialGreen[4] = params[1];
-      glContext.materialBlue[4] = params[2];
-    } break;
+  int f0 = 0; int f1 = 1;
+  if (face == GL_FRONT) {f0=0;f1=1;}
+  if (face == GL_BACK) {f0=1;f1=2;}
+  if (face == GL_FRONT_AND_BACK) {f0=0;f1=2;}
+  for(int f = f0; f<f1; f++) {
+    switch(pname) {
+      case GL_AMBIENT: {
+        glContext.materialRed[f][0] = params[0];
+        glContext.materialGreen[f][0] = params[1];
+        glContext.materialBlue[f][0] = params[2];
+      } break;
+      case GL_DIFFUSE: {
+        glContext.materialRed[f][1] = params[0];
+        glContext.materialGreen[f][1] = params[1];
+        glContext.materialBlue[f][1] = params[2];
+      } break;
+      case GL_SPECULAR: {
+        glContext.materialRed[f][2] = params[0];
+        glContext.materialGreen[f][2] = params[1];
+        glContext.materialBlue[f][2] = params[2];
+      } break;
+      case GL_EMISSION: {
+        glContext.materialRed[f][3] = params[0];
+        glContext.materialGreen[f][3] = params[1];
+        glContext.materialBlue[f][3] = params[2];
+      } break;
+      case GL_SHININESS: {
+        glContext.materialRed[f][4] = params[0];
+        glContext.materialGreen[f][4] = params[1];
+        glContext.materialBlue[f][4] = params[2];
+      } break;
+    }
   }
 }
 
