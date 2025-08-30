@@ -641,8 +641,8 @@ GLAPI void APIENTRY glListBase (GLuint base);
 GLAPI void APIENTRY glLoadIdentity (void); // supported
 GLAPI void APIENTRY glLoadMatrixf (const GLfloat *m); // supported
 GLAPI void APIENTRY glLoadMatrixd (const GLdouble *m); // supported
-GLAPI void APIENTRY glMaterialf (GLenum face, GLenum pname, GLfloat param); // supported (only GL_FRONT)
-GLAPI void APIENTRY glMaterialfv (GLenum face, GLenum pname, const GLfloat *params); // supported (only GL_FRONT)
+GLAPI void APIENTRY glMaterialf (GLenum face, GLenum pname, GLfloat param);
+GLAPI void APIENTRY glMaterialfv (GLenum face, GLenum pname, const GLfloat *params);
 GLAPI void APIENTRY glMatrixMode (GLenum mode); // supported
 GLAPI void APIENTRY glMultMatrixf (const GLfloat *m); // supported
 GLAPI void APIENTRY glMultMatrixd (const GLdouble *m); // supported
@@ -655,7 +655,7 @@ GLAPI void APIENTRY glNormalPointer (GLenum type, GLsizei stride, const GLvoid *
 GLAPI void APIENTRY glOrthof (GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar); // supported
 GLAPI void APIENTRY glPixelStorei (GLenum pname, GLint param);
 GLAPI void APIENTRY glPointSize (GLfloat size); // supported
-GLAPI void APIENTRY glPolygonMode (GLenum face, GLenum mode); // supported (only GL_FRONT)
+GLAPI void APIENTRY glPolygonMode (GLenum face, GLenum mode); // supported
 GLAPI void APIENTRY glPolygonOffset (GLfloat factor, GLfloat units);
 GLAPI void APIENTRY glPolygonStipple (const GLubyte *mask);
 GLAPI void APIENTRY glPopMatrix (void); // supported
@@ -1051,7 +1051,7 @@ public:
   GLenum texGenT;
   bool needNewInverseModelView;
   bool twoSidedLighting;
-  bool wireframe;
+  bool wireframe[2];
   GLfloat fogStart;
   GLfloat fogEnd;
   GLfloat fogColor[4];

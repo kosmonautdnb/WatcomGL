@@ -147,6 +147,7 @@ _GLContext::_GLContext() {
     materialGreen[i][4] = 1;
     materialBlue[i][4] = 1;
     materialAlpha[i][4] = 1;
+    wireframe[i] = false;
   }
 
   for (i = 0;  i < __GL_MAX_LIGHTS__; i++) {
@@ -199,7 +200,6 @@ _GLContext::_GLContext() {
   texGenT = GL_SPHERE_MAP_ATAN2; // actually GL_EYE_LINEAR
   needNewInverseModelView = false;
   twoSidedLighting = false;
-  wireframe = false;
 
   fogStart = 0.0;
   fogEnd = 1.0;
@@ -771,7 +771,8 @@ void glSetVertex(glVertex *w) {
 }
 
 bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
-  if (glContext.twoSidedLighting) { // used only for coloring currently
+  currentBackFacing = false;
+  if (glContext.twoSidedLighting || glContext.wireframe[0] || glContext.wireframe[1]) { // used only for coloring currently
     const double ax = v1.vertexX-v0.vertexX;
     const double ay = v1.vertexY-v0.vertexY;
     const double az = v1.vertexZ-v0.vertexZ;
@@ -799,7 +800,6 @@ bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
 }
 
 void glEmitVertex() {
-  currentBackFacing = false;
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
   v->colorRed = w->colorRed;
@@ -909,7 +909,8 @@ void glEmitVertex() {
     } break;
     case GL_TRIANGLES: {
       if (glCurrentVertexElement==3) {
-        if (glContext.wireframe) {
+        if (backFaceCalc(glVertices[0],glVertices[1],glVertices[2])) {glCurrentVertexElement = 0;currentBackFacing = false;break;}
+        if (glContext.wireframe[currentBackFacing ? 1 : 0]) {
           glVertex vs[3];
           vs[0] = glVertices[0];
           vs[1] = glVertices[1];
@@ -922,10 +923,9 @@ void glEmitVertex() {
           glSetVertex(&vs[2]);glEmitVertex();
           glSetVertex(&vs[0]);glEmitVertex();
           glSetVertex(&vs[2]);
-          glContext.beginMode = GL_TRIANGLES; glCurrentVertexElement = 0;
+          glContext.beginMode = GL_TRIANGLES; glCurrentVertexElement = 0; currentBackFacing = false;
           break;
         }
-        if (backFaceCalc(glVertices[0],glVertices[1],glVertices[2])) {glCurrentVertexElement = 0;break;}
         int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1],true);
@@ -946,12 +946,13 @@ void glEmitVertex() {
             drawClippedTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
           }
         }
-        glCurrentVertexElement = 0;
+        glCurrentVertexElement = 0; currentBackFacing = false; 
       }
     } break;
     case GL_QUADS: {
       if (glCurrentVertexElement==4) {
-        if (glContext.wireframe) {
+        if (backFaceCalc(glVertices[0],glVertices[1],glVertices[2])) {glCurrentVertexElement = 0;currentBackFacing = false;break;}
+        if (glContext.wireframe[currentBackFacing ? 1 : 0]) {
           glVertex vs[4];
           vs[0] = glVertices[0];
           vs[1] = glVertices[1];
@@ -967,10 +968,9 @@ void glEmitVertex() {
           glSetVertex(&vs[3]);glEmitVertex();
           glSetVertex(&vs[0]);glEmitVertex();
           glSetVertex(&vs[3]);
-          glContext.beginMode = GL_QUADS; glCurrentVertexElement = 0;
+          glContext.beginMode = GL_QUADS; glCurrentVertexElement = 0; currentBackFacing = false;
           break;
         }
-        if (backFaceCalc(glVertices[0],glVertices[1],glVertices[2])) {glCurrentVertexElement = 0;break;}
         int a = glTransformVertex(&glContext,&glVertices[0],true);
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[1],true);
@@ -995,7 +995,7 @@ void glEmitVertex() {
             drawClippedQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
           }
         }
-        glCurrentVertexElement = 0;
+        glCurrentVertexElement = 0; currentBackFacing = false;
       }
     } break;
     case GL_POINTS: {
@@ -1737,7 +1737,13 @@ void glPointSize (GLfloat size) {
 }
 
 void glPolygonMode (GLenum face, GLenum mode) {
-  glContext.wireframe = mode == GL_LINE;
+  int f0 = 0; int f1 = 1;
+  if (face == GL_FRONT) {f0=0;f1=1;}
+  if (face == GL_BACK) {f0=1;f1=2;}
+  if (face == GL_FRONT_AND_BACK) {f0=0;f1=2;}
+  for (int f = f0; f < f1; f++) {
+    glContext.wireframe[f] = mode == GL_LINE;
+  }
 }
 
 void glPolygonOffset (GLfloat factor, GLfloat units) {
