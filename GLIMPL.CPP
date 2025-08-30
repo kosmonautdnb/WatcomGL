@@ -436,7 +436,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     float specularGreen = 0;
     float specularBlue = 0;
 
-    int face = currentBackFacing ? 1:0;
+    int face = glContext.twoSidedLighting ? (currentBackFacing ? 1:0) : 0;
     float materialAmbientRed = context->materialRed[face][0];
     float materialAmbientGreen = context->materialGreen[face][0];
     float materialAmbientBlue = context->materialBlue[face][0];
