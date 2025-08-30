@@ -771,21 +771,29 @@ void glSetVertex(glVertex *w) {
 }
 
 bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
-  if (glContext.twoSidedLighting) {
-    double ax = v1.vertexX-v0.vertexX;
-    double ay = v1.vertexY-v0.vertexY;
-    double az = v1.vertexZ-v0.vertexZ;
-    double bx = v2.vertexX-v0.vertexX;
-    double by = v2.vertexY-v0.vertexY;
-    double bz = v2.vertexZ-v0.vertexZ;
-    double nx = ay*bz - az*by;
-    double ny = az*bx - ax*bz;
-    double nz = ax*by - ay*bx;
-    //double *m = glContext.matrixForMode[GL_MODELVIEW & 1];
-    //double d = m[4*0+2]*nx+m[4*1+2]*ny+m[4*2+2]*nz; // this transpose just works for orthogonal matrices
-    double *m = glGetInverseModelView(&glContext); // maybe the inverse is better here
-    double d = m[4*2+0]*nx+m[4*2+1]*ny+m[4*2+2]*nz;
-    currentBackFacing = d < 0; // used only for coloring currently
+  if (glContext.twoSidedLighting) { // used only for coloring currently
+    const double ax = v1.vertexX-v0.vertexX;
+    const double ay = v1.vertexY-v0.vertexY;
+    const double az = v1.vertexZ-v0.vertexZ;
+    const double bx = v2.vertexX-v0.vertexX;
+    const double by = v2.vertexY-v0.vertexY;
+    const double bz = v2.vertexZ-v0.vertexZ;
+    const double nx = ay*bz - az*by;
+    const double ny = az*bx - ax*bz;
+    const double nz = ax*by - ay*bx;
+    const double *o = glContext.matrixForMode[GL_PROJECTION & 1];
+    if (fabs(o[0*4+3]+o[1*4+3]+o[2*4+3])<0.001) { // check if orthographic projection by x,y,z not influencing w
+      const double *m = glGetInverseModelView(&glContext);
+      const double d = m[4*2+0]*nx+m[4*2+1]*ny+m[4*2+2]*nz;
+      currentBackFacing = d < 0;
+    } else {
+      const double *m = glGetInverseModelView(&glContext);
+      const double vx = v0.vertexX-m[4*3+0];
+      const double vy = v0.vertexY-m[4*3+1];
+      const double vz = v0.vertexZ-m[4*3+2];
+      const double d = vx*nx+vy*ny+vz*nz;
+      currentBackFacing = d > 0;
+    }
   }
   return false;
 }
