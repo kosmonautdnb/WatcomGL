@@ -781,7 +781,7 @@ bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
     const double nx = ay*bz - az*by;
     const double ny = az*bx - ax*bz;
     const double nz = ax*by - ay*bx;
-    const double *o = glContext.matrixForMode[GL_PROJECTION & 1];
+    const double *o = glContext.matrix;
     if (o[0*4+3]==0&&o[1*4+3]==0&&o[2*4+3]==0) { // check if orthographic projection by x,y,z not influencing w
       const double *m = glGetInverseModelView(&glContext);
       const double d = m[4*2+0]*nx+m[4*2+1]*ny+m[4*2+2]*nz;
