@@ -787,6 +787,8 @@ bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
       const double *m = glGetInverseModelView(&glContext);
       const double d = m[4*2+0]*nx+m[4*2+1]*ny+m[4*2+2]*nz;
       currentBackFacing = d < 0;
+      if (glContext.frontFace != GL_CCW) currentBackFacing = !currentBackFacing;
+
     } else {
       const double *m = glGetInverseModelView(&glContext);
       const double vx = v0.vertexX-m[4*3+0];
@@ -794,6 +796,7 @@ bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
       const double vz = v0.vertexZ-m[4*3+2];
       const double d = vx*nx+vy*ny+vz*nz;
       currentBackFacing = d > 0;
+      if (glContext.frontFace != GL_CCW) currentBackFacing = !currentBackFacing;
     }
   }
   return false;
