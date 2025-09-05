@@ -1,3 +1,4 @@
+// vertex winding order is inverted here by:  glFrontFace(GL_CW);
 #include "gl.h"	
 #include <conio.h>
 #include <stdlib.h>
