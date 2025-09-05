@@ -584,12 +584,6 @@ void glLightVertex(_GLContext *context, glVertex *v) {
           double spotDirectionX = context->lightRed[4][i];
           double spotDirectionY = context->lightGreen[4][i];
           double spotDirectionZ =  context->lightBlue[4][i];
-          double ls = sqrt(spotDirectionX*spotDirectionX+spotDirectionY*spotDirectionY+spotDirectionZ*spotDirectionZ);
-          if (fabs(ls)>0.0) {
-            spotDirectionX /= ls;
-            spotDirectionY /= ls;
-            spotDirectionZ /= ls;
-          }
           double spotAngleDot = lVecX*spotDirectionX+lVecY*spotDirectionY+lVecZ*spotDirectionZ;
           if (spotAngleDot>spotCutOff) { // spotCutOff goes from 1(0degrees) to -1(180degrees)
             const double spotExponent = context->spotExponent[i];
@@ -1587,7 +1581,7 @@ void glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
   case GL_QUADRATIC_ATTENUATION: {params[0]=glContext.quadraticAttenuation[light-GL_LIGHT0];} break;
   case GL_SPOT_EXPONENT: {params[0]=glContext.spotExponent[light-GL_LIGHT0];} break;
   case GL_SPOT_CUTOFF: {params[0]=acos(glContext.spotCutOff[light-GL_LIGHT0])*180.0/PI;} break;
-  case GL_SPOT_DIRECTION:
+  case GL_SPOT_DIRECTION: // spot_direction already normalized
   case GL_POSITION:
   case GL_DIFFUSE:
   case GL_SPECULAR:
@@ -1635,6 +1629,8 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
     double xl = lx * matrix[0*4+0] + ly * matrix[1*4+0] + lz * matrix[2*4+0];
     double yl = lx * matrix[0*4+1] + ly * matrix[1*4+1] + lz * matrix[2*4+1];
     double zl = lx * matrix[0*4+2] + ly * matrix[1*4+2] + lz * matrix[2*4+2];
+    double k = sqrt(xl*xl+yl*yl+zl*zl);
+    if (fabs(k)>0) {xl/=k;yl/=k;zl/=k;}
     glContext.lightRed[pname & 7][light - GL_LIGHT0] = xl;
     glContext.lightGreen[pname & 7][light - GL_LIGHT0] = yl;
     glContext.lightBlue[pname & 7][light - GL_LIGHT0] = zl;
