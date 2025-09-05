@@ -118,6 +118,9 @@ extern "C" {
 #define GL_LINE 0x1b01 // :mad:
 #define GL_FILL 0x1b02 // :mad:
 
+#define GL_SPOT_DIRECTION 0x1204 // :mad:
+#define GL_SPOT_EXPONENT 0x1205 // :mad:
+#define GL_SPOT_CUTOFF 0x1206 // :mad:
 
 
 typedef unsigned int GLenum;
@@ -1016,10 +1019,10 @@ public:
   GLdouble textureW;
   GLenum beginMode;
   GLboolean enabledCaps[256];
-  GLdouble lightRed[4][__GL_MAX_LIGHTS__];
-  GLdouble lightGreen[4][__GL_MAX_LIGHTS__];
-  GLdouble lightBlue[4][__GL_MAX_LIGHTS__];
-  GLdouble lightAlpha[4][__GL_MAX_LIGHTS__];
+  GLdouble lightRed[8][__GL_MAX_LIGHTS__];
+  GLdouble lightGreen[8][__GL_MAX_LIGHTS__];
+  GLdouble lightBlue[8][__GL_MAX_LIGHTS__];
+  GLdouble lightAlpha[8][__GL_MAX_LIGHTS__];
   GLenum colorMaterial[2];
   GLenum colorMaterialFace;
   GLfloat materialRed[2][5];
@@ -1047,6 +1050,8 @@ public:
   GLfloat constantAttenuation[__GL_MAX_LIGHTS__];
   GLfloat linearAttenuation[__GL_MAX_LIGHTS__];
   GLfloat quadraticAttenuation[__GL_MAX_LIGHTS__];
+  GLfloat spotExponent[__GL_MAX_LIGHTS__];
+  GLfloat spotCutOff[__GL_MAX_LIGHTS__];
   GLenum texGenS;
   GLenum texGenT;
   bool needNewInverseModelView;

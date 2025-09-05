@@ -11,7 +11,6 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-
 #define PI 3.14159265358979323846
 #define FLOOR(__v__) (__v__) // not needed since conversion to int truncates
 
@@ -171,10 +170,17 @@ _GLContext::_GLContext() {
     lightGreen[3][i] = 0;
     lightBlue[3][i] = 1;
     lightAlpha[3][i] = 0;
+    // spot direction
+    lightRed[4][i] = 0;
+    lightGreen[4][i] = 0;
+    lightBlue[4][i] = 1;
+    lightAlpha[4][i] = 0;
     // attenuation
     constantAttenuation[i] = 1;
     linearAttenuation[i] = 0;
     quadraticAttenuation[i] = 0;
+    spotExponent[i] = 0;
+    spotCutOff[i] = cos(180.0*PI/180.0);
   }
   for (i = 0; i < GLMAXTEXTUREUNITS; i++) {
     boundTextures[i] = 0;
@@ -522,6 +528,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         const double lightPositionX = context->lightRed[3][i];
         const double lightPositionY = context->lightGreen[3][i];
         const double lightPositionZ =  context->lightBlue[3][i];
+  
         const double lightPositionW =  context->lightAlpha[3][i];
         double lVecX = lightPositionX;
         double lVecY = lightPositionY;
@@ -569,6 +576,33 @@ void glLightVertex(_GLContext *context, glVertex *v) {
           specular = -viewX * reflectionX + -viewY * reflectionY + -viewZ * reflectionZ;
         }
         if (specular<0.0) specular = 0.0;
+
+        // spot calculations
+        const double spotCutOff = context->spotCutOff[i];
+        if (spotCutOff>-0.9999) { // is it a spot light?
+          // light position needs w other than 0, denoting no directional
+          double spotDirectionX = context->lightRed[4][i];
+          double spotDirectionY = context->lightGreen[4][i];
+          double spotDirectionZ =  context->lightBlue[4][i];
+          double ls = sqrt(spotDirectionX*spotDirectionX+spotDirectionY*spotDirectionY+spotDirectionZ*spotDirectionZ);
+          if (fabs(ls)>0.0) {
+            spotDirectionX /= ls;
+            spotDirectionY /= ls;
+            spotDirectionZ /= ls;
+          }
+          double spotAngleDot = lVecX*spotDirectionX+lVecY*spotDirectionY+lVecZ*spotDirectionZ;
+          if (spotAngleDot>spotCutOff) { // spotCutOff goes from 1(0degrees) to -1(180degrees)
+            const double spotExponent = context->spotExponent[i];
+            const double d = pow(spotAngleDot < 0 ? 0 : spotAngleDot,spotExponent);
+            diffuse *= d;
+            specular *= d;
+          } else {
+            // cutoff
+            diffuse = 0;
+            specular = 0;
+          }
+        }
+
         ambientRed += materialAmbientRed*lightAmbientRed;
         ambientGreen += materialAmbientGreen*lightAmbientGreen;
         ambientBlue += materialAmbientBlue*lightAmbientBlue;
@@ -1551,14 +1585,17 @@ void glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
   case GL_CONSTANT_ATTENUATION: {params[0]=glContext.constantAttenuation[light-GL_LIGHT0];} break;
   case GL_LINEAR_ATTENUATION: {params[0]=glContext.linearAttenuation[light-GL_LIGHT0];} break;
   case GL_QUADRATIC_ATTENUATION: {params[0]=glContext.quadraticAttenuation[light-GL_LIGHT0];} break;
+  case GL_SPOT_EXPONENT: {params[0]=glContext.spotExponent[light-GL_LIGHT0];} break;
+  case GL_SPOT_CUTOFF: {params[0]=acos(glContext.spotCutOff[light-GL_LIGHT0])*180.0/PI;} break;
+  case GL_SPOT_DIRECTION:
   case GL_POSITION:
   case GL_DIFFUSE:
   case GL_SPECULAR:
   case GL_AMBIENT: {
-      params[0] = glContext.lightRed[pname & 3][light - GL_LIGHT0];
-      params[1] = glContext.lightGreen[pname & 3][light - GL_LIGHT0];
-      params[2] = glContext.lightBlue[pname & 3][light - GL_LIGHT0];
-      params[3] = glContext.lightAlpha[pname & 3][light - GL_LIGHT0];
+      params[0] = glContext.lightRed[pname & 7][light - GL_LIGHT0];
+      params[1] = glContext.lightGreen[pname & 7][light - GL_LIGHT0];
+      params[2] = glContext.lightBlue[pname & 7][light - GL_LIGHT0];
+      params[3] = glContext.lightAlpha[pname & 7][light - GL_LIGHT0];
     }; break;
   }
 }
@@ -1576,6 +1613,8 @@ void glLightf(GLenum light, GLenum pname, GLfloat param) {
   case GL_CONSTANT_ATTENUATION: {glContext.constantAttenuation[light - GL_LIGHT0] = param; return;} break;
   case GL_LINEAR_ATTENUATION: {glContext.linearAttenuation[light - GL_LIGHT0] = param; return;} break;
   case GL_QUADRATIC_ATTENUATION: {glContext.quadraticAttenuation[light - GL_LIGHT0] = param; return;} break;
+  case GL_SPOT_EXPONENT: {glContext.spotExponent[light - GL_LIGHT0] = param; return;} break;
+  case GL_SPOT_CUTOFF: {glContext.spotCutOff[light - GL_LIGHT0] = cos(param*PI/180.0); return;} break;
   }
 }
 
@@ -1584,8 +1623,23 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
   case GL_CONSTANT_ATTENUATION: {glContext.constantAttenuation[light - GL_LIGHT0] = params[0]; return;} break;
   case GL_LINEAR_ATTENUATION: {glContext.linearAttenuation[light - GL_LIGHT0] = params[0]; return;} break;
   case GL_QUADRATIC_ATTENUATION: {glContext.quadraticAttenuation[light - GL_LIGHT0] = params[0]; return;} break;
+  case GL_SPOT_EXPONENT: {glContext.spotExponent[light - GL_LIGHT0] = params[0]; return;} break;
+  case GL_SPOT_CUTOFF: {glContext.spotCutOff[light - GL_LIGHT0] = cos(params[0]*PI/180); return;} break;
   }
 
+  if (pname == GL_SPOT_DIRECTION) {
+    double lx = params[0];
+    double ly = params[1];
+    double lz = params[2];
+    double *matrix = glContext.matrixForMode[GL_MODELVIEW&1]; 
+    double xl = lx * matrix[0*4+0] + ly * matrix[1*4+0] + lz * matrix[2*4+0];
+    double yl = lx * matrix[0*4+1] + ly * matrix[1*4+1] + lz * matrix[2*4+1];
+    double zl = lx * matrix[0*4+2] + ly * matrix[1*4+2] + lz * matrix[2*4+2];
+    glContext.lightRed[pname & 7][light - GL_LIGHT0] = xl;
+    glContext.lightGreen[pname & 7][light - GL_LIGHT0] = yl;
+    glContext.lightBlue[pname & 7][light - GL_LIGHT0] = zl;
+    return;
+  }
   if (pname == GL_POSITION) {
     double lx = params[0];
     double ly = params[1];
@@ -1607,16 +1661,16 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
       lz = zl;
       lw = wl;
     //}
-    glContext.lightRed[pname & 3][light - GL_LIGHT0] = lx;
-    glContext.lightGreen[pname & 3][light - GL_LIGHT0] = ly;
-    glContext.lightBlue[pname & 3][light - GL_LIGHT0] = lz;
-    glContext.lightAlpha[pname & 3][light - GL_LIGHT0] = lw;
-  } else {
-    glContext.lightRed[pname & 3][light - GL_LIGHT0] = params[0];
-    glContext.lightGreen[pname & 3][light - GL_LIGHT0] = params[1];
-    glContext.lightBlue[pname & 3][light - GL_LIGHT0] = params[2];
-    glContext.lightAlpha[pname & 3][light - GL_LIGHT0] = params[3];
-  }
+    glContext.lightRed[pname & 7][light - GL_LIGHT0] = lx;
+    glContext.lightGreen[pname & 7][light - GL_LIGHT0] = ly;
+    glContext.lightBlue[pname & 7][light - GL_LIGHT0] = lz;
+    glContext.lightAlpha[pname & 7][light - GL_LIGHT0] = lw;
+    return;
+  } 
+  glContext.lightRed[pname & 7][light - GL_LIGHT0] = params[0];
+  glContext.lightGreen[pname & 7][light - GL_LIGHT0] = params[1];
+  glContext.lightBlue[pname & 7][light - GL_LIGHT0] = params[2];
+  glContext.lightAlpha[pname & 7][light - GL_LIGHT0] = params[3];
 }
 
 void glLightModeli(GLenum pname, const GLenum param) {
