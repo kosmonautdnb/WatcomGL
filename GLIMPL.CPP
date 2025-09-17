@@ -1595,7 +1595,7 @@ void glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
 }
 
 const GLubyte *glGetString(GLenum name) {
-  return "";
+  return (const GLubyte *)"";
 }
 
 GLboolean glIsEnabled(GLenum cap) {
@@ -4394,7 +4394,7 @@ short DPMI_int386x(int intno, RMREGS *in, RMREGS *out, RMSREGS *sregs) {
   out->cflag = rmregs.flags & 0x01;
   return out->ax;
 }
-VBE_initRMBuf() {
+void VBE_initRMBuf() {
   if (!VESABUF_sel) {
     DPMI_allocRealSeg(VESABUF_len,&VESABUF_sel,&VESABUF_rseg);
     atexit(ExitVBEBuf);
