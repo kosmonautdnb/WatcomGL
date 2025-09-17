@@ -10,7 +10,7 @@
 #ifndef __gl_h__
 #define __gl_h__
 
-#ifdef __cplusplus
+#ifdef x__cplusplus
 extern "C" {
 #endif
 
@@ -752,7 +752,7 @@ GLAPI void APIENTRY glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GL
 GLAPI void APIENTRY glBlendEquation(GLenum mode); // :mad: // supported
 
 
-#ifdef __cplusplus
+#ifdef x__cplusplus
 }
 #endif
 

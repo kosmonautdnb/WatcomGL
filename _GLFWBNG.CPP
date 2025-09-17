@@ -675,7 +675,7 @@ int main( void )
 
    glfwSetTime( 0.0 );
   */
-  const bool pureVGA = true;
+  const bool pureVGA = false;
   if (pureVGA) {
     glVGA();
   } else {
