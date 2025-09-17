@@ -1,1 +1,0 @@
-R:\_test.exe
