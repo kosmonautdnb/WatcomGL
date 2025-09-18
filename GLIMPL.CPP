@@ -2667,6 +2667,8 @@ int glInvertMatrixf(const float *m, float *out)
 
 int glInvertMatrix(const double *m, double *out)
 {
+   //https://archive.mesa3d.org/older-versions/9.x/9.0/
+   //MesaLib-9.0.zip/Mesa-9.0\src\mesa\math\m_matrix.c
    double wtmp[4][8];
    double m0, m1, m2, m3, s;
    double *r0, *r1, *r2, *r3;
