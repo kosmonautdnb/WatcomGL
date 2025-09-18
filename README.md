@@ -13,7 +13,7 @@ WatcomC library collection: https://github.com/kosmonautdnb/WatcomLibs
 
 Needs a fairly fast FreeDOS/DOS machine. It looks not so well optimized but doesn't get faster by disabling all non fancy stuff. Main limiting factor by far seems to be memory bandwidth(+cache). File names are upper case which is DOS default.  
 
-(Better use PModeW instead of Dos4GW for 256 MB of memory instead of 32 MB)  
+(Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of 32 MB)  
 ## Typical usage
 #include "gl.h"  
 
