@@ -1840,7 +1840,7 @@ void glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum forma
   }
 }
 
-void glhRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, GLfloat z) {
+void glRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, GLfloat z) {
   double m[16], rotate[16];
   double OneMinusCosAngle, CosAngle, SinAngle;
   double A_OneMinusCosAngle, C_OneMinusCosAngle;
@@ -1890,7 +1890,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
     y/=l;
     z/=l;
   }
-  glhRotate(matrix,angle*2.0*PI/360.0,x,y,z);
+  glRotate(matrix,angle*2.0*PI/360.0,x,y,z);
   glUpdateMatrix();
 }
 
@@ -2129,7 +2129,7 @@ void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, 
 }
 
 
-void glhTranslate(GLdouble *matrix, GLfloat x, GLfloat y, GLfloat z) {
+void glTranslate(GLdouble *matrix, GLfloat x, GLfloat y, GLfloat z) {
   matrix[12]=matrix[0]*(double)x+matrix[4]*(double)y+matrix[8]*(double)z+matrix[12];
   matrix[13]=matrix[1]*(double)x+matrix[5]*(double)y+matrix[9]*(double)z+matrix[13];
   matrix[14]=matrix[2]*(double)x+matrix[6]*(double)y+matrix[10]*(double)z+matrix[14];
@@ -2138,7 +2138,7 @@ void glhTranslate(GLdouble *matrix, GLfloat x, GLfloat y, GLfloat z) {
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
   double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  glhTranslate(matrix,x,y,z);
+  glTranslate(matrix,x,y,z);
   glUpdateMatrix();
 }
 
@@ -2148,7 +2148,7 @@ void glTranslatefv(const GLfloat *v) {
 
 void glTranslated(GLdouble x, GLdouble y, GLdouble z) {
   double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  glhTranslate(matrix,x,y,z);
+  glTranslate(matrix,x,y,z);
   glUpdateMatrix();
 }
 
@@ -2433,7 +2433,7 @@ void ComputeNormalOfPlane(double *normal, double *pvector1, double *pvector2) {
   normal[2]=(pvector1[0]*pvector2[1])-(pvector1[1]*pvector2[0]);
 }
 
-void glhFrustum(double *matrix, double left, double right, double bottom, double top, double znear, double zfar) {
+void glFrustum(double *matrix, double left, double right, double bottom, double top, double znear, double zfar) {
   double matrix2[16],temp, temp2, temp3, temp4;
   temp = 2.0 * znear;
   temp2 = right - left;
@@ -2458,15 +2458,15 @@ void glhFrustum(double *matrix, double left, double right, double bottom, double
   MultiplyMatrices4by4OpenGL_DOUBLE(matrix, matrix, matrix2);
 }
 
-void glhPerspective(double *matrix, double fovyInDegrees, double aspectRatio, double znear, double zfar) {
+void glPerspective(double *matrix, double fovyInDegrees, double aspectRatio, double znear, double zfar) {
   double ymax, xmax;
   double temp, temp2, temp3, temp4;
   ymax = znear * tan(fovyInDegrees*PI/360.f);
   xmax = ymax * aspectRatio;
-  glhFrustum(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
+  glFrustum(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
 }
 
-void glhLookAt(double *matrix, double *eyePosition3D, double *center3D, double *upVector3D) {
+void glLookAt(double *matrix, double *eyePosition3D, double *center3D, double *upVector3D) {
   double forward[3], side[3], up[3];
   double matrix2[16], resultMatrix[16];
   forward[0] = center3D[0]-eyePosition3D[0];
@@ -2491,7 +2491,7 @@ void glhLookAt(double *matrix, double *eyePosition3D, double *center3D, double *
   matrix2[3] = matrix2[7] = matrix2[11] = 0.0;
   matrix2[15] = 1.0;
   glMatMul(matrix, matrix2, resultMatrix);
-  glhTranslate(resultMatrix,-eyePosition3D[0],-eyePosition3D[1],-eyePosition3D[2]);
+  glTranslate(resultMatrix,-eyePosition3D[0],-eyePosition3D[1],-eyePosition3D[2]);
   memcpy(matrix,resultMatrix,16*sizeof(double));
 }
 
@@ -2499,7 +2499,7 @@ void glhLookAt(double *matrix, double *eyePosition3D, double *center3D, double *
 #define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
 #define MAT(m,r,c) (m)[(c)*4+(r)]
 
-int glhInvertMatrixf(const float *m, float *out)
+int glInvertMatrixf(const float *m, float *out)
 {
    float wtmp[4][8];
    float m0, m1, m2, m3, s;
@@ -2665,7 +2665,7 @@ int glhInvertMatrixf(const float *m, float *out)
    return 1;
 }
 
-int glhInvertMatrix(const double *m, double *out)
+int glInvertMatrix(const double *m, double *out)
 {
    double wtmp[4][8];
    double m0, m1, m2, m3, s;
@@ -2832,14 +2832,14 @@ int glhInvertMatrix(const double *m, double *out)
 }
 
 int gluInvertMatrixf(const float *m, float *dest) {
-  return glhInvertMatrixf(m,dest);
+  return glInvertMatrixf(m,dest);
 }
 
 int gluInvertMatrix(const double *m, double *dest) {
-  return glhInvertMatrix(m,dest);
+  return glInvertMatrix(m,dest);
 }
 
-int glhUnProjectf(float winx, float winy, float winz,
+int glUnProjectf(float winx, float winy, float winz,
      float *modelview, float *projection,
      int *viewport,
      float *objectCoordinate)
@@ -2852,7 +2852,7 @@ int glhUnProjectf(float winx, float winy, float winz,
   //and store in A[16]
   MultiplyMatrices4by4OpenGL_FLOAT(A, projection, modelview);
   //Now compute the inverse of matrix A
-  if(glhInvertMatrixf(A, m)==0)
+  if(glInvertMatrixf(A, m)==0)
     return 0;
   
   //Transformation of normalized coordinates between -1 and 1
@@ -2872,7 +2872,7 @@ int glhUnProjectf(float winx, float winy, float winz,
   return 1;
 }
 
-int glhUnProject(double winx, double winy, double winz,
+int glUnProject(double winx, double winy, double winz,
      double *modelview, double *projection,
      int *viewport,
      double *objectCoordinate)
@@ -2885,7 +2885,7 @@ int glhUnProject(double winx, double winy, double winz,
   //and store in A[16]
   MultiplyMatrices4by4OpenGL_DOUBLE(A, projection, modelview);
   //Now compute the inverse of matrix A
-  if(glhInvertMatrix(A, m)==0)
+  if(glInvertMatrix(A, m)==0)
     return 0;
   
   //Transformation of normalized coordinates between -1 and 1
@@ -2905,7 +2905,7 @@ int glhUnProject(double winx, double winy, double winz,
   return 1;
 }
 
-int glhProjectfx(float objx, float objy, float objz,
+int glProjectfx(float objx, float objy, float objz,
   float *modelview, float *projection,
   int *viewport,
   float *windowCoordinate) {
@@ -2931,7 +2931,7 @@ int glhProjectfx(float objx, float objy, float objz,
   return 1;
 }
 
-int glhProjectx(double objx, double objy, double objz,
+int glProjectx(double objx, double objy, double objz,
   double *modelview, double *projection,
   int *viewport,
   double *windowCoordinate) {
@@ -2957,7 +2957,7 @@ int glhProjectx(double objx, double objy, double objz,
   return 1;
 }
 
-int glhProjectf(float objx, float objy, float objz,
+int glProjectf(float objx, float objy, float objz,
   float *modelview, float *projection,
   int *viewport,
   float *windowCoordinate)
@@ -3018,7 +3018,7 @@ int glhProjectf(float objx, float objy, float objz,
   return 1;
 }
 
-int glhProject(double objx, double objy, double objz,
+int glProject(double objx, double objy, double objz,
  double *modelview, double *projection,
  int *viewport,
  double *windowCoordinate)
@@ -3135,7 +3135,7 @@ void glFrontFace(GLenum mode) {
 }
 
 void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
-  glhFrustum(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
+  glFrustum(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
   glUpdateMatrix();
 }
 
@@ -3155,7 +3155,7 @@ void gluOrtho2D(float left, float right, float bottom, float top) {
 }
 
 void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane) {
-  glhPerspective(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
+  glPerspective(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
   glUpdateMatrix();
 }
 
@@ -3172,13 +3172,13 @@ void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz
   up[0] = ux;
   up[1] = uy;
   up[2] = uz;
-  glhLookAt(glContext.matrixForMode[glContext.matrixModeNr],eye,center,up);
+  glLookAt(glContext.matrixForMode[glContext.matrixModeNr],eye,center,up);
   glUpdateMatrix();
 }
 
 GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
   float d[3];
-  const GLint r = glhProjectfx(objX, objY, objZ, model, projection, view, d);
+  const GLint r = glProjectfx(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
   *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
@@ -3187,7 +3187,7 @@ GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLf
 
 GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ) {
   float d[3];
-  const GLint r = glhProjectf(objX, objY, objZ, model, projection, view, d);
+  const GLint r = glProjectf(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
   *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
@@ -3198,7 +3198,7 @@ GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GL
   float d[3];
   winX -= glPixelCenterX; // actually you need the pixelCenter?
   winY += glPixelCenterY; // actually you need the pixelCenter?
-  const GLint r = glhUnProjectf(winX, winY, winZ, model, projection, view, d);
+  const GLint r = glUnProjectf(winX, winY, winZ, model, projection, view, d);
   *objX = d[0];
   *objY = d[1];
   *objZ = d[2];
@@ -3207,7 +3207,7 @@ GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GL
 
 GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ) {
   double d[3];
-  const GLint r = glhProjectx(objX, objY, objZ, model, projection, view, d);
+  const GLint r = glProjectx(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
   *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
@@ -3216,7 +3216,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 
 GLint gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ) {
   double d[3];
-  const GLint r = glhProject(objX, objY, objZ, model, projection, view, d);
+  const GLint r = glProject(objX, objY, objZ, model, projection, view, d);
   *winX = d[0]+glPixelCenterX; // actually you need the pixelCenter?
   *winY = d[1]-glPixelCenterY; // actually you need the pixelCenter?
   *winZ = d[2];
@@ -3227,7 +3227,7 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
   double d[3];
   winX -= glPixelCenterX; // actually you need the pixelCenter?
   winY += glPixelCenterY; // actually you need the pixelCenter?
-  const GLint r = glhUnProject(winX, winY, winZ, model, projection, view, d);
+  const GLint r = glUnProject(winX, winY, winZ, model, projection, view, d);
   *objX = d[0];
   *objY = d[1];
   *objZ = d[2];
