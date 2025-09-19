@@ -14,8 +14,16 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+
 #define PI 3.14159265358979323846
 #define FLOOR(__v__) (__v__) // not needed since conversion to int truncates
+#define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
+#define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
+#define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
+#define MAT(m,r,c) (m)[(c)*4+(r)]
+#define FABSF fabs
+#define __MATRIX_STACK_SIZE__ 16
+#define __ATTRIB_STACK_SIZE__ 4
 
 double glPixelCenterX = -0.5;
 double glPixelCenterY = -0.5;
@@ -26,20 +34,22 @@ int glFrameBufferWidth = 0;
 int glFrameBufferHeight = 0;
 int glFrameBufferBytesPerPixel = 4;
 unsigned int *glFrameBuffer = NULL;
-//unsigned int *glStencilBuffer = NULL; // not supported
 float *glDepthBuffer = NULL;
-
 int glFrameBufferWidth0 = 0;
 int glFrameBufferHeight0 = 0;
 unsigned int *glFrameBuffer0 = NULL;
-//unsigned int *glStencilBuffer0 = NULL;
 float *glDepthBuffer0 = NULL;
-
 GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 bool currentBackFacing = false;
-
-#define __MATRIX_STACK_SIZE__ 16
-#define __ATTRIB_STACK_SIZE__ 4
+_GLContext glContext;
+_GLContext glAttribStack[__ATTRIB_STACK_SIZE__];
+GLint glAttribStackPos = 0;
+GLdouble glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
+GLint glMatrixStackPos = 0;
+glVertex glVertices[4];
+int glCurrentVertexElement = 0;
+TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
+glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
 
 __inline float glClampf(float a, float n, float x) {
   return a < n ? n : (a > x ? x : a);
@@ -152,7 +162,7 @@ _GLContext::_GLContext() {
     wireframe[i] = false;
   }
 
-  for (i = 0;  i < __GL_MAX_LIGHTS__; i++) {
+  for (i = 0;  i < GLMAXLIGHTS; i++) {
     // ambient
     lightRed[0][i] = 0;
     lightGreen[0][i] = 0;
@@ -221,24 +231,14 @@ _GLContext::_GLContext() {
 }
 
 void _GLContext::enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
+
 GLboolean _GLContext::isEnabled(GLenum prop) {return enabledCaps[prop&255];}
 
-_GLContext glContext;
-GLdouble glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
-GLint glMatrixStackPos = 0;
-_GLContext glAttribStack[__ATTRIB_STACK_SIZE__];
-GLint glAttribStackPos = 0;
-
-glVertex glVertices[4];
-int glCurrentVertexElement = 0;
-
-TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
 void glSetTriangleDrawer(TriangleDrawer drawer) {
   glDrawTriangle = drawer;
 }
-void glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
-glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
+void glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
 GLuint glNewTexture() {
   for (int i = 1; i < GLMAXTEXTURES; i++) {
@@ -293,7 +293,7 @@ void glMatMulf(const GLfloat *ma, const GLfloat *mb, GLfloat *r) {
   memcpy(r,result,4*4*sizeof(float));
 }
 
-void glMatMulf2(const GLdouble *ma, const GLfloat *mb, GLdouble *r) {
+void glMatMulf2(const GLdouble *ma, const GLfloat *mb, GLdouble *r) { // double output
   GLdouble result[16];
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -507,16 +507,15 @@ void glLightVertex(_GLContext *context, glVertex *v) {
     double normalX = nx;
     double normalY = ny;
     double normalZ = nz;
-    //if (context->isEnabled(GL_NORMALIZE)) {
-      float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
-      if (l>0.f) {
-        normalX/=l;
-        normalY/=l;
-        normalZ/=l;
-      }
-    //}
 
-    for (int i = 0; i < __GL_MAX_LIGHTS__; i++) {
+    float l = sqrt(normalX*normalX+normalY*normalY+normalZ*normalZ);
+    if (l>0.f) {
+      normalX/=l;
+      normalY/=l;
+      normalZ/=l;
+    }
+
+    for (int i = 0; i < GLMAXLIGHTS; i++) {
       if (context->isEnabled(GL_LIGHT0+i)) {
         const float lightAmbientRed = context->lightRed[0][i];
         const float lightAmbientGreen = context->lightGreen[0][i];
@@ -803,7 +802,7 @@ void glSetVertex(glVertex *w) {
 
 bool backFaceCalc(const glVertex &v0,const glVertex &v1,const glVertex &v2) {
   currentBackFacing = false;
-  if (glContext.twoSidedLighting || glContext.wireframe[0] || glContext.wireframe[1]) { // used only for coloring currently
+  if (glContext.twoSidedLighting || glContext.wireframe[0] || glContext.wireframe[1]) { // used only for two sided coloring/wireframe currently
     const double ax = v1.vertexX-v0.vertexX;
     const double ay = v1.vertexY-v0.vertexY;
     const double az = v1.vertexZ-v0.vertexZ;
@@ -1080,7 +1079,7 @@ void glEmitVertex() {
   }
 }
 
-void glActiveTexture (GLenum texture) {
+void glActiveTexture(GLenum texture) {
   glContext.activeTexture = texture - GL_TEXTURE0;
 }
 
@@ -1095,7 +1094,7 @@ void glBegin(GLenum mode) {
   glCurrentVertexElement = 0;
 }
 
-void glBindTexture (GLenum target, GLuint texture) {
+void glBindTexture(GLenum target, GLuint texture) {
   glContext.boundTextures[glContext.activeTexture] = texture;
 }
 
@@ -1137,12 +1136,6 @@ void glClear(GLbitfield mask) {
       for (int x = minX; x < maxX; x++)
         glDepthBuffer[x+y*glFrameBufferWidth] = glContext.clearDepth; // clamping?
   }
-  //if ((mask & GL_STENCIL_BUFFER_BIT) && (glStencilBuffer != NULL)) {
-  //  unsigned int k = glContext.clearStencil;
-  //  for (int y = minY; y < maxY; y++)
-  //    for (int x = minX; x < maxX; x++)
-  //      glStencilBuffer[x+y*glFrameBufferWidth] = k;
-  //}
 }
 
 void glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
@@ -1286,7 +1279,6 @@ void glDisable(GLenum cap) {
 }
 
 void glDisableClientState(GLenum array) {
-//  glContext.enableClientState(array, false);
 }
 
 void glEnable(GLenum cap) {
@@ -1294,7 +1286,6 @@ void glEnable(GLenum cap) {
 }
 
 void glEnableClientState(GLenum array) {
-//  glContext.enableClientState(array, true);
 }
 
 void glEnd() {
@@ -1376,7 +1367,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=(int)floor(glContext.lineWidth);} break;
   case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
-  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
   case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
@@ -1399,7 +1390,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
   }
 }
 
-void glGetDoublev (GLenum pname, GLdouble *params) {
+void glGetDoublev(GLenum pname, GLdouble *params) {
   int i;
   switch(pname) {
   case GL_ALPHA_BITS: {*params=8;} break;
@@ -1434,7 +1425,7 @@ void glGetDoublev (GLenum pname, GLdouble *params) {
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=glContext.lineWidth;} break;
   case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
-  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
   case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
@@ -1457,7 +1448,7 @@ void glGetDoublev (GLenum pname, GLdouble *params) {
   }
 }
 
-void glGetFloatv (GLenum pname, GLfloat *params) {
+void glGetFloatv(GLenum pname, GLfloat *params) {
   int i;
   switch(pname) {
   case GL_ALPHA_BITS: {*params=8;} break;
@@ -1492,7 +1483,7 @@ void glGetFloatv (GLenum pname, GLfloat *params) {
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=glContext.lineWidth;} break;
   case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
-  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
   case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
@@ -1515,7 +1506,7 @@ void glGetFloatv (GLenum pname, GLfloat *params) {
   }
 }
 
-void glGetIntegerv (GLenum pname, GLint *params) {
+void glGetIntegerv(GLenum pname, GLint *params) {
   int i;
   switch(pname) {
   case GL_ALPHA_BITS: {*params=8;} break;
@@ -1550,7 +1541,7 @@ void glGetIntegerv (GLenum pname, GLint *params) {
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=(int)floor(glContext.lineWidth);} break;
   case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
-  case GL_MAX_LIGHTS: {*params=__GL_MAX_LIGHTS__;} break;
+  case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i<16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
   case GL_NORMALIZE: {*params=glIsEnabled(GL_NORMALIZE);} break;
@@ -1644,22 +1635,22 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
     double ly = params[1];
     double lz = params[2];
     double lw = params[3];
-    //if (fabs(lw)>0.0) {
-      double *matrix = glContext.matrixForMode[GL_MODELVIEW&1]; 
-      double xl = lx * matrix[0*4+0] + ly * matrix[1*4+0] + lz * matrix[2*4+0] + lw * matrix[3*4+0];
-      double yl = lx * matrix[0*4+1] + ly * matrix[1*4+1] + lz * matrix[2*4+1] + lw * matrix[3*4+1];
-      double zl = lx * matrix[0*4+2] + ly * matrix[1*4+2] + lz * matrix[2*4+2] + lw * matrix[3*4+2];
-      double wl = lx * matrix[0*4+3] + ly * matrix[1*4+3] + lz * matrix[2*4+3] + lw * matrix[3*4+3];
-      if (wl != 0.0) {
-        xl /= wl;
-        yl /= wl;
-        zl /= wl;
-      }
-      lx = xl;
-      ly = yl;
-      lz = zl;
-      lw = wl;
-    //}
+
+    double *matrix = glContext.matrixForMode[GL_MODELVIEW&1]; 
+    double xl = lx * matrix[0*4+0] + ly * matrix[1*4+0] + lz * matrix[2*4+0] + lw * matrix[3*4+0];
+    double yl = lx * matrix[0*4+1] + ly * matrix[1*4+1] + lz * matrix[2*4+1] + lw * matrix[3*4+1];
+    double zl = lx * matrix[0*4+2] + ly * matrix[1*4+2] + lz * matrix[2*4+2] + lw * matrix[3*4+2];
+    double wl = lx * matrix[0*4+3] + ly * matrix[1*4+3] + lz * matrix[2*4+3] + lw * matrix[3*4+3];
+    if (wl != 0.0) {
+      xl /= wl;
+      yl /= wl;
+      zl /= wl;
+    }
+    lx = xl;
+    ly = yl;
+    lz = zl;
+    lw = wl;
+
     glContext.lightRed[pname & 7][light - GL_LIGHT0] = lx;
     glContext.lightGreen[pname & 7][light - GL_LIGHT0] = ly;
     glContext.lightBlue[pname & 7][light - GL_LIGHT0] = lz;
@@ -1704,12 +1695,12 @@ void glLoadIdentity() {
   glUpdateMatrix();
 }
 
-void glLoadMatrixf (const GLfloat *m) {
+void glLoadMatrixf(const GLfloat *m) {
   for (int i = 0; i < 4*4; i++) glContext.matrixForMode[glContext.matrixModeNr][i] = m[i];
   glUpdateMatrix();
 }
 
-void glLoadMatrixd (const GLdouble *m) {
+void glLoadMatrixd(const GLdouble *m) {
   for (int i = 0; i < 4*4; i++) glContext.matrixForMode[glContext.matrixModeNr][i] = m[i];
   glUpdateMatrix();
 }
@@ -1738,7 +1729,7 @@ void glMaterialf(GLenum face, GLenum pname, GLfloat param) {
   glMaterialfv(face,pname,p);
 }
 
-void glMaterialfv (GLenum face, GLenum pname, const GLfloat *params) {
+void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
   int f0 = 0; int f1 = 1;
   if (face == GL_FRONT) {f0=0;f1=1;}
   if (face == GL_BACK) {f0=1;f1=2;}
@@ -1774,25 +1765,25 @@ void glMaterialfv (GLenum face, GLenum pname, const GLfloat *params) {
   }
 }
 
-void glMatrixMode (GLenum mode) {
+void glMatrixMode(GLenum mode) {
   glContext.matrixModeNr = mode & 0x01;
 }
 
-void glMultMatrixf (const GLfloat *m) {
+void glMultMatrixf(const GLfloat *m) {
   glMatMulf2(glContext.matrixForMode[glContext.matrixModeNr],m,glContext.matrixForMode[glContext.matrixModeNr]);
   glUpdateMatrix();
 }
 
-void glMultMatrixd (const GLdouble *m) {
+void glMultMatrixd(const GLdouble *m) {
   glMatMul(glContext.matrixForMode[glContext.matrixModeNr],m,glContext.matrixForMode[glContext.matrixModeNr]);
   glUpdateMatrix();
 }
 
-void glPointSize (GLfloat size) {
+void glPointSize(GLfloat size) {
   glContext.pointSize = size;
 }
 
-void glPolygonMode (GLenum face, GLenum mode) {
+void glPolygonMode(GLenum face, GLenum mode) {
   int f0 = 0; int f1 = 1;
   if (face == GL_FRONT) {f0=0;f1=1;}
   if (face == GL_BACK) {f0=1;f1=2;}
@@ -1802,7 +1793,7 @@ void glPolygonMode (GLenum face, GLenum mode) {
   }
 }
 
-void glPolygonOffset (GLfloat factor, GLfloat units) {
+void glPolygonOffset(GLfloat factor, GLfloat units) {
   glContext.polygonOffsetFactor = factor;
   glContext.polygonOffsetUnits = units;
 }
@@ -1818,9 +1809,7 @@ void glPushMatrix() {
   glMatrixStackPos++;
 }
 
-#define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
-
-void glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) {
+void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) {
   for (int yp = 0; yp < height; yp++) {
     int y2 = yp + glFrameBufferHeight - 1 - y;
     if (y2 < 0 || y2 >= glFrameBufferHeight) continue;
@@ -1972,11 +1961,10 @@ void glStencilOp(GLenum fail, GLenum zfail, GLenum zpass) {
   glContext.stencilOpZPass = zpass;
 }
 
-void glTexEnvfv (GLenum target, GLenum pname, const GLfloat *params) {
-
+void glTexEnvfv(GLenum target, GLenum pname, const GLfloat *params) {
 }
 
-void glTexEnvi (GLenum target, GLenum pname, GLint param) {
+void glTexEnvi(GLenum target, GLenum pname, GLint param) {
   if (glContext.boundTextures[glContext.activeTexture]==0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -1987,14 +1975,14 @@ void glTexEnvi (GLenum target, GLenum pname, GLint param) {
   }
 }
 
-void glTexGeni (GLenum coord, GLenum pname, GLint param) {
+void glTexGeni(GLenum coord, GLenum pname, GLint param) {
   switch(coord) {
   case GL_S: {glContext.texGenS = param;} break;
   case GL_T: {glContext.texGenT = param;} break;
   }
 }
 
-void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
+void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
   if (glContext.boundTextures[glContext.activeTexture]==0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -2073,7 +2061,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
   }
 }
 
-void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
+void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
   if (glContext.boundTextures[glContext.activeTexture]==0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -2159,33 +2147,33 @@ void glTranslatedv(const GLdouble *v) {
   glTranslated(v[0],v[1],v[2]);
 }
 
-void glVertex2f (GLfloat x, GLfloat y) {
+void glVertex2f(GLfloat x, GLfloat y) {
   glContext.vertexX = x;
   glContext.vertexY = y;
   glEmitVertex();
 }
 
-void glVertex2fv (const GLfloat *v) {
+void glVertex2fv(const GLfloat *v) {
   glContext.vertexX = v[0];
   glContext.vertexY = v[1];
   glEmitVertex();
 }
 
-void glVertex3f (GLfloat x, GLfloat y, GLfloat z) {
+void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
   glContext.vertexX = x;
   glContext.vertexY = y;
   glContext.vertexZ = z;
   glEmitVertex();
 }
 
-void glVertex3fv (const GLfloat *v) {
+void glVertex3fv(const GLfloat *v) {
   glContext.vertexX = v[0];
   glContext.vertexY = v[1];
   glContext.vertexZ = v[2];
   glEmitVertex();
 }
 
-void glVertex4f (GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
+void glVertex4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
   glContext.vertexX = x;
   glContext.vertexY = y;
   glContext.vertexZ = z;
@@ -2193,7 +2181,7 @@ void glVertex4f (GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
   glEmitVertex();
 }
 
-void glVertex4fv (const GLfloat *v) {
+void glVertex4fv(const GLfloat *v) {
   glContext.vertexX = v[0];
   glContext.vertexY = v[1];
   glContext.vertexZ = v[2];
@@ -2338,8 +2326,8 @@ void glTexCoord4fv(const GLfloat *v) {
   glTexCoord4f(v[0],v[1],v[2],v[3]);
 }
 
+// mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
 void glPushAttrib(GLbitfield mask) {
-  // mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
   glContext.pushAttribBitsHere = mask; // maybe evaluate at glPopAttrib later
   memcpy(&glAttribStack[glAttribStackPos], &glContext, sizeof(_GLContext));
   glContext.pushAttribBitsHere = 0;
@@ -2352,7 +2340,7 @@ void glPopAttrib() {
   glUpdateMatrix();
 }
 
-void glTexParameterfv (GLenum target, GLenum pname, GLfloat *param) {
+void glTexParameterfv(GLenum target, GLenum pname, GLfloat *param) {
   if (glContext.boundTextures[glContext.activeTexture]==0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -2391,7 +2379,7 @@ void glBlendEquation(GLenum mode) {
 // -----------
 // -----------
 // -----------
-void MultiplyMatrixByVector4by4OpenGL_FLOAT(float *dest, float *m, float *v) {
+static void MulMatVec(float *dest, float *m, float *v) {
   float x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
   float y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
   float z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
@@ -2402,7 +2390,7 @@ void MultiplyMatrixByVector4by4OpenGL_FLOAT(float *dest, float *m, float *v) {
   dest[3] = w;
 }
 
-void MultiplyMatrixByVector4by4OpenGL_DOUBLE(double *dest, double *m, double *v) {
+static void MulMatVec(double *dest, double *m, double *v) {
   double x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
   double y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
   double z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
@@ -2413,15 +2401,15 @@ void MultiplyMatrixByVector4by4OpenGL_DOUBLE(double *dest, double *m, double *v)
   dest[3] = w;
 }
 
-void MultiplyMatrices4by4OpenGL_FLOAT(float *dest, float *m1, float *m2) {
+static void MulMatMat(float *dest, float *m1, float *m2) {
   glMatMulf(m1,m2,dest);
 }
 
-void MultiplyMatrices4by4OpenGL_DOUBLE(double *dest, double *m1, double *m2) {
+static void MulMatMat(double *dest, double *m1, double *m2) {
   glMatMul(m1,m2,dest);
 }
 
-void NormalizeVector(double *v) {
+static void normalize(double *v) {
   double l = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   if (l>0) {
     v[0] /= l;
@@ -2430,13 +2418,13 @@ void NormalizeVector(double *v) {
   }
 }
 
-void ComputeNormalOfPlane(double *normal, double *pvector1, double *pvector2) {
+static void planeNormal(double *normal, double *pvector1, double *pvector2) {
   normal[0]=(pvector1[1]*pvector2[2])-(pvector1[2]*pvector2[1]);
   normal[1]=(pvector1[2]*pvector2[0])-(pvector1[0]*pvector2[2]);
   normal[2]=(pvector1[0]*pvector2[1])-(pvector1[1]*pvector2[0]);
 }
 
-void glFrustum(double *matrix, double left, double right, double bottom, double top, double znear, double zfar) {
+void __glFrustum(double *matrix, double left, double right, double bottom, double top, double znear, double zfar) {
   double matrix2[16],temp, temp2, temp3, temp4;
   temp = 2.0 * znear;
   temp2 = right - left;
@@ -2458,15 +2446,15 @@ void glFrustum(double *matrix, double left, double right, double bottom, double 
   matrix2[13] = 0;
   matrix2[14] = (-temp*zfar)/temp4;
   matrix2[15] = 0.0;
-  MultiplyMatrices4by4OpenGL_DOUBLE(matrix, matrix, matrix2);
+  MulMatMat(matrix, matrix, matrix2);
 }
 
-void glPerspective(double *matrix, double fovyInDegrees, double aspectRatio, double znear, double zfar) {
+void __glPerspective(double *matrix, double fovyInDegrees, double aspectRatio, double znear, double zfar) {
   double ymax, xmax;
   double temp, temp2, temp3, temp4;
   ymax = znear * tan(fovyInDegrees*PI/360.f);
   xmax = ymax * aspectRatio;
-  glFrustum(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
+  __glFrustum(matrix,-xmax,xmax,-ymax,ymax,znear,zfar);
 }
 
 void glLookAt(double *matrix, double *eyePosition3D, double *center3D, double *upVector3D) {
@@ -2475,10 +2463,10 @@ void glLookAt(double *matrix, double *eyePosition3D, double *center3D, double *u
   forward[0] = center3D[0]-eyePosition3D[0];
   forward[1] = center3D[1]-eyePosition3D[1];
   forward[2] = center3D[2]-eyePosition3D[2];
-  NormalizeVector(forward);
-  ComputeNormalOfPlane(side, forward, upVector3D);
-  NormalizeVector(side);
-  ComputeNormalOfPlane(up, side, forward);
+  normalize(forward);
+  planeNormal(side, forward, upVector3D);
+  normalize(side);
+  planeNormal(up, side, forward);
   matrix2[0] = side[0];
   matrix2[4] = side[1];
   matrix2[8] = side[2];
@@ -2497,11 +2485,6 @@ void glLookAt(double *matrix, double *eyePosition3D, double *center3D, double *u
   glTranslate(resultMatrix,-eyePosition3D[0],-eyePosition3D[1],-eyePosition3D[2]);
   memcpy(matrix,resultMatrix,16*sizeof(double));
 }
-
-#define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
-#define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
-#define MAT(m,r,c) (m)[(c)*4+(r)]
-#define FABSF fabs
 
 int glInvertMatrixf(const float *m, float *out)
 {
@@ -2740,25 +2723,19 @@ int glUnProjectf(float winx, float winy, float winz,
      int *viewport,
      float *objectCoordinate)
 {
-  //Transformation matrices
   float m[16], A[16];
   float in[4], out[4];
   
-  //Calculation for inverting a matrix, compute projection x modelview
-  //and store in A[16]
-  MultiplyMatrices4by4OpenGL_FLOAT(A, projection, modelview);
-  //Now compute the inverse of matrix A
+  MulMatMat(A, projection, modelview);
   if(glInvertMatrixf(A, m)==0)
     return 0;
   
-  //Transformation of normalized coordinates between -1 and 1
   in[0]=((winx-(float)viewport[0])/(float)viewport[2]*2.0-1.0)/glContext.zoomX;
   in[1]=((winy-(float)viewport[1])/(float)viewport[3]*2.0-1.0)/glContext.zoomY;
   in[2]=2.0*winz-1.0;
   in[3]=1.0;
   
-  //Objects coordinates
-  MultiplyMatrixByVector4by4OpenGL_FLOAT(out, m, in);
+  MulMatVec(out, m, in);
   if(out[3]==0.0)
     return 0;
   out[3]=1.0/out[3];
@@ -2773,25 +2750,19 @@ int glUnProject(double winx, double winy, double winz,
      int *viewport,
      double *objectCoordinate)
 {
-  //Transformation matrices
   double m[16], A[16];
   double in[4], out[4];
   
-  //Calculation for inverting a matrix, compute projection x modelview
-  //and store in A[16]
-  MultiplyMatrices4by4OpenGL_DOUBLE(A, projection, modelview);
-  //Now compute the inverse of matrix A
+  MulMatMat(A, projection, modelview);
   if(glInvertMatrix(A, m)==0)
     return 0;
   
-  //Transformation of normalized coordinates between -1 and 1
   in[0]=((winx-(double)viewport[0])/(double)viewport[2]*2.0-1.0)/glContext.zoomX;
   in[1]=((winy-(double)viewport[1])/(double)viewport[3]*2.0-1.0)/glContext.zoomY;
   in[2]=2.0*winz-1.0;
   in[3]=1.0;
   
-  //Objects coordinates
-  MultiplyMatrixByVector4by4OpenGL_DOUBLE(out, m, in);
+  MulMatVec(out, m, in);
   if(out[3]==0.0)
     return 0;
   out[3]=1.0/out[3];
@@ -2810,8 +2781,8 @@ int glProjectfx(float objx, float objy, float objz,
   in[1] = objy;
   in[2] = objz;
   in[3] = 1;
-  MultiplyMatrixByVector4by4OpenGL_FLOAT(in, modelview, in);
-  MultiplyMatrixByVector4by4OpenGL_FLOAT(in, projection, in);
+  MulMatVec(in, modelview, in);
+  MulMatVec(in, projection, in);
   if (in[3]==0) return 0;
   in[0]/=in[3];
   in[1]/=in[3];
@@ -2836,8 +2807,8 @@ int glProjectx(double objx, double objy, double objz,
   in[1] = objy;
   in[2] = objz;
   in[3] = 1;
-  MultiplyMatrixByVector4by4OpenGL_DOUBLE(in, modelview, in);
-  MultiplyMatrixByVector4by4OpenGL_DOUBLE(in, projection, in);
+  MulMatVec(in, modelview, in);
+  MulMatVec(in, projection, in);
   if (in[3]==0) return 0;
   in[0]/=in[3];
   in[1]/=in[3];
@@ -2858,13 +2829,11 @@ int glProjectf(float objx, float objy, float objz,
   int *viewport,
   float *windowCoordinate)
 {
-  //Transformation vectors
   float fTempo[8];
-  //Modelview transform
   fTempo[0]=modelview[0]*objx+
   modelview[4]*objy+
   modelview[8]*objz+
-  modelview[12];		//w is always 1
+  modelview[12];  //w is always 1
   fTempo[1]=modelview[1]*objx+
   modelview[5]*objy+
   modelview[9]*objz+
@@ -2877,8 +2846,6 @@ int glProjectf(float objx, float objy, float objz,
   modelview[7]*objy+
   modelview[11]*objz+
   modelview[15];
-  //Projection transform, the final row of projection matrix is always [0 0 -1 0]
-  //so we optimize for that.
   fTempo[4]=projection[0]*fTempo[0]+	
   projection[4]*fTempo[1]+
   projection[8]*fTempo[2]+
@@ -2893,24 +2860,17 @@ int glProjectf(float objx, float objy, float objz,
   projection[14]*fTempo[3];
   fTempo[7]=-fTempo[2];
   
-  //The result normalizes between -1 and 1
-  if(fTempo[7]==0.0)	//The w value
+  if(fTempo[7]==0.0)  //The w value
     return 0;
   
   fTempo[7]=1.0/fTempo[7];
-  
-  //Perspective division
   fTempo[4]*=fTempo[7];
   fTempo[5]*=fTempo[7];
   fTempo[6]*=fTempo[7];
   
-  //Window coordinates
-  //Map x, y to range 0-1
   windowCoordinate[0]=(fTempo[4]*0.5*glContext.zoomX+0.5)*viewport[2]+viewport[0];
   windowCoordinate[1]=(fTempo[5]*0.5*glContext.zoomY+0.5)*viewport[3]+viewport[1];
-  
-  //This is only correct when glDepthRange(0.0, 1.0)
-  windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
+  windowCoordinate[2]=(1.0+fTempo[6])*0.5;  //Between 0 and 1
   return 1;
 }
 
@@ -2919,13 +2879,11 @@ int glProject(double objx, double objy, double objz,
  int *viewport,
  double *windowCoordinate)
 {
-  //Transformation vectors
   double fTempo[8];
-  //Modelview transform
   fTempo[0]=modelview[0]*objx+
   modelview[4]*objy+
   modelview[8]*objz+
-  modelview[12];		//w is always 1
+  modelview[12];  //w is always 1
   fTempo[1]=modelview[1]*objx+
   modelview[5]*objy+
   modelview[9]*objz+
@@ -2938,8 +2896,6 @@ int glProject(double objx, double objy, double objz,
   modelview[7]*objy+
   modelview[11]*objz+
   modelview[15];
-  //Projection transform, the final row of projection matrix is always [0 0 -1 0]
-  //so we optimize for that.
   fTempo[4]=projection[0]*fTempo[0]+	
   projection[4]*fTempo[1]+
   projection[8]*fTempo[2]+
@@ -2954,47 +2910,25 @@ int glProject(double objx, double objy, double objz,
   projection[14]*fTempo[3];
   fTempo[7]=-fTempo[2];
   
-  //The result normalizes between -1 and 1
-  if(fTempo[7]==0.0)	//The w value
+  if(fTempo[7]==0.0)  //The w value
     return 0;
   
   fTempo[7]=1.0/fTempo[7];
-  
-  //Perspective division
   fTempo[4]*=fTempo[7];
   fTempo[5]*=fTempo[7];
   fTempo[6]*=fTempo[7];
   
-  //Window coordinates
-  //Map x, y to range 0-1
   windowCoordinate[0]=(fTempo[4]*0.5*glContext.zoomX+0.5)*viewport[2]+viewport[0];
   windowCoordinate[1]=(fTempo[5]*0.5*glContext.zoomY+0.5)*viewport[3]+viewport[1];
-  
-  //This is only correct when glDepthRange(0.0, 1.0)
-  windowCoordinate[2]=(1.0+fTempo[6])*0.5;	//Between 0 and 1
+  windowCoordinate[2]=(1.0+fTempo[6])*0.5;  //Between 0 and 1
   return 1;
 }
 
 void glOrtho(float left, float right, float bottom, float top, float znear, float zfar) {
-//  GLfloat x,y,z;
-//  GLfloat tx,ty,tz;
-//  GLfloat m[16];
-//  x = 2.0 / (right-left);
-//  y = 2.0 / (top-bottom);
-//  z = -2.0 / (zfar - znear);
-//  tx = -(right+left)/(right-left);
-//  ty = -(top+bottom)/(top-bottom);
-//  tz = -(zfar+znear)/(zfar-znear);
-//#define M(row,col) m[col*4+row]  
-//  M(0,0)=x; M(0,1)=0; M(0,2) = 0.f; M(0,3) = tx;
-//  M(1,0)=0; M(1,1)=y; M(1,2) = 0.f; M(1,3) = ty;
-//  M(2,0)=0; M(2,1)=0; M(2,2) = z; M(2,3) = tz;
-//  M(3,0)=0; M(3,1)=0; M(3,2) = 0; M(3,3) = 1;
-//  glMultMatrixf(m);
-  double r2 = (right-(right-left)*0.5)*glContext.zoomX+(right-left)*0.5;
-  double l2 = (left-(right-left)*0.5)*glContext.zoomX+(right-left)*0.5;
-  double t2 = (top-(top-bottom)*0.5)*glContext.zoomY+(top-bottom)*0.5;
-  double b2 = (bottom-(top-bottom)*0.5)*glContext.zoomY+(top-bottom)*0.5;
+  const double r2 = (right-(right-left)*0.5)*glContext.zoomX+(right-left)*0.5;
+  const double l2 = (left-(right-left)*0.5)*glContext.zoomX+(right-left)*0.5;
+  const double t2 = (top-(top-bottom)*0.5)*glContext.zoomY+(top-bottom)*0.5;
+  const double b2 = (bottom-(top-bottom)*0.5)*glContext.zoomY+(top-bottom)*0.5;
 
   right = r2;
   left = l2;
@@ -3022,7 +2956,7 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
   matrix2[14]=(-zfar-znear)/temp4;
   matrix2[15]=1.0;
   double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  MultiplyMatrices4by4OpenGL_DOUBLE(matrix, matrix, matrix2);
+  MulMatMat(matrix, matrix, matrix2);
   glUpdateMatrix();
 }
 
@@ -3031,27 +2965,24 @@ void glFrontFace(GLenum mode) {
 }
 
 void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
-  glFrustum(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
+  __glFrustum(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
   glUpdateMatrix();
 }
 
 void glFrustumf(float left, float right, float bottom, float top, float znear, float zfar) {
   glFrustum(left,right,bottom,top,znear,zfar);
-  glUpdateMatrix();
 }
 
 void glOrthof(float left, float right, float bottom, float top, float znear, float zfar) {
   glOrtho(left, right, bottom, top, znear, zfar);
-  glUpdateMatrix();
 }
 
 void gluOrtho2D(float left, float right, float bottom, float top) {
   glOrtho(left, right, bottom, top, -1, 1);
-  glUpdateMatrix();
 }
 
 void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane) {
-  glPerspective(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
+  __glPerspective(glContext.matrixForMode[glContext.matrixModeNr],fov,aspect,nearPlane,farPlane);
   glUpdateMatrix();
 }
 
