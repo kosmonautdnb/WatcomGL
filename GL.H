@@ -47,7 +47,7 @@ void glSetRenderTarget(unsigned int *frameBufferOrNULL, float *depthBuffer, unsi
 // ------------------------
 // ------------------------
 
-double glSeconds(); // tells the seconds ellapsed since the start of OpenGL (glVesa()) (granularity seems to be 18.2 Hz, maybe better use speaker.hpp) // better reprogram timer interrupt, this one is quite stuttery
+double glSeconds(); // tells the seconds ellapsed since the start of OpenGL (granularity seems to be 18.2 Hz, maybe better use speaker.hpp) // better reprogram timer interrupt, this one is quite stuttery
 void glSetTime(double seconds); // sets the time to <seconds>
                         
 unsigned short glNextKey(); // gets the next pressed key from the keyboard buffer (GL_VK_xxxx)
@@ -215,17 +215,6 @@ void glColor3ubv(const GLubyte *color); // :mad: // supported
 void glColorMaterial(GLenum face, GLenum pname); // :mad: // supported
 void glMateriali(GLenum face, GLenum pname, GLint param); // :mad: // supported
 void glFrustum(float left, float right, float bottom, float top, float znear, float zfar); // :mad: // supported
-void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane); // :mad: // supported
-void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz); // :mad: // supported
-// gluProject/gluUnproject seem not to work with ortho matrices, use gluProjectx for direct point transformation without strange enhancements/optimizations
-GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ); // supported
-GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ); // supported
-GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ); // supported
-GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ); // supported
-GLint gluInvertMatrixf(const float *m, float *dest); // supported
-GLint gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ); // supported
-GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *objX, GLdouble *objY, GLdouble *objZ); // supported
-GLint gluInvertMatrix(const double *m, double *dest); // supported
 void glNormal3d(GLdouble nx, GLdouble ny, GLdouble nz); // supported
 void glNormal3dv(const GLdouble *v); // supported
 void glVertex2d(GLdouble x, GLdouble y); // :mad: // supported
@@ -252,12 +241,31 @@ void glTexCoord4dv(const GLdouble *v); // :mad: // supported
 void glTexCoord4fv(const GLfloat *v); // :mad: // supported
 void glPushAttrib(GLbitfield mask); // :mad: // supported (mask not supported)
 void glPopAttrib(); // :mad: // supported
-void gluOrtho2D(float left, float right, float bottom, float top); // :mad: // supported
 void glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar); // :mad: // supported
 void glDeleteTextures (GLsizei n, GLuint *textures); // :mad: // supported
 void glTexParameterfv (GLenum target, GLenum pname, GLfloat *param); // :mad: // supported
 void glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad: // supported
 void glBlendEquation(GLenum mode); // :mad: // supported
+
+// ------------------------
+// ------------------------
+
+void gluLookAt(GLfloat cx,GLfloat cy,GLfloat cz,GLfloat ox,GLfloat oy,GLfloat oz,GLfloat ux,GLfloat uy,GLfloat uz); // :mad: // supported
+void gluPerspective(GLfloat fov, GLfloat aspect, GLfloat nearPlane, GLfloat farPlane); // :mad: // supported
+void gluOrtho2D(float left, float right, float bottom, float top); // :mad: // supported
+GLint gluProjectf(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ); // supported
+GLint gluProject(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ); // supported
+GLint gluUnProjectf(GLfloat winX, GLfloat winY, GLfloat winZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *objX, GLfloat *objY, GLfloat *objZ); // supported
+GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *objX, GLdouble *objY, GLdouble *objZ); // supported
+GLint gluInvertMatrixf(const float *m, float *dest); // supported
+GLint gluInvertMatrix(const double *m, double *dest); // supported
+
+// ------------------------
+// ------------------------
+
+// gluProject/gluUnproject seem not to work with ortho matrices, use gluProjectx for direct point transformation without strange enhancements/optimizations
+GLint gluProjectfx(GLfloat objX, GLfloat objY, GLfloat objZ, GLfloat *model, GLfloat *projection, GLint *view, GLfloat *winX, GLfloat *winY, GLfloat *winZ); // supported
+GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, GLdouble *projection, GLint *view, GLdouble *winX, GLdouble *winY, GLdouble *winZ); // supported
 
 // ------------------------
 // ------------------------
