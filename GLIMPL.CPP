@@ -2366,14 +2366,14 @@ void glTexParameterfv (GLenum target, GLenum pname, GLfloat *param) {
   }
 }
 
-GLAPI void APIENTRY glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
+void glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha) {
   glContext.blendColorRed = red;
   glContext.blendColorGreen = green;
   glContext.blendColorBlue = blue;
   glContext.blendColorAlpha = alpha;
 }
 
-GLAPI void APIENTRY glBlendEquation(GLenum mode) {
+void glBlendEquation(GLenum mode) {
   glContext.blendEquation = mode;
 }
 
@@ -4390,7 +4390,7 @@ void *glVesaPointer(const void *d) {
 // --------------------------------------
 void glSetupMouse();
 double glStartClock;
-GLboolean glVesa(int xRes,int yRes, int bPP) {
+bool glVesa(int xRes,int yRes, int bPP) {
   glGraphicsModeToRestore = getBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
   glVbeModeInfo modeInfo;
@@ -4500,7 +4500,7 @@ static void setVGABufferStart(unsigned int adr) {
 static bool hiColor = false;
 static bool otherFrame = false;
 unsigned char hiRedTab[256];
-GLboolean glVGA() {
+bool glVGA() {
   glGraphicsModeToRestore = getBiosGraphicsMode();
   setBiosGraphicsMode(0x13);
   setModeX();
@@ -4531,7 +4531,7 @@ GLboolean glVGA() {
   }
   return true;
 }
-GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height) {
+bool glDirect(unsigned int *frameBuffer, float *depthBuffer, unsigned int width, unsigned int height) {
   glFrameBufferWidth = width;
   glFrameBufferHeight = height;
   glFrameBuffer = frameBuffer;
@@ -4607,7 +4607,7 @@ float glGetZoomY() {
   return glContext.zoomY;
 }
 
-void glExplicitAlpha(bool useExplicitAlpha, GLfloat alpha) {
+void glExplicitAlpha(bool useExplicitAlpha, float alpha) {
   glContext.explicitAlpha = alpha;
   glContext.useExplicitAlpha = useExplicitAlpha;
 }
@@ -4756,7 +4756,7 @@ void glTexturePointer(int width, int height, unsigned int *textureData) {
   t->height = height;
 }
 
-void glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height) {
+void glSetRenderTarget(unsigned int *frameBufferOrNULL, float *depthBuffer, unsigned int width, unsigned int height) {
   if (frameBufferOrNULL == NULL) {
     glFrameBufferWidth = glFrameBufferWidth0;
     glFrameBufferHeight = glFrameBufferHeight0;
@@ -4768,16 +4768,17 @@ void glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint w
     glFrameBuffer = frameBufferOrNULL;
     glDepthBuffer = depthBuffer;
   }
+  glViewport(0,0,glFrameBufferWidth,glFrameBufferHeight);
 }
 
-GLuint glGetTextureWidth(GLuint textureId) {
+unsigned int glGetTextureWidth(unsigned int textureId) {
   glTexture *t = &glTextures[textureId];
   if (t->name == 0x00) return 0;
   return t->width;
 
 }
 
-GLuint glGetTextureHeight(GLuint textureId) {
+unsigned int glGetTextureHeight(unsigned int textureId) {
   glTexture *t = &glTextures[textureId];
   if (t->name == 0x00) return 0;
   return t->height;
