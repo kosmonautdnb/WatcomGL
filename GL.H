@@ -1,12 +1,15 @@
-//-------------------------
-// OpenGL emulation for WatcomC/Dos. 
-//--------------
-// Just the most basic functionality. And some glu.
-// Of course with texturing/blending and alphatest etc.. 
-// It is required that Vesa 3.0 e.g. 640x480x32 works on your device.
+// --
+// WatcomGL
+// OpenGL like software rendering for WatcomC++/Dos.
+// --
+// License: MIT License
+// Github: https://github.com/kosmonautdnb/WatcomGL
 // by Stefan Mader in 2025
-//-------------------------
-// Issues: In very rare cases (on 3d x or y==0) polygons may have seams
+// --
+// Issues:
+// - In ultra rare cases polygons may have seams.
+// - Better take public domain PModeW for 256MB of memory.
+// --
 #ifndef __gl_h__
 #define __gl_h__
 
