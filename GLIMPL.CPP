@@ -4101,42 +4101,16 @@ void glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVer
 // -----------
 // -----------
 // -----------
-#ifdef __WATCOMC__
-#include <i86.h>
-#endif
 #ifdef __DJGPP__
-#define DISABLEVESA 1 // no Vesa support on DJGPP, yet
-#include <dos.h>
-#include <go32.h>
-#include <dpmi.h>
-#include <sys/nearptr.h>
-#include <sys/farptr.h>
-#define DJGPPVGAMEMON if (useNearPointers) __djgpp_nearptr_enable();
-#define DJGPPVGAMEMOFF if (useNearPointers) __djgpp_nearptr_disable();
-#define VGARAMBASE (0xa0000+__djgpp_conventional_base)
-#else
-#define DJGPPVGAMEMON
-#define DJGPPVGAMEMOFF
-#define VGARAMBASE (0xa0000)
+#define DJGPPVESA 1
 #endif
 
-unsigned short glGraphicsModeToRestore=0x02;
-void setBiosGraphicsMode(unsigned short mode) {
-    union REGS regs;
-    regs.w.ax = mode;
-    int386(0x10, &regs, &regs);
-}
-
-unsigned short getBiosGraphicsMode() {
-    union REGS regs;
-    regs.w.ax = 0x0f00;
-    int386 (0x10, &regs, &regs);
-    return regs.h.al;
-}
-
+extern unsigned short glGraphicsModeToRestore;
+unsigned short getBiosGraphicsMode();
 void glSetupMouse();
 double glStartClock;
 
+// --------------------------------------
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
@@ -4195,9 +4169,20 @@ typedef struct glVbeModeInfo {
   uint8_t reserved1[256-50];
 } glVbeModeInfo;
 #pragma pack(pop)
+
 // --------------------------------------
 // ---- DPMI for VESA ---
-#ifndef DISABLEVESA
+// --------------------------------------
+
+// --------------------------------------
+#ifndef DJGPPVESA
+// --------------------------------------
+
+#include <i86.h>
+#define DJGPPVGAMEMON
+#define DJGPPVGAMEMOFF
+#define VGARAMBASE (0xa0000)
+
 #include <conio.h>
 #include <stdio.h>
 typedef struct {
@@ -4385,6 +4370,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glSetupMouse();
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
+      delete[] w;
       return true;
     }
     v++;
@@ -4392,60 +4378,42 @@ bool glVesa(int xRes,int yRes, int bPP) {
   delete[] w;
   return false;
 }
-#else // DISABLEVESA
+// --------------------------------------
+#else // DJGPPVESA
+// --------------------------------------
 
-// DJGPP
-//typedef struct {
-//  unsigned long handle;
-//  unsigned long size;
-//  unsigned long address;
-//} __dpmi_meminfo;
-//typedef struct {
-//  unsigned long size;
-//  unsigned long pm_offset;
-//  unsigned short pm_selector;
-//  unsigned short rm_offset;
-//  unsigned short rm_segment;
-//} _go32_dpmi_seginfo;
+#include <dos.h>
+#include <go32.h>
+#include <dpmi.h>
+#include <sys/nearptr.h>
+#include <sys/farptr.h>
+#define VGARAMBASE (0xa0000+__djgpp_conventional_base)
+#define DJGPPVGAMEMON if (useNearPointers) __djgpp_nearptr_enable();
+#define DJGPPVGAMEMOFF if (useNearPointers) __djgpp_nearptr_disable();
 
-void *glVesaPointer(const void *d) {
-  int segment = ((unsigned int)d) >> 16;
-  int offset = ((unsigned int)d) & 0xffff;
-  return (void*)(((unsigned int)segment<<4)+offset);
-}
+int VESABUF_len=1024; // length of struct to work on with realmode es:di
+bool VESABUF_sel_init = false; // we need VESABUF_sel just once
+__dpmi_meminfo linearFrameBufferStruct; // physical to linear address mapping for linear framebuffer
+_go32_dpmi_seginfo VESABUF_sel; // struct to work on with realmode es:di
+int vesasel; // final linear framebuffer accessor (_farpokel)
 
-__dpmi_meminfo linearFrameBufferStruct;
-_go32_dpmi_seginfo VESABUF_sel;
-bool VESABUF_sel_init = false;
-
-void DPMI_allocRealSeg(int size, _go32_dpmi_seginfo *a) {
-  a->size = (size+15)/16;
-  _go32_dpmi_allocate_dos_memory(a);
-}
-void DPMI_freeRealSeg(_go32_dpmi_seginfo *a) {
-  _go32_dpmi_free_dos_memory(a);
+bool unmapPhysical(unsigned int linearAddress) {
+  __dpmi_free_physical_address_mapping(&linearFrameBufferStruct);
+  __dpmi_free_ldt_descriptor(vesasel);
+  return true;
 }
 
 static void ExitVBEBuf() {
-  DPMI_freeRealSeg(&VESABUF_sel);
-}
-
-int VESABUF_len=1024;
-void VBE_initRMBuf() {
-  if (!VESABUF_sel_init) {
-    VESABUF_sel_init = true;
-    DPMI_allocRealSeg(VESABUF_len,&VESABUF_sel);
-    atexit(ExitVBEBuf);
-  }
-}
-
-short DPMI_int386(int intno, __dpmi_regs *regs) {
-  __dpmi_simulate_real_mode_interrupt(intno, regs);
-  return regs->x.ax;
+  _go32_dpmi_free_dos_memory(&VESABUF_sel); // called at exit of app
 }
 
 void VBE_callESDI(__dpmi_regs *regs, void *buffer, int size) {
-  VBE_initRMBuf();
+  if (!VESABUF_sel_init) {
+    VESABUF_sel_init = true;
+    VESABUF_sel.size = (VESABUF_len+15)/16;
+    _go32_dpmi_allocate_dos_memory(&VESABUF_sel);
+    atexit(ExitVBEBuf);
+  }
   regs->x.es = VESABUF_sel.rm_segment;
   regs->x.di = VESABUF_sel.rm_offset;
   unsigned long addr; // 32 bit
@@ -4453,34 +4421,11 @@ void VBE_callESDI(__dpmi_regs *regs, void *buffer, int size) {
   DJGPPVGAMEMON
   void *ptr = (void*)(addr+__djgpp_conventional_base);
   memcpy(ptr,buffer,size);
-  DPMI_int386(0x10,regs);
+  __dpmi_simulate_real_mode_interrupt(0x10, regs);
   memcpy(buffer,ptr,size);
   //printf("%c%c%c%c\n",((char*)buffer)[0],((char*)buffer)[1],((char*)buffer)[2],((char*)buffer)[3]);
   DJGPPVGAMEMOFF
 }
-
-int vesasel;
-bool unmapPhysical(unsigned int linearAddress) {
-  __dpmi_free_physical_address_mapping(&linearFrameBufferStruct);
-  __dpmi_free_ldt_descriptor(vesasel);
-  return true;
-}
-
-uint32_t mapPhysicalToLinear(unsigned int physicalAddress, unsigned int size) {
-  linearFrameBufferStruct.size = size;
-  linearFrameBufferStruct.address = physicalAddress;
-  if (__dpmi_physical_address_mapping(&linearFrameBufferStruct)) {printf("error\n");}
-  vesasel = __dpmi_allocate_ldt_descriptors(1);
-  if (vesasel<0) {
-    __dpmi_free_physical_address_mapping(&linearFrameBufferStruct);
-    return 0;
-  }
-  __dpmi_set_segment_base_address(vesasel,linearFrameBufferStruct.address);
-  __dpmi_set_segment_limit(vesasel,linearFrameBufferStruct.size-1);
-
-  return (uint32_t)linearFrameBufferStruct.address;
-}
-
 bool glVesa(int xRes,int yRes, int bPP) {
   glGraphicsModeToRestore = getBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
@@ -4491,19 +4436,17 @@ bool glVesa(int xRes,int yRes, int bPP) {
   VBE_callESDI(&regs,&vbeInfo,sizeof(glVbeInfoBlock));
   if (regs.x.ax != 0x004f) return false;
 
-  uint16_t *u = (uint16_t *)glVesaPointer(vbeInfo.videoModes);
-  uint16_t *v = u;
-  unsigned short k = 0;
-  unsigned int ofs = (unsigned int)u;
+  unsigned int videoModes = (((unsigned int)vbeInfo.videoModes)>>16<<4)+(((unsigned int)vbeInfo.videoModes) & 0xffff);
+  unsigned int ofs = videoModes;
   do {
+    unsigned short k = 0;
     dosmemget(ofs,2,&k);
     if (k == 0xffff) break;
     ofs += 2;
-    v++;
   } while(true);
-  uint16_t *w=new uint16_t[v-u];
-  dosmemget((unsigned int)u,((unsigned int)v)-((unsigned int)u),w);
-  v = w;
+  uint16_t *w=new uint16_t[(ofs-videoModes)/2];
+  uint16_t *v=w;
+  dosmemget(videoModes,ofs-videoModes,w);
 
   while(*v != 0xffff) {
     int mode = *v;
@@ -4515,13 +4458,19 @@ bool glVesa(int xRes,int yRes, int bPP) {
       memset(&regs,0,sizeof(__dpmi_regs));
       regs.x.ax = 0x4f02;
       regs.x.bx = mode|0x4000;
-      DPMI_int386(0x10,&regs); // needed here for later mouse setup
+      __dpmi_simulate_real_mode_interrupt(0x10, &regs); // needed here for later mouse setup
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
-      glFrameBufferDedicated = (unsigned int*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
+      // linear framebuffer mapping to vesasel not glFrameBufferDedicated
+      glFrameBufferDedicated = NULL;
+      linearFrameBufferStruct.size = 4096*1024-1;
+      linearFrameBufferStruct.address = modeInfo.linearFrameBuffer;
+      __dpmi_physical_address_mapping(&linearFrameBufferStruct);
+      vesasel = __dpmi_allocate_ldt_descriptors(1);
+      __dpmi_set_segment_base_address(vesasel,linearFrameBufferStruct.address);
+      __dpmi_set_segment_limit(vesasel,linearFrameBufferStruct.size-1);
       glFrameBuffer = new unsigned int[glFrameBufferWidth*glFrameBufferHeight];
       glDepthBuffer = new float[glFrameBufferWidth*glFrameBufferHeight];
-      //memset(glFrameBufferDedicated,0,glFrameBufferWidth*glFrameBufferHeight*4);
       for (int i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) _farpokel(vesasel,i<<2,0);
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
@@ -4532,6 +4481,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glSetupMouse();
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
+      delete[] w;
       return true;
     }
     v++;
@@ -4539,8 +4489,25 @@ bool glVesa(int xRes,int yRes, int bPP) {
   delete[] w;
   return false;
 }
+// --------------------------------------
+#endif // DJGPPVESA
+// --------------------------------------
 
-#endif // DISABLEVESA
+unsigned short glGraphicsModeToRestore=0x02;
+
+void setBiosGraphicsMode(unsigned short mode) {
+    union REGS regs;
+    regs.w.ax = mode;
+    int386(0x10, &regs, &regs);
+}
+
+unsigned short getBiosGraphicsMode() {
+    union REGS regs;
+    regs.w.ax = 0x0f00;
+    int386 (0x10, &regs, &regs);
+    return regs.h.al;
+}
+
 static void setBiosCursor(int x, int y) {
     union REGS regs;
     regs.w.ax = 0x200;
