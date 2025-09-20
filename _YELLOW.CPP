@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <dos.h>
 
 #define XRES 640
 #define YRES 480
@@ -29,8 +33,19 @@ int SDL_GetTicks() {
 
 int main(int argc,char *argv[])
 {    
-  glVesa(XRES,YRES,32);
-  glViewport(0,0,XRES,YRES);
+  const bool pureVGA = false;
+  if (pureVGA) {
+    glVGA();
+  } else {
+    if (!glVesa(XRES,YRES,32)) {
+      printf("No Vesa %dx%dx32 found.\n", XRES, YRES);
+      if (!glVGA())
+      {
+        printf("No VGA device found.\n");
+        exit(0);
+      }
+    }
+  }
   glSetMonitorAspectRatio(16.0/9.0);
 
   
@@ -47,11 +62,9 @@ int main(int argc,char *argv[])
   return 0;
 }
 
-#include "gl.h"
-#include <math.h>
-#include <stdlib.h>
-
+#ifndef M_PI
 #define M_PI 3.1415927f
+#endif
 #define GL_POLYGON GL_QUADS
 
 // playerin laskuri

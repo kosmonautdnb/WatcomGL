@@ -365,7 +365,6 @@ int main(int argc, const char *argv[]) {
   } else {
     if (!glVesa(XRES,YRES,32)) {
       printf("No Vesa %dx%dx32 found.\n", XRES, YRES);
-      sleep(1);
       if (!glVGA())
       {
         printf("No VGA device found.\n");

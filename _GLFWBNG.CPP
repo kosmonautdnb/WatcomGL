@@ -44,7 +44,9 @@
 class GLFWwindow;
 #define GLFW_FALSE false
 #define GLFW_TRUE true
+#ifndef M_PI
 #define M_PI 3.1415927
+#endif
 #define XRES 1024
 #define YRES 768
 
@@ -681,7 +683,6 @@ int main( void )
   } else {
     if (!glVesa(XRES,YRES,32)) {
       printf("No Vesa %dx%dx32 found.\n", XRES, YRES);
-      sleep(1);
       if (!glVGA())
       {
         printf("No VGA device found.\n");

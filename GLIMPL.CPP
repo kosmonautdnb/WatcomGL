@@ -14,8 +14,9 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-
+#ifndef PI
 #define PI 3.14159265358979323846
+#endif
 #define FLOOR(__v__) (__v__) // not needed since conversion to int truncates
 #define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
 #define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
@@ -35,6 +36,7 @@ int glFrameBufferHeight = 0;
 int glFrameBufferBytesPerPixel = 4;
 unsigned int *glFrameBuffer = NULL;
 float *glDepthBuffer = NULL;
+bool useNearPointers = true;
 int glFrameBufferWidth0 = 0;
 int glFrameBufferHeight0 = 0;
 unsigned int *glFrameBuffer0 = NULL;
@@ -1324,6 +1326,10 @@ void glFogi(GLenum pname, GLint param) {
   case GL_FOG_DENSITY: {glContext.fogDensity = param;} break;
   case GL_FOG_MODE: {glContext.fogMode = param;} break;
   }
+}
+
+void glFrontFace(GLenum mode) {
+  glContext.frontFace = mode;
 }
 
 void glGenTextures (GLsizei n, GLuint *textures) {
@@ -2960,10 +2966,6 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
   glUpdateMatrix();
 }
 
-void glFrontFace(GLenum mode) {
-  glContext.frontFace = mode;
-}
-
 void glFrustum(float left, float right, float bottom, float top, float znear, float zfar) {
   __glFrustum(glContext.matrixForMode[glContext.matrixModeNr],left,right,bottom,top,znear,zfar);
   glUpdateMatrix();
@@ -4099,28 +4101,52 @@ void glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVer
 // -----------
 // -----------
 // -----------
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef unsigned long uint64_t;
-// ---- DPMI for VESA ---
+#ifdef __WATCOMC__
 #include <i86.h>
-#include <conio.h>
-#include <stdio.h>
-#include <stdlib.h>
-int glGraphicsModeToRestore=0x02;
-void setBiosGraphicsMode(int mode) {
+#endif
+#ifdef __DJGPP__
+#define DISABLEVESA 1 // no Vesa support on DJGPP, yet
+bool glVesa(int xRes,int yRes, int bPP) {return false;}
+bool unmapPhysical(unsigned int linearAddress) {return false;}
+#include <dos.h>
+#include <go32.h>
+#include <dpmi.h>
+#include <sys/nearptr.h>
+#define DJGPPVGAMEMON if (useNearPointers) __djgpp_nearptr_enable();
+#define DJGPPVGAMEMOFF if (useNearPointers) __djgpp_nearptr_disable();
+#define VGARAMBASE (0xa0000+__djgpp_conventional_base)
+#else
+#define DJGPPVGAMEMON
+#define DJGPPVGAMEMOFF
+#define VGARAMBASE (0xa0000)
+#endif
+
+unsigned short glGraphicsModeToRestore=0x02;
+void setBiosGraphicsMode(unsigned short mode) {
     union REGS regs;
-    regs.x.eax = mode;
+    regs.w.ax = mode;
     int386(0x10, &regs, &regs);
 }
 
-int getBiosGraphicsMode() {
+unsigned short getBiosGraphicsMode() {
     union REGS regs;
     regs.w.ax = 0x0f00;
     int386 (0x10, &regs, &regs);
     return regs.h.al;
 }
+
+void glSetupMouse();
+double glStartClock;
+
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long uint64_t;
+
+// ---- DPMI for VESA ---
+#ifndef DISABLEVESA
+#include <conio.h>
+#include <stdio.h>
 typedef struct {
   short di;
   short si;
@@ -4319,8 +4345,6 @@ void *glVesaPointer(const void *d) {
 // --------------------------------------
 // --------------------------------------
 // --------------------------------------
-void glSetupMouse();
-double glStartClock;
 bool glVesa(int xRes,int yRes, int bPP) {
   glGraphicsModeToRestore = getBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
@@ -4366,9 +4390,10 @@ bool glVesa(int xRes,int yRes, int bPP) {
   delete[] w;
   return false;
 }
+#endif // DISABLEVESA
 static void setBiosCursor(int x, int y) {
     union REGS regs;
-    regs.x.eax = 0x200;
+    regs.w.ax = 0x200;
     regs.h.bh = 0;
     regs.h.dl = x;
     regs.h.dh = y;
@@ -4439,8 +4464,10 @@ bool glVGA() {
   setHiColorPalette();
   hiColor = true;
   otherFrame = false;
-  unsigned char *vga = (unsigned char*)(0xa0000);
+  unsigned char *vga = (unsigned char*)(VGARAMBASE);
+  DJGPPVGAMEMON
   memset(vga,0,0x10000);
+  DJGPPVGAMEMOFF
   setVGABufferStart(otherFrame ? 0x8000 : 0x0000);
   int xRes = 320;
   int yRes = 200;
@@ -4479,7 +4506,8 @@ bool glDirect(unsigned int *frameBuffer, float *depthBuffer, unsigned int width,
   return true;
 }
 void glRefreshHiColor() {
-  unsigned char *vga = (unsigned char*)(0xa0000+(otherFrame?0x8000:0x00));
+  DJGPPVGAMEMON
+  unsigned char *vga = (unsigned char*)(VGARAMBASE+(otherFrame?0x8000:0x00));
   for (int p = 0; p < 4; p++) {
     outp(0x3c4,0x02);
     outp(0x3c5,1<<p);
@@ -4494,6 +4522,7 @@ void glRefreshHiColor() {
       }
     }
   }
+  DJGPPVGAMEMOFF
   setVGABufferStart(otherFrame ? 0x8000 : 0x0000);
   otherFrame = !otherFrame;   
 }
@@ -4588,15 +4617,15 @@ int glKey = 0;
 
 unsigned short glNextKey() {
   union REGS regs;
-  regs.x.eax = 0x0600;
-  regs.x.edx = 0xff;
+  regs.w.ax = 0x0600;
+  regs.w.dx = 0xff;
   int386(0x21, &regs, &regs);
-  glKey = regs.x.eax & 0xff;
+  glKey = regs.w.ax & 0xff;
   if (glKey == 0) {
-    regs.x.eax = 0x0600;
-    regs.x.edx = 0xff;
+    regs.w.ax = 0x0600;
+    regs.w.dx = 0xff;
     int386(0x21, &regs, &regs);
-    glKey += (regs.x.eax & 0xff)<<8;
+    glKey += (regs.w.ax & 0xff)<<8;
   }
   return glKey;
 }
@@ -4610,20 +4639,20 @@ int glMouseB = 0;
 
 void glSetMousePos(int x, int y) {
   union REGS regs;
-  regs.x.eax = 0x04;
-  regs.x.ecx = x;
-  regs.x.edx = y;
+  regs.w.ax = 0x04;
+  regs.w.cx = x;
+  regs.w.dx = y;
   int386(0x33, &regs, &regs);
 }
 
 void glNextMouseDelta(double *mouseX, double *mouseY) {
   union REGS regs;
-  regs.x.eax = 0x03;
+  regs.w.ax = 0x03;
   int386(0x33, &regs, &regs);
   glLastMouseX = glMouseX;
   glLastMouseY = glMouseY;
-  glMouseX = regs.x.ecx & 0xffff;
-  glMouseY = regs.x.edx & 0xffff;
+  glMouseX = regs.w.cx & 0xffff;
+  glMouseY = regs.w.dx & 0xffff;
   *mouseX = glMouseX - glLastMouseX;
   *mouseY = glMouseY - glLastMouseY;
   if (true) {
@@ -4637,22 +4666,22 @@ void glNextMouseDelta(double *mouseX, double *mouseY) {
 
 char glMouseButtons() {
   union REGS regs;
-  regs.x.eax = 0x03;
+  regs.w.ax = 0x03;
   int386(0x33, &regs, &regs);
   glLastMouseB = glMouseB;
-  glMouseB = regs.x.ebx & 0xffff;
+  glMouseB = regs.w.bx & 0xffff;
   return glMouseB & 0xff;
 }
 
 void glSetupMouse() {
     union REGS regs;
-    regs.x.eax = 0x07;
-    regs.x.ecx = 0;
-    regs.x.edx = glFrameBufferWidth0-1;
+    regs.w.ax = 0x07;
+    regs.w.cx = 0;
+    regs.w.dx = glFrameBufferWidth0-1;
     int386(0x33, &regs, &regs);
-    regs.x.eax = 0x08;
-    regs.x.ecx = 0;
-    regs.x.edx = glFrameBufferHeight0-1;
+    regs.w.ax = 0x08;
+    regs.w.cx = 0;
+    regs.w.dx = glFrameBufferHeight0-1;
     int386(0x33, &regs, &regs);
     glMouseX = glFrameBufferWidth0/2;
     glMouseY = glFrameBufferHeight0/2;
