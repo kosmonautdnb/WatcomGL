@@ -4142,6 +4142,8 @@ typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long uint64_t;
 // --------------------------------------
+#pragma pack(push)
+#pragma pack(1)
 typedef struct glVbeInfoBlock {
   char signature[4];
   uint16_t version;
@@ -4192,6 +4194,7 @@ typedef struct glVbeModeInfo {
   uint16_t offScreenMemSize;
   uint8_t reserved1[256-50];
 } glVbeModeInfo;
+#pragma pack(pop)
 // --------------------------------------
 // ---- DPMI for VESA ---
 #ifndef DISABLEVESA
@@ -4225,6 +4228,7 @@ typedef struct {
 typedef struct {
   short es,ds,fs,gs,ip,cs,sp,ss;
 } RMSREGS;
+
 #define IN(reg) rmregs.e##reg = in->##reg
 #define OUT(reg) out->##reg = rmregs.e##reg
 void *glVesaPointer(const void *d) {
@@ -4486,12 +4490,21 @@ bool glVesa(int xRes,int yRes, int bPP) {
   regs.x.ax = 0x4f00;
   VBE_callESDI(&regs,&vbeInfo,sizeof(glVbeInfoBlock));
   if (regs.x.ax != 0x004f) return false;
+
   uint16_t *u = (uint16_t *)glVesaPointer(vbeInfo.videoModes);
   uint16_t *v = u;
-  while(*v != 0xffff) {v++;}
+  unsigned short k = 0;
+  unsigned int ofs = (unsigned int)u;
+  do {
+    dosmemget(ofs,2,&k);
+    if (k == 0xffff) break;
+    ofs += 2;
+    v++;
+  } while(true);
   uint16_t *w=new uint16_t[v-u];
-  memcpy(w,u,((unsigned int)v)-((unsigned int)u));
+  dosmemget((unsigned int)u,((unsigned int)v)-((unsigned int)u),w);
   v = w;
+
   while(*v != 0xffff) {
     int mode = *v;
     memset(&regs,0,sizeof(__dpmi_regs));
