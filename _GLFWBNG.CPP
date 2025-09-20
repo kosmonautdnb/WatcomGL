@@ -647,9 +647,6 @@ void DrawGrid( void )
 
 int main( void )
 {
-  //glVesa(XRES,YRES,32);
-  //return 0;
-
   /*
    GLFWwindow* window;
 

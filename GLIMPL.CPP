@@ -4105,6 +4105,7 @@ void glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVer
 #define DJGPPVESA 1
 #endif
 
+bool noRefresh = false;
 extern unsigned short glGraphicsModeToRestore;
 unsigned short getBiosGraphicsMode();
 void glSetupMouse();
@@ -4371,6 +4372,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
       delete[] w;
+      noRefresh = false;
       return true;
     }
     v++;
@@ -4482,6 +4484,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
       delete[] w;
+      noRefresh = false;
       return true;
     }
     v++;
@@ -4604,6 +4607,7 @@ bool glVGA() {
   for (int i = 0; i < 256; i++) {
     hiRedTab[i] = 128+(((i>>4)&15)<<3);
   }
+  noRefresh = false;
   return true;
 }
 bool glDirect(unsigned int *frameBuffer, float *depthBuffer, unsigned int width, unsigned int height) {
@@ -4620,6 +4624,7 @@ bool glDirect(unsigned int *frameBuffer, float *depthBuffer, unsigned int width,
   glSetupMouse();
   glStartClock = clock();
   glViewport(0,0,width,height);
+  noRefresh = true;
   return true;
 }
 void glRefreshHiColor() {
@@ -4644,6 +4649,7 @@ void glRefreshHiColor() {
   otherFrame = !otherFrame;   
 }
 void glRefresh() {
+  if (noRefresh) return;
   if (hiColor) {glRefreshHiColor();return;}
   unsigned int rgba;
   for (int i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
