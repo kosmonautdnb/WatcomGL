@@ -1,8 +1,8 @@
 @echo off
-wcl386.exe /c /mf /zp1 glimpl.cpp  -fo_glimpl.obj
-wcl386.exe /c /mf /zp1 _nehe.cpp -fo_nehe.obj
-wcl386.exe /c /mf /zp1 _glfwbng.cpp -fo_glfwbng.obj
-wcl386.exe /c /mf /zp1 _yellow.cpp -fo_yellow.obj
+wcl386.exe /c /mf glimpl.cpp  -fo_glimpl.obj
+wcl386.exe /c /mf _nehe.cpp -fo_nehe.obj
+wcl386.exe /c /mf _glfwbng.cpp -fo_glfwbng.obj
+wcl386.exe /c /mf _yellow.cpp -fo_yellow.obj
 wlink FILE _nehe.obj FILE _glimpl.obj  OPTION QUIET OPTION STack = 65536 NAME _nehe.exe
 wlink FILE _glfwbng.obj FILE _glimpl.obj  OPTION QUIET OPTION STack = 65536 NAME _glfwbng.exe
 wlink FILE _yellow.obj FILE _glimpl.obj  OPTION QUIET OPTION STack = 65536 NAME _yellow.exe

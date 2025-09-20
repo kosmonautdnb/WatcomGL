@@ -4367,6 +4367,9 @@ bool glVesa(int xRes,int yRes, int bPP) {
     regs.cx = mode;
     VBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
+      regs.ax = 0x4f02;
+      regs.bx = mode|0x4000;
+      DPMI_int386(0x10,&regs,&regs); // needed here for later mouse setup
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
       glFrameBufferDedicated = (unsigned int*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
@@ -4382,9 +4385,6 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glSetupMouse();
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
-      regs.ax = 0x4f02;
-      regs.bx = mode|0x4000;
-      DPMI_int386(0x10,&regs,&regs);
       return true;
     }
     v++;
@@ -4512,6 +4512,10 @@ bool glVesa(int xRes,int yRes, int bPP) {
     regs.x.cx = mode;
     VBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
+      memset(&regs,0,sizeof(__dpmi_regs));
+      regs.x.ax = 0x4f02;
+      regs.x.bx = mode|0x4000;
+      DPMI_int386(0x10,&regs); // needed here for later mouse setup
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
       glFrameBufferDedicated = (unsigned int*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
@@ -4528,10 +4532,6 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glSetupMouse();
       glStartClock = clock();
       glViewport(0,0,xRes,yRes);
-      memset(&regs,0,sizeof(__dpmi_regs));
-      regs.x.ax = 0x4f02;
-      regs.x.bx = mode|0x4000;
-      DPMI_int386(0x10,&regs);
       return true;
     }
     v++;
