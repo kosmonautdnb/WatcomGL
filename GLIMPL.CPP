@@ -4818,19 +4818,37 @@ void glSetupMouse() {
 }
 
 void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey) {
+#ifdef __WATCOMC__
   int keyState = *((char *)0x417);
+#endif // __WATCOMC__
+#ifdef __DJGPP__
+  char keyState;
+  dosmemget(0x417,1,&keyState);
+#endif // __DJGPP__
   *shiftKey = (keyState & 0x03) != 0;
   *ctrlKey = (keyState & 0x04) != 0;
   *altKey = (keyState & 0x08) != 0;
 }
 
+#ifdef __DJGPP__
+#include <time.h>
+double glSeconds() {
+  return (double)(uclock() - glStartClock) / UCLOCKS_PER_SEC;
+}
+void glSetTime(double seconds) {
+  glStartClock = uclock();
+}
+#endif 
+
+#ifdef __WATCOMC__
+// very bad resolution, things seem to stutter by that, better use speaker.hpp and it's reprogrammed timer
 double glSeconds() {
   return (double)(clock() - glStartClock) / CLOCKS_PER_SEC;
 }
-
 void glSetTime(double seconds) {
   glStartClock = clock() - seconds * CLOCKS_PER_SEC;
 }
+#endif
 
 void glTexturePointer(int width, int height, unsigned int *textureData) {
   if (glContext.boundTextures[glContext.activeTexture]==0) 

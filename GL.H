@@ -46,7 +46,7 @@ void glSetRenderTarget(unsigned int *frameBufferOrNULL, float *depthBuffer, unsi
 // ------------------------
 // ------------------------
 
-double glSeconds(); // tells the seconds ellapsed since the start of OpenGL (granularity seems to be 18.2 Hz, maybe better use speaker.hpp) // better reprogram timer interrupt, this one is quite stuttery
+double glSeconds(); // tells the seconds ellapsed since the start of OpenGL (granularity seems to be 18.2 Hz, better use speaker.hpp for "non stuttering") // better reprogram timer interrupt, this one is quite stuttery
 void glSetTime(double seconds); // sets the time to <seconds>
                         
 unsigned short glNextKey(); // gets the next pressed key from the keyboard buffer (GL_VK_xxxx)
