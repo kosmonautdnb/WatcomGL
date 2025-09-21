@@ -7,7 +7,7 @@
 // by Stefan Mader in 2025
 // --
 // Issues:
-// - In ultra rare cases polygons may have seams.
+// - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math)
 // - Better take public domain PModeW for 256MB of memory.
 // --
 #include "gl.h"
@@ -699,7 +699,7 @@ void drawClippedNgon(_GLContext *context, glVertex *vertices[], int vertexCount)
       glLightVertex(context,&poly[count]);
       clipFlags &= glClipVertex(&glContext,&poly[count]);
       count++;
-      float f = (w0+z0) / ((z0-z1)+(w0-w1));
+      double f = (w0+z0) / ((z0-z1)+(w0-w1));
       interpolateVertex(&poly[count],v0,v1,f);
       glTransformVertex(context,&poly[count],false);
       glLightVertex(context,&poly[count]);
@@ -707,7 +707,7 @@ void drawClippedNgon(_GLContext *context, glVertex *vertices[], int vertexCount)
       count++;
     } else 
     if((!currentInside) && nextInside) {
-      float f = (w0+z0) / ((z0-z1)+(w0-w1));
+      double f = (w0+z0) / ((z0-z1)+(w0-w1));
       interpolateVertex(&poly[count],v0,v1,f);
       glTransformVertex(context,&poly[count],false);
       glLightVertex(context,&poly[count]);

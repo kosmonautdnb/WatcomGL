@@ -1,7 +1,7 @@
-gpp -c -O3 -Ofast -o_glimpl.obj glimpl.cpp
-gpp -c -O3 -Ofast -o_nehe.obj _nehe.cpp
-gpp -c -O3 -Ofast -o_glfwbng.obj _glfwbng.cpp
-gpp -c -O3 -Ofast -Wno-narrowing -o_yellow.obj _yellow.cpp
+gpp -c -O3 -o_glimpl.obj glimpl.cpp
+gpp -c -O3 -o_nehe.obj _nehe.cpp
+gpp -c -O3 -o_glfwbng.obj _glfwbng.cpp
+gpp -c -O3 -Wno-narrowing -o_yellow.obj _yellow.cpp
 gpp -o _nehe.exe _glimpl.obj _nehe.obj
 gpp -o _glfwbng.exe _glimpl.obj _glfwbng.obj
 gpp -o _yellow.exe _glimpl.obj _yellow.obj

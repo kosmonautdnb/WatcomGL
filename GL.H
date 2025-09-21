@@ -7,7 +7,7 @@
 // by Stefan Mader in 2025
 // --
 // Issues:
-// - In ultra rare cases polygons may have seams.
+// - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math)
 // - Better take public domain PModeW for 256MB of memory.
 // --
 #ifndef __GL_H__
