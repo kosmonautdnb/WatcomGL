@@ -1,4 +1,4 @@
-# Software OpenGL for DOS/WatcomC++ and DJGPP
+w# Software OpenGL for DOS/WatcomC++ and DJGPP
 
 #### Just include and link:  
   GL.H  
@@ -39,7 +39,7 @@ https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ
 Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa6.5.3, in 2007, though.  
 You can find the compiled Mesa libraries in the comments of this video (video not by me):  
 https://www.youtube.com/watch?v=vkUwT9U1GzA  
-
+or directly at:
 http://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip
 
 ## TinyGL
