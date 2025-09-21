@@ -41,17 +41,19 @@ int glFrameBufferWidth0 = 0;
 int glFrameBufferHeight0 = 0;
 unsigned int *glFrameBuffer0 = NULL;
 float *glDepthBuffer0 = NULL;
-GLdouble identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
+double identityMatrix[4*4] = {1,0,0,0 ,0,1,0,0 ,0,0,1,0 ,0,0,0,1};
 bool currentBackFacing = false;
 _GLContext glContext;
 _GLContext glAttribStack[__ATTRIB_STACK_SIZE__];
-GLint glAttribStackPos = 0;
-GLdouble glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
-GLint glMatrixStackPos = 0;
+int glAttribStackPos = 0;
+double glMatrixStack[__MATRIX_STACK_SIZE__][4*4];
+int glMatrixStackPos = 0;
 glVertex glVertices[4];
 int glCurrentVertexElement = 0;
+double additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
 glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
+
 
 __inline float glClampf(float a, float n, float x) {
   return a < n ? n : (a > x ? x : a);
@@ -874,7 +876,7 @@ void glEmitVertex() {
             double dy = glVertices[1].sy-glVertices[0].sy;
             double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            const double nx = dy * glContext.zoomX;
+            const double nx = dy * glContext.zoomX*additionalPointSpriteXStretch;
             const double ny = -dx * glContext.zoomY;
             const double d = glContext.lineWidth*0.5;
             glVertices[3].sx += nx*d;
@@ -916,7 +918,7 @@ void glEmitVertex() {
             double dy = glVertices[1].sy-glVertices[0].sy;
             double l = sqrt(dx*dx+dy*dy);
             if (l>0.f) {dx/=l;dy/=l;};
-            const double nx = dy*glContext.zoomX;
+            const double nx = dy*glContext.zoomX*additionalPointSpriteXStretch;
             const double ny = -dx*glContext.zoomY;
             const double d = glContext.lineWidth*0.5;
             glVertices[3].sx += nx*d;
@@ -1040,7 +1042,7 @@ void glEmitVertex() {
           glVertices[1] = glVertices[0];
           glVertices[2] = glVertices[0];
           glVertices[3] = glVertices[0];
-          const double pointSizeX = glContext.pointSize*0.5*glContext.zoomX;
+          const double pointSizeX = glContext.pointSize*0.5*glContext.zoomX*additionalPointSpriteXStretch;
           const double pointSizeY = glContext.pointSize*0.5*glContext.zoomY;
           glVertices[3].textureX = 0;
           glVertices[3].textureY = 1;

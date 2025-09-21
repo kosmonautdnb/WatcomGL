@@ -59,6 +59,7 @@ unsigned int glGetTextureHeight(unsigned int textureId);
 
 void glExplicitAlpha(bool useExplicitAlpha, float alpha); // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer")
 bool glPixel(bool newXYZ, float xp, float yp, float zp, int x, int y, unsigned int color); // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp, without it, it will take the last one)
+void glAdditionalPointSpriteXStretch(float widthStretch); // for having point sprites quadratic on e.g. 16:9 screens
 
 // ------------------------
 // ------------------------
