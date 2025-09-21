@@ -4111,13 +4111,11 @@ bool noRefresh = false;
 extern unsigned short glGraphicsModeToRestore;
 unsigned short getBiosGraphicsMode();
 void glSetupMouse();
-double glStartClock;
 
 // --------------------------------------
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
-typedef unsigned long uint64_t;
 // --------------------------------------
 #pragma pack(push)
 #pragma pack(1)
@@ -4371,7 +4369,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glFrameBuffer0 = glFrameBuffer;
       glDepthBuffer0 = glDepthBuffer;
       glSetupMouse();
-      glStartClock = clock();
+      glSetTime(0);
       glViewport(0,0,xRes,yRes);
       delete[] w;
       noRefresh = false;
@@ -4483,7 +4481,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       glFrameBuffer0 = glFrameBuffer;
       glDepthBuffer0 = glDepthBuffer;
       glSetupMouse();
-      glStartClock = clock();
+      glSetTime(0);
       glViewport(0,0,xRes,yRes);
       delete[] w;
       noRefresh = false;
@@ -4604,7 +4602,7 @@ bool glVGA() {
   glFrameBuffer0 = glFrameBuffer;
   glDepthBuffer0 = glDepthBuffer;
   glSetupMouse();
-  glStartClock = clock();
+  glSetTime(0);
   glViewport(0,0,xRes,yRes);
   for (int i = 0; i < 256; i++) {
     hiRedTab[i] = 128+(((i>>4)&15)<<3);
@@ -4624,7 +4622,7 @@ bool glDirect(unsigned int *frameBuffer, float *depthBuffer, unsigned int width,
   glFrameBuffer0 = glFrameBuffer;
   glDepthBuffer0 = glDepthBuffer;
   glSetupMouse();
-  glStartClock = clock();
+  glSetTime(0);
   glViewport(0,0,width,height);
   noRefresh = true;
   return true;
@@ -4831,16 +4829,20 @@ void glSpecialKeys(bool *shiftKey, bool *ctrlKey, bool *altKey) {
 }
 
 #ifdef __DJGPP__
+typedef signed long long int int64_t;
+typedef unsigned long long int uint64_t;
+int64_t glStartClock = 0;
 #include <time.h>
 double glSeconds() {
   return (double)(uclock() - glStartClock) / UCLOCKS_PER_SEC;
 }
 void glSetTime(double seconds) {
-  glStartClock = uclock();
+  glStartClock = uclock() - (int64_t)(seconds * UCLOCKS_PER_SEC);
 }
 #endif 
 
 #ifdef __WATCOMC__
+double glStartClock = 0;
 // very bad resolution, things seem to stutter by that, better use speaker.hpp and it's reprogrammed timer
 double glSeconds() {
   return (double)(clock() - glStartClock) / CLOCKS_PER_SEC;
