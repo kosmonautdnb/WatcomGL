@@ -38,6 +38,9 @@ extern double glTexelCenterX; // -0.5 (texCoord += glTexelCenterX)
 extern double glTexelCenterY; // -0.5
 extern double glMonitorAspectRatio; // use glSetMonitorAspectRatio()
 extern bool useNearPointers;
+extern bool glFastTexturing; // use perspective approximations default false
+extern int glFastTextureSpanWidth; // default 16
+
 // ------------------------
 // ------------------------
 

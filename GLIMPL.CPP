@@ -14,22 +14,30 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+
 #ifndef PI
-#define PI 3.14159265358979323846
+#  define PI 3.14159265358979323846
 #endif
+
 #define FLOOR(__v__) (__v__) // not needed since conversion to int truncates
-#define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
+#define FABSF fabs
+#define DIVE255 /= 255 // >>= 8
+#define DIVQ255 / 255 // >> 8
+
 #define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
 #define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
 #define MAT(m,r,c) (m)[(c)*4+(r)]
-#define FABSF fabs
+#define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
 #define __MATRIX_STACK_SIZE__ 16
 #define __ATTRIB_STACK_SIZE__ 4
+
 #ifdef __WATCOMC__
-#define INLINE __inline
+#  define INLINE __inline
+#  define __FASTTEXTURING__ 1 // it's slower with DJGPP so just for WatcomC++
 #endif
+
 #ifdef __DJGPP__
-#define INLINE inline
+#  define INLINE inline
 #endif
 
 double glPixelCenterX = -0.5;
@@ -58,6 +66,8 @@ glVertex glVertices[4];
 int glCurrentVertexElement = 0;
 double additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
+bool glFastTexturing = false; // only with #define __FASTTEXTURING__
+int glFastTextureSpanWidth = 16;
 
 glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
 
@@ -3213,6 +3223,9 @@ INLINE double getBary(double x, double y, const glVertex *v0, const glVertex *v1
 #define __BARY0__(__v__) ((__v__)*bary0)
 #define __BARY1__(__v__) ((__v__)*bary1)
 #define __BARY2__(__v__) ((__v__)*bary2)
+#define __BARY0PADD__(__v__) ((__v__)*(bary0+baryAdd0))
+#define __BARY1PADD__(__v__) ((__v__)*(bary1+baryAdd1))
+#define __BARY2PADD__(__v__) ((__v__)*(bary2+baryAdd2))
 
 bool glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   const float dx0 = v1->sx - v0->sx;
@@ -3254,9 +3267,6 @@ INLINE int textureWrap(int t, int siz, GLenum filterMode) {
   }
   return t<0?(siz-1-((-t)%siz)):(t%siz); // GL_REPEAT
 }
-
-#define DIVE255 /= 255 // >>= 8
-#define DIVQ255 / 255 // >> 8
 
 INLINE unsigned int doBlend(unsigned int dest, unsigned int source, int sourceFunc, int destFunc, unsigned int constantColor, int blendEquation) {
 
@@ -3910,11 +3920,15 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
 
   const unsigned int wrapS = forceWrapRepeat ? GL_REPEAT : t->wrapS;
   const unsigned int wrapT = forceWrapRepeat ? GL_REPEAT : t->wrapT;
+  int tpx,tpy,tpxa,tpya;
 
   dontPaint = false;
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
   if (dontPaint) return;
+#ifdef __FASTTEXTURING__
+  int fastApprox = 0;
+#endif // __FASTTEXTURING__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0>=0&&bary1>=0&&bary2>=0) {
         double zp = __BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z);
@@ -3934,42 +3948,111 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
           if (textured) {
             unsigned int rgba;
             if (filtering) {
-              const float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw;
-              const float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw;
-              const int tix0 = textureWrap((int)FLOOR(tx), twidth0, wrapS);
-              int tiy0 = textureWrap((int)FLOOR(ty), theight0, wrapT);
-              const int tix1 = textureWrap(tix0+1, twidth0, wrapS);
-              int tiy1 = textureWrap(tiy0+1, theight0, wrapT);
-              int txf = (int)FLOOR(fmod(tx*256.f,256.f));
-              int tyf = (int)FLOOR(fmod(ty*256.f,256.f));
-              if (txf<0) txf = 256+txf;
-              if (tyf<0) tyf = 256+tyf;
-              const int p1v = ((256-txf)*(256-tyf))>>8; 
-              const int p2v = ((txf)*(256-tyf))>>8; 
-              const int p3v = ((txf)*(tyf))>>8; 
-              const int p4v = ((256-txf)*(tyf))>>8;
-              tiy0 *= twidth0;
-              tiy1 *= twidth0;
-              const unsigned int rgba00 = (tix0|tiy0)>=0?tdata0[tix0+tiy0]:borderColor;
-              const unsigned int rgba10 = (tix1|tiy0)>=0?tdata0[tix1+tiy0]:borderColor;
-              const unsigned int rgba11 = (tix1|tiy1)>=0?tdata0[tix1+tiy1]:borderColor;
-              const unsigned int rgba01 = (tix0|tiy1)>=0?tdata0[tix0+tiy1]:borderColor;
-              rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
-              rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
-              rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
-              rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
-              rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
-              rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
-              rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
-              rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
-            } else {
-              int tix0 = textureWrap((int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw), twidth0, wrapS);
-              int tiy0 = textureWrap((int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw), theight0, wrapT);
-              if ((int)(tix0|tiy0)>=0) {
-                rgba = tdata0[tix0+tiy0*twidth0];
+#ifdef __FASTTEXTURING__
+              if (glFastTexturing) {
+                if (fastApprox==0) {
+                  fastApprox=glFastTextureSpanWidth;
+                  double iw2=iw*0x10000;
+                  tpx = (int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
+                  tpy = (int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
+                  if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
+                  tpxa = (int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx;
+                  tpya = (int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy;
+                }
+                const int kx = tpx>>16;
+                const int ky = tpy>>16;
+                int tix0 = textureWrap(kx, twidth0, wrapS);
+                int tiy0 = textureWrap(ky, theight0, wrapT);
+                const int tix1 = textureWrap(kx+1, twidth0, wrapS);
+                int tiy1 = textureWrap(ky+1, theight0, wrapT);
+                const int txf = (tpx>>8)&255;
+                const int tyf = (tpy>>8)&255;
+                const int p1v = ((256-txf)*(256-tyf))>>8; 
+                const int p2v = ((txf)*(256-tyf))>>8; 
+                const int p3v = ((txf)*(tyf))>>8; 
+                const int p4v = ((256-txf)*(tyf))>>8;
+                tiy0 *= twidth0;
+                tiy1 *= twidth0;
+                const unsigned int rgba00 = (tix0|tiy0)>=0?tdata0[tix0+tiy0]:borderColor;
+                const unsigned int rgba10 = (tix1|tiy0)>=0?tdata0[tix1+tiy0]:borderColor;
+                const unsigned int rgba11 = (tix1|tiy1)>=0?tdata0[tix1+tiy1]:borderColor;
+                const unsigned int rgba01 = (tix0|tiy1)>=0?tdata0[tix0+tiy1]:borderColor;
+                rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
+                rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
+                rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
+                rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
+                rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
+                rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
+                rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
+                rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
+                tpx+=tpxa;
+                tpy+=tpya;
+                fastApprox--;
               } else {
-                rgba = borderColor;
+#endif // __FASTTEXTURING__
+                const float tx = (__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw;
+                const float ty = (__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw;
+                const int tix0 = textureWrap((int)FLOOR(tx), twidth0, wrapS);
+                int tiy0 = textureWrap((int)FLOOR(ty), theight0, wrapT);
+                const int tix1 = textureWrap((int)FLOOR(tx)+1, twidth0, wrapS);
+                int tiy1 = textureWrap((int)FLOOR(ty)+1, theight0, wrapT);
+                int txf = (int)FLOOR(tx*256.f) & 255;
+                int tyf = (int)FLOOR(ty*256.f) & 255;
+                const int p1v = ((256-txf)*(256-tyf))>>8; 
+                const int p2v = ((txf)*(256-tyf))>>8; 
+                const int p3v = ((txf)*(tyf))>>8; 
+                const int p4v = ((256-txf)*(tyf))>>8;
+                tiy0 *= twidth0;
+                tiy1 *= twidth0;
+                const unsigned int rgba00 = (tix0|tiy0)>=0?tdata0[tix0+tiy0]:borderColor;
+                const unsigned int rgba10 = (tix1|tiy0)>=0?tdata0[tix1+tiy0]:borderColor;
+                const unsigned int rgba11 = (tix1|tiy1)>=0?tdata0[tix1+tiy1]:borderColor;
+                const unsigned int rgba01 = (tix0|tiy1)>=0?tdata0[tix0+tiy1]:borderColor;
+                rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
+                rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
+                rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
+                rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
+                rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
+                rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
+                rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
+                rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
+#ifdef __FASTTEXTURING__
               }
+#endif // __FASTTEXTURING__
+            } else {
+#ifdef __FASTTEXTURING__
+              if (glFastTexturing) {
+                if (fastApprox==0) {
+                  fastApprox=glFastTextureSpanWidth;
+                  double iw2=iw*0x10000;
+                  tpx = (int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
+                  tpy = (int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
+                  if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
+                  tpxa = (int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx;
+                  tpya = (int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy;
+                }
+                int tix0 = textureWrap(tpx>>16, twidth0, wrapS);
+                int tiy0 = textureWrap(tpy>>16, theight0, wrapT);
+                if ((int)(tix0|tiy0)>=0) {
+                  rgba = tdata0[tix0+tiy0*twidth0];
+                } else {
+                  rgba = borderColor;
+                }
+                tpx+=tpxa;
+                tpy+=tpya;
+                fastApprox--;
+              } else {
+#endif // __FASTTEXTURING__
+                int tix0 = textureWrap((int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw), twidth0, wrapS);
+                int tiy0 = textureWrap((int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw), theight0, wrapT);
+                if ((int)(tix0|tiy0)>=0) {
+                  rgba = tdata0[tix0+tiy0*twidth0];
+                } else {
+                  rgba = borderColor;
+                }
+#ifdef __FASTTEXTURING__
+              }
+#endif // __FASTTEXTURING__
             }
             if (texEnvMode==GL_MODULATE) {
               if (modulate) {
