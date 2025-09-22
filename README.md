@@ -41,7 +41,7 @@ You can find the compiled Mesa libraries in the comments of this video (video no
 https://www.youtube.com/watch?v=vkUwT9U1GzA  
 or directly at:
 https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip  
-attention to the inverted y pixel positions of the screenbuffer. And texture coordinate (0,1) accesses lower part of texture. OpenGL states (0,1) should be upper part of the texture image.
+attention to the inverted y pixel positions of the screenbuffer. And texture coordinate (0,1) accesses lower part of texture. OpenGL states (0,1) should be upper part of the (loaded) texture image.
 
 ## TinyGL
 There is a also the TinyGL project. Which seems to do the same. I don't know anything about it maybe it's rendering is a lot faster (but they implemented a lot less), however here is the link:  
