@@ -81,5 +81,6 @@ https://github.com/erysdren/TinyGL.git
 - No MultiTexturing
 - No assembly/mmx/sse etc..
 - No DisplayLists/VertexBuffers/IndexBuffers
+- No Shaders
 
 This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
