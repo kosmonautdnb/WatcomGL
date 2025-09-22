@@ -82,5 +82,6 @@ https://github.com/erysdren/TinyGL.git
 - No assembly/mmx/sse etc..
 - No DisplayLists/VertexBuffers/IndexBuffers
 - No Shaders
+- Just the very oldschool OpenGL
 
 This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
