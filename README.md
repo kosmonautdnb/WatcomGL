@@ -77,4 +77,9 @@ https://github.com/erysdren/TinyGL.git
 - Possible Two Sided Lighting
 - Complete Fixed Function OpenGL Pipeline
 
+# Drawbacks
+- No MultiTexturing
+- No assembly/mmx/sse etc..
+- No DisplayLists/VertexBuffers/IndexBuffers
+
 This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
