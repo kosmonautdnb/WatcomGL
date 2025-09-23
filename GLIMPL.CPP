@@ -66,6 +66,7 @@ glVertex glVertices[4];
 int glCurrentVertexElement = 0;
 double additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
+bool glUseHalveVector = false; // OSMesa seems to use the halvevector, instead of the "real" phong described in the docs of OpenGL
 bool glFastTexturing = false; // only with #define __FASTTEXTURING__
 int glFastTextureSpanWidth = 16;
 
@@ -609,7 +610,7 @@ void glLightVertex(_GLContext *context, glVertex *v) {
         l = sqrt(viewX*viewX+viewY*viewY+viewZ*viewZ);
         if (l>0.f) {viewX/=l;viewY/=l;viewZ/=l;}
         double specular;
-        const bool halveVector = false;
+        const bool halveVector = glUseHalveVector;
         if (halveVector) {
           double reflectionX = -viewX + lVecX; // halveVector
           double reflectionY = -viewY + lVecY;
