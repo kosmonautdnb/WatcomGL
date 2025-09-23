@@ -51,6 +51,9 @@ int glFrameBufferBytesPerPixel = 4;
 unsigned int *glFrameBuffer = NULL;
 float *glDepthBuffer = NULL;
 bool useNearPointers = true;
+bool glUseHalveVector = false; // OSMesa seems to use the halvevector, instead of the "real" phong described in the docs of OpenGL
+bool glFastTexturing = false; // only with #define __FASTTEXTURING__
+int glFastTextureSpanWidth = 16;
 int glFrameBufferWidth0 = 0;
 int glFrameBufferHeight0 = 0;
 unsigned int *glFrameBuffer0 = NULL;
@@ -66,9 +69,6 @@ glVertex glVertices[4];
 int glCurrentVertexElement = 0;
 double additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
-bool glUseHalveVector = false; // OSMesa seems to use the halvevector, instead of the "real" phong described in the docs of OpenGL
-bool glFastTexturing = false; // only with #define __FASTTEXTURING__
-int glFastTextureSpanWidth = 16;
 
 glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
 
@@ -4051,7 +4051,7 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
 #endif // __FASTTEXTURING__
             }
             if (alphaSolelyOpacity) writePixel2 = (rgba&0xff000000)!=0;
-            if (colorSolelyOpacity) writePixel2 = (rgba&0x00ffffff)!=0;
+            if (colorSolelyOpacity) writePixel2 = rgba!=0; // alpha channel has to be 0,too for optimized additive transparency
           }
           
           if (writePixel2) {
