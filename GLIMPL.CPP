@@ -66,7 +66,7 @@ glVertex glVertices[4];
 int glCurrentVertexElement = 0;
 double additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
-bool glFastTexturing = false; // only with #define __FASTTEXTURING__
+bool glFastTexturing = true; // only with #define __FASTTEXTURING__
 int glFastTextureSpanWidth = 16;
 
 glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
@@ -3594,6 +3594,7 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   bool textured = context->isEnabled(GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
   bool filtering = (t->magFilter != GL_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_LINEAR);
+  bool fastTexturing = glFastTexturing;
   float tx0,ty0,tz0,tw0;
   float tx1,ty1,tz1,tw1;
   float tx2,ty2,tz2,tw2;
@@ -3913,6 +3914,7 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
   const bool preMultipliedAlpha = blendFuncS == GL_ONE && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD;
   const bool normalAlphaBlendingOrPreMultipliedAlpha = normalAlphaBlending || preMultipliedAlpha;
   const bool useExplicitAlpha = context->useExplicitAlpha;
+  const bool alphaSolelyOpacity = blending&&(normalAlphaBlending||(blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE && blendEquation == GL_FUNC_ADD));
 
   int explicitAlphaValue = (int)FLOOR(context->explicitAlpha * 255.f);
   if (explicitAlphaValue<0) explicitAlphaValue=0;
@@ -3934,22 +3936,13 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
         double zp = __BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z);
         if ((!depthTest)||glCheckDepthFunction(*zDest,zp,depthFunction)) {
           if (wValue) iw = 1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w));
-          if (interpolateColor) {
-            r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw;
-            g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw;
-            b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iw;
-            a = (__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iw;
-          } else {
-            r = rf;
-            g = gf;
-            b = bf;
-            a = af;
-          }
+          unsigned int rgba;
+          bool writePixel = true;
+          bool writePixel2 = true;
           if (textured) {
-            unsigned int rgba;
             if (filtering) {
 #ifdef __FASTTEXTURING__
-              if (glFastTexturing) {
+              if (fastTexturing) {
                 if (fastApprox==0) {
                   fastApprox=glFastTextureSpanWidth;
                   double iw2=iw*0x10000;
@@ -4021,7 +4014,7 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
 #endif // __FASTTEXTURING__
             } else {
 #ifdef __FASTTEXTURING__
-              if (glFastTexturing) {
+              if (fastTexturing) {
                 if (fastApprox==0) {
                   fastApprox=glFastTextureSpanWidth;
                   double iw2=iw*0x10000;
@@ -4054,49 +4047,25 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
               }
 #endif // __FASTTEXTURING__
             }
-            if (texEnvMode==GL_MODULATE) {
-              if (modulate) {
-                r *= rgba & 255;
-                g *= (rgba >> 8) & 255;
-                b *= (rgba >> 16) & 255;
-                a *= (rgba >> 24) & 255;
-                r DIVE255;
-                g DIVE255;
-                b DIVE255;
-                a DIVE255;
-              } else {
-                r = rgba & 255;
-                g = (rgba >> 8) & 255;
-                b = (rgba >> 16) & 255;
-                a = (rgba >> 24) & 255;
-              }
+            if (alphaSolelyOpacity) writePixel2 = (rgba&0xff000000)!=0;
+          }
+          
+          if (writePixel2) {
+            if (interpolateColor) {
+              r = (__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw;
+              g = (__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw;
+              b = (__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iw;
+              a = (__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iw;
             } else {
-              switch(texEnvMode) {
-                case GL_REPLACE: {
-                  r = rgba & 255;
-                  g = (rgba >> 8) & 255;
-                  b = (rgba >> 16) & 255;
-                } break;
-                case GL_DECAL: {
-                  const int as = ((rgba >> 24)&255);
-                  r = r*(255-as)+(rgba & 255)*as;
-                  g = g*(255-as)+((rgba>>8) & 255)*as;
-                  b = b*(255-as)+((rgba>>16) & 255)*as;
-                  r DIVE255;
-                  g DIVE255;
-                  b DIVE255;
-                } break;
-                case GL_ADD: {
-                  const int as = ((rgba >> 24)&255);
-                  r += rgba & 255;
-                  g += (rgba >> 8) & 255;
-                  b += (rgba >> 16) & 255;
-                  a = (a*as)>>8;
-                  if (r > 255) r = 255;
-                  if (g > 255) g = 255;
-                  if (b > 255) b = 255;
-                } break;
-                default: {//case GL_MODULATE: {
+              r = rf;
+              g = gf;
+              b = bf;
+              a = af;
+            }
+  
+            if (textured) {
+              if (texEnvMode==GL_MODULATE) {
+                if (modulate) {
                   r *= rgba & 255;
                   g *= (rgba >> 8) & 255;
                   b *= (rgba >> 16) & 255;
@@ -4105,45 +4074,100 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
                   g DIVE255;
                   b DIVE255;
                   a DIVE255;
-                } break;
+                } else {
+                  r = rgba & 255;
+                  g = (rgba >> 8) & 255;
+                  b = (rgba >> 16) & 255;
+                  a = (rgba >> 24) & 255;
+                }
+              } else {
+                switch(texEnvMode) {
+                  case GL_REPLACE: {
+                    r = rgba & 255;
+                    g = (rgba >> 8) & 255;
+                    b = (rgba >> 16) & 255;
+                  } break;
+                  case GL_DECAL: {
+                    const int as = ((rgba >> 24)&255);
+                    r = r*(255-as)+(rgba & 255)*as;
+                    g = g*(255-as)+((rgba>>8) & 255)*as;
+                    b = b*(255-as)+((rgba>>16) & 255)*as;
+                    r DIVE255;
+                    g DIVE255;
+                    b DIVE255;
+                  } break;
+                  case GL_ADD: {
+                    const int as = ((rgba >> 24)&255);
+                    r += rgba & 255;
+                    g += (rgba >> 8) & 255;
+                    b += (rgba >> 16) & 255;
+                    a = (a*as)>>8;
+                    if (r > 255) r = 255;
+                    if (g > 255) g = 255;
+                    if (b > 255) b = 255;
+                  } break;
+                  default: {//case GL_MODULATE: {
+                    r *= rgba & 255;
+                    g *= (rgba >> 8) & 255;
+                    b *= (rgba >> 16) & 255;
+                    a *= (rgba >> 24) & 255;
+                    r DIVE255;
+                    g DIVE255;
+                    b DIVE255;
+                    a DIVE255;
+                  } break;
+                }
+              }
+            }
+  
+            if (alphaTest) {
+              switch(alphaFunction) {
+              case GL_NEVER: {writePixel = false;} break;
+              case GL_LESS: {writePixel = a<alphaRef;} break;
+              case GL_EQUAL: {writePixel = a==alphaRef;} break;
+              case GL_LEQUAL: {writePixel = a<=alphaRef;} break;
+              case GL_GREATER: {writePixel = a>alphaRef;} break;
+              case GL_NOTEQUAL: {writePixel = a!=alphaRef;} break;
+              case GL_GEQUAL: {writePixel = a>=alphaRef;} break;
+              case GL_ALWAYS: {writePixel = true;} break;
+              }
+            }
+  
+            if (separateSpecular) {
+              if (fogging) {
+                const double f = (__BARY0__(f0)+__BARY1__(f1)+__BARY2__(f2))*iw;
+                r *= f;
+                g *= f;
+                b *= f;
+              }
+              if (interpolateSpecular) {
+                r += (__BARY0__(sr0)+__BARY1__(sr1)+__BARY2__(sr2))*iw;
+                g += (__BARY0__(sg0)+__BARY1__(sg1)+__BARY2__(sg2))*iw;
+                b += (__BARY0__(sb0)+__BARY1__(sb1)+__BARY2__(sb2))*iw;
+              } else {
+                r += srf;
+                g += sgf;
+                b += sbf;
+              }
+              if (r>255) r = 255;
+              if (g>255) g = 255;
+              if (b>255) b = 255;
+            }
+          } else {
+            if (alphaTest) {
+              switch(alphaFunction) {
+              case GL_NEVER: {writePixel = false;} break;
+              case GL_LESS: {writePixel = 0<alphaRef;} break;
+              case GL_EQUAL: {writePixel = 0==alphaRef;} break;
+              case GL_LEQUAL: {writePixel = 0<=alphaRef;} break;
+              case GL_GREATER: {writePixel = 0>alphaRef;} break;
+              case GL_NOTEQUAL: {writePixel = 0!=alphaRef;} break;
+              case GL_GEQUAL: {writePixel = 0>=alphaRef;} break;
+              case GL_ALWAYS: {writePixel = true;} break;
               }
             }
           }
-               
-          if (separateSpecular) {
-            if (fogging) {
-              const double f = (__BARY0__(f0)+__BARY1__(f1)+__BARY2__(f2))*iw;
-              r *= f;
-              g *= f;
-              b *= f;
-            }
-            if (interpolateSpecular) {
-              r += (__BARY0__(sr0)+__BARY1__(sr1)+__BARY2__(sr2))*iw;
-              g += (__BARY0__(sg0)+__BARY1__(sg1)+__BARY2__(sg2))*iw;
-              b += (__BARY0__(sb0)+__BARY1__(sb1)+__BARY2__(sb2))*iw;
-            } else {
-              r += srf;
-              g += sgf;
-              b += sbf;
-            }
-            if (r>255) r = 255;
-            if (g>255) g = 255;
-            if (b>255) b = 255;
-          }
 
-          bool writePixel = true;
-          if (alphaTest) {
-            switch(alphaFunction) {
-            case GL_NEVER: {writePixel = false;} break;
-            case GL_LESS: {writePixel = a<alphaRef;} break;
-            case GL_EQUAL: {writePixel = a==alphaRef;} break;
-            case GL_LEQUAL: {writePixel = a<=alphaRef;} break;
-            case GL_GREATER: {writePixel = a>alphaRef;} break;
-            case GL_NOTEQUAL: {writePixel = a!=alphaRef;} break;
-            case GL_GEQUAL: {writePixel = a>=alphaRef;} break;
-            case GL_ALWAYS: {writePixel = true;} break;
-            }
-          }
           if (writePixel) {
             if (writeDepth) 
               *zDest=zp;
@@ -4158,38 +4182,40 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
                 if (maskAlpha) pDest2[3] = a;
               }
             else {
-              if (notMasked) {
-                if (normalAlphaBlendingOrPreMultipliedAlpha) {
-                  unsigned int a8 = (a<<16)/255;
-                  unsigned char *c = (unsigned char*)pDest;
-                  if (preMultipliedAlpha) {
-                    a8 = 0x10000-a8;
-                    r += (c[0]*a8)>>16;
-                    g += (c[1]*a8)>>16;
-                    b += (c[2]*a8)>>16;
-                    a += (c[3]*a8)>>16;
-                    if (r>255) r = 255;
-                    if (g>255) g = 255;
-                    if (b>255) b = 255;
-                    if (a>255) a = 255;
-                    *pDest=r|(g<<8)|(b<<16)|(a<<24);
+              if (writePixel2) {
+                if (notMasked) {
+                  if (normalAlphaBlendingOrPreMultipliedAlpha) {
+                    unsigned int a8 = (a<<16)/255;
+                    unsigned char *c = (unsigned char*)pDest;
+                    if (preMultipliedAlpha) {
+                      a8 = 0x10000-a8;
+                      r += (c[0]*a8)>>16;
+                      g += (c[1]*a8)>>16;
+                      b += (c[2]*a8)>>16;
+                      a += (c[3]*a8)>>16;
+                      if (r>255) r = 255;
+                      if (g>255) g = 255;
+                      if (b>255) b = 255;
+                      if (a>255) a = 255;
+                      *pDest=r|(g<<8)|(b<<16)|(a<<24);
+                    } else {
+                      c[0] += ((r-c[0])*a8)>>16;
+                      c[1] += ((g-c[1])*a8)>>16;
+                      c[2] += ((b-c[2])*a8)>>16;
+                      c[3] += ((a-c[3])*a8)>>16;    
+                    }
                   } else {
-                    c[0] += ((r-c[0])*a8)>>16;
-                    c[1] += ((g-c[1])*a8)>>16;
-                    c[2] += ((b-c[2])*a8)>>16;
-                    c[3] += ((a-c[3])*a8)>>16;    
+                    *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
                   }
                 } else {
-                  *pDest=doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+                  unsigned int k = doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
+                  unsigned char *pDest2 = (unsigned char *)pDest;
+                  unsigned char *k2 = (unsigned char*)k;
+                  if (maskRed) pDest2[0] = k2[0];
+                  if (maskGreen) pDest2[1] = k2[1];
+                  if (maskBlue) pDest2[2] = k2[2];
+                  if (maskAlpha) pDest2[3] = k2[3];
                 }
-              } else {
-                unsigned int k = doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
-                unsigned char *pDest2 = (unsigned char *)pDest;
-                unsigned char *k2 = (unsigned char*)k;
-                if (maskRed) pDest2[0] = k2[0];
-                if (maskGreen) pDest2[1] = k2[1];
-                if (maskBlue) pDest2[2] = k2[2];
-                if (maskAlpha) pDest2[3] = k2[3];
               }
             }
             if (useExplicitAlpha) {
