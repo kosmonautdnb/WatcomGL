@@ -66,7 +66,7 @@ glVertex glVertices[4];
 int glCurrentVertexElement = 0;
 double additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
-bool glFastTexturing = true; // only with #define __FASTTEXTURING__
+bool glFastTexturing = false; // only with #define __FASTTEXTURING__
 int glFastTextureSpanWidth = 16;
 
 glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
@@ -447,9 +447,9 @@ void glTexGen_(_GLContext *context, glVertex *v, double x, double y, double z, d
   case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureX = reflectionX/(fabs(reflectionZ)+1.0)*0.5+0.5;} break;
   }
   switch(context->texGenT) {
-  case GL_SPHERE_MAP: {v->textureY = reflectionY*0.5+0.5;} break;
-  case GL_SPHERE_MAP_ATAN2: {v->textureY = acos(-reflectionY)/PI;} break;
-  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureY = reflectionY/(fabs(reflectionZ)+1.0)*0.5+0.5;} break;
+  case GL_SPHERE_MAP: {v->textureY = -reflectionY*0.5+0.5;} break;
+  case GL_SPHERE_MAP_ATAN2: {v->textureY = -acos(-reflectionY)/PI;} break;
+  case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureY = -reflectionY/(fabs(reflectionZ)+1.0)*0.5+0.5;} break;
   }
 }
 
@@ -2072,7 +2072,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei widt
   input[2]=0xff;
   input[3]=0xff;
   for (int y = 0; y < height; y++) {
-    int i2 = width*height-(y+1)*width; // textures are flipped read out (source bottom left is tex pixel uv 0.0)
+    int i2 = y*width;
     int i = y*width;
     for (int x = 0; x < width; x++) {
       if (pixels != NULL) {
@@ -2145,7 +2145,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
   input[2]=0xff;
   input[3]=0xff;
   for (int y = 0; y < height; y++) {
-    int i2 = width*height-(y+1)*width; // textures are flipped read out (source bottom left is tex pixel uv 0.0)
+    int i2 = y*width;
     for (int x = 0; x < width; x++) {
       if (pixels != NULL) {
         input[0] = ((unsigned char*)pixels)[i2*formatStride];
