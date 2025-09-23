@@ -3915,6 +3915,8 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
   const bool normalAlphaBlendingOrPreMultipliedAlpha = normalAlphaBlending || preMultipliedAlpha;
   const bool useExplicitAlpha = context->useExplicitAlpha;
   const bool alphaSolelyOpacity = blending&&(normalAlphaBlending||(blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE && blendEquation == GL_FUNC_ADD));
+  const bool colorSolelyPossible = (texEnvMode==GL_MODULATE)||(texEnvMode==GL_ADD)||(texEnvMode==GL_REPLACE);
+  const bool colorSolelyOpacity = colorSolelyPossible&&blending&&(blendFuncS == GL_ONE && blendFuncD == GL_ONE && blendEquation == GL_FUNC_ADD);
 
   int explicitAlphaValue = (int)FLOOR(context->explicitAlpha * 255.f);
   if (explicitAlphaValue<0) explicitAlphaValue=0;
@@ -4048,6 +4050,7 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
 #endif // __FASTTEXTURING__
             }
             if (alphaSolelyOpacity) writePixel2 = (rgba&0xff000000)!=0;
+            if (colorSolelyOpacity) writePixel2 = (rgba&0x00ffffff)!=0;
           }
           
           if (writePixel2) {
