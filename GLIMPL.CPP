@@ -3224,9 +3224,9 @@ INLINE double getBary(double x, double y, const glVertex *v0, const glVertex *v1
 #define __BARY0__(__v__) ((__v__)*bary0)
 #define __BARY1__(__v__) ((__v__)*bary1)
 #define __BARY2__(__v__) ((__v__)*bary2)
-#define __BARY0PADD__(__v__) ((__v__)*(bary0+baryAdd0))
-#define __BARY1PADD__(__v__) ((__v__)*(bary1+baryAdd1))
-#define __BARY2PADD__(__v__) ((__v__)*(bary2+baryAdd2))
+#define __BARY0PADD__(__v__) ((__v__)*(bary0+xbaryAdd0))
+#define __BARY1PADD__(__v__) ((__v__)*(bary1+xbaryAdd1))
+#define __BARY2PADD__(__v__) ((__v__)*(bary2+xbaryAdd2))
 
 bool glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   const float dx0 = v1->sx - v0->sx;
@@ -3933,6 +3933,9 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
   if (dontPaint) return;
 #ifdef __FASTTEXTURING__
   int fastApprox = 0;
+  double xbaryAdd0 = baryAdd0*glFastTextureSpanWidth;
+  double xbaryAdd1 = baryAdd1*glFastTextureSpanWidth;
+  double xbaryAdd2 = baryAdd2*glFastTextureSpanWidth;
 #endif // __FASTTEXTURING__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0>=0&&bary1>=0&&bary2>=0) {
@@ -3952,8 +3955,8 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
                   tpx = (int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
                   tpy = (int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
                   if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
-                  tpxa = (int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx;
-                  tpya = (int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy;
+                  tpxa = ((int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/glFastTextureSpanWidth;
+                  tpya = ((int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/glFastTextureSpanWidth;
                 }
                 const int kx = tpx>>16;
                 const int ky = tpy>>16;
@@ -4024,8 +4027,8 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
                   tpx = (int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
                   tpy = (int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
                   if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
-                  tpxa = (int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx;
-                  tpya = (int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy;
+                  tpxa = ((int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/glFastTextureSpanWidth;
+                  tpya = ((int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/glFastTextureSpanWidth;
                 }
                 int tix0 = textureWrap(tpx>>16, twidth0, wrapS);
                 int tiy0 = textureWrap(tpy>>16, theight0, wrapT);
