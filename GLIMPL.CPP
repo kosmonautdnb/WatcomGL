@@ -4274,6 +4274,7 @@ bool noRefresh = false;
 extern unsigned short glGraphicsModeToRestore;
 unsigned short getBiosGraphicsMode();
 void glSetupMouse();
+bool glVesaBGRA = true;
 
 // --------------------------------------
 typedef unsigned char uint8_t;
@@ -4519,6 +4520,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       regs.ax = 0x4f02;
       regs.bx = mode|0x4000;
       DPMI_int386(0x10,&regs,&regs); // needed here for later mouse setup
+      glVesaBGRA = (modeInfo.bluePosition==0);
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
       glFrameBufferDedicated = (unsigned int*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
@@ -4624,6 +4626,7 @@ bool glVesa(int xRes,int yRes, int bPP) {
       regs.x.ax = 0x4f02;
       regs.x.bx = mode|0x4000;
       __dpmi_simulate_real_mode_interrupt(0x10, &regs); // needed here for later mouse setup
+      glVesaBGRA = (modeInfo.bluePosition==0);
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
       // linear framebuffer mapping to vesasel not glFrameBufferDedicated
@@ -4815,13 +4818,24 @@ void glRefresh() {
   if (noRefresh) return;
   if (hiColor) {glRefreshHiColor();return;}
   unsigned int rgba;
-  for (int i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
-    rgba = glFrameBuffer0[i];
-#if __DJGPP__
-    _farpokel(vesasel,i<<2,(rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000));
-#else
-    glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000);
-#endif
+  if (glVesaBGRA) {
+    for (int i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
+      rgba = glFrameBuffer0[i];
+#  if __DJGPP__
+      _farpokel(vesasel,i<<2,(rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000));
+#  else
+      glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000);
+#  endif
+    }
+  } else {
+    for (int i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
+      rgba = glFrameBuffer0[i];
+#  if __DJGPP__
+      _farpokel(vesasel,i<<2,rgba);
+#  else
+      glFrameBufferDedicated[i] = rgba;
+#  endif
+    }
   }
 }
 void glDone() {
