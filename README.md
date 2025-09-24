@@ -35,7 +35,7 @@ void main() {
 
 ## Mesa
 Comparing DJGPP Mesa to DJGPP WatcomGL:  
-https://youtu.be/WCn5BFcgszs?si=aosPAw7LaFom554P  
+https://youtu.be/Hwof2DcAREU?si=CWSjkz_khNZ4ciQo  
 
 If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional software OpenGL option:  
 https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ  
