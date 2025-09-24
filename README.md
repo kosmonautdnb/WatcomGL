@@ -1,4 +1,4 @@
-w# Software OpenGL for DOS/WatcomC++ and DJGPP
+wennw# Software OpenGL for DOS/WatcomC++ and DJGPP
 
 #### Just include and link:  
   GL.H  
@@ -36,7 +36,9 @@ void main() {
 ## Mesa
 Comparing DJGPP Mesa to DJGPP WatcomGL:  
 https://youtu.be/Hwof2DcAREU?si=CWSjkz_khNZ4ciQo  
-
+  
+OSMesa seems to be slower in the average use case.  
+  
 If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional software OpenGL option:  
 https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ  
 Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa6.5.3, in 2007, though.  
