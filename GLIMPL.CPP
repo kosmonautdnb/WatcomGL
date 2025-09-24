@@ -3205,8 +3205,8 @@ INLINE double getBary(double x, double y, const glVertex *v0, const glVertex *v1
     if (xp[1]<xp[0]) {int k = xp[0]; xp[0] = xp[1]; xp[1] = k;}\
     xp[0]-=2;\
     xp[1]+=2;\
-    if (xp[1]>dminx&&xp[1]<dmaxx) {dmaxx = xp[1];}\
-    if (xp[0]>dminx&&xp[0]<dmaxx) {\
+    if (xp[1]<dmaxx) {dmaxx = xp[1];}\
+    if (xp[0]>dminx) {\
       int addx = xp[0]-dminx;\
       dminx += addx;\
       pDest += addx;\
