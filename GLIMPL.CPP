@@ -33,11 +33,12 @@
 
 #ifdef __WATCOMC__
 #  define INLINE __inline
-#  define __FASTTEXTURING__ 1 // it's slower with DJGPP so just for WatcomC++
+#  define __FASTTEXTURING__ 1
 #endif
 
 #ifdef __DJGPP__
 #  define INLINE inline
+#  define __FASTTEXTURING__ 1
 #endif
 
 double glPixelCenterX = -0.5;

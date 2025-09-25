@@ -39,7 +39,7 @@ extern double glTexelCenterY; // -0.5
 extern double glMonitorAspectRatio; // use glSetMonitorAspectRatio()
 extern bool useNearPointers; // option for DJGPP
 extern bool glUseHalveVector; // seems to be OSMesa is using this, the docs require different
-extern bool glFastTexturing; // use perspective approximations default false (not on DJGPP)
+extern bool glFastTexturing; // use perspective approximations default false
 extern int glFastTextureSpanWidth; // default 16
 
 // ------------------------
