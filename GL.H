@@ -7,7 +7,7 @@
 // by Stefan Mader in 2025
 // --
 // Issues:
-// - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math)
+// - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math), maybe add 0.001 to the coordinates
 // - Better take public domain PModeW for 256MB of memory.
 // --
 #ifndef __GL_H__
@@ -18,7 +18,7 @@
 
 bool glVesa(int xRes,int yRes, int bPP); // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors (only 32 bit, yet)
 bool glVGA(); // 320x200 with 6 bit green + 3 bit blue + 4 bit red 320x400 so to say (green on one line, blue+red on the other, 200*2=400 lines) // may return true even if it's not supported (it's a fallback for no vesa320x200x32)
-bool glDirect(unsigned int *frameBuffer, float *depthBuffer, unsigned int width, unsigned int height); // to Setup direct rendering to a buffer+depth buffer // look also at glSetRenderTarget() // buffers will be deleted at glDone()
+bool glDirect(unsigned int *frameBuffer, float *depthBuffer, unsigned int width, unsigned int height); // to Setup direct rendering to a buffer+depth buffer // look also at glSetRenderTarget() // you need to delete the buffers yourself
 
 void glRefresh(); // to be called in a loop, copies the frameBuffer to the screen and updates per frame stuff
 
