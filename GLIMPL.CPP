@@ -48,8 +48,9 @@
 #  define __FASTTEXTURING__ 1
 #endif
 
-double glPixelCenterX = -0.5;
-double glPixelCenterY = -0.5;
+#define SEAMPREVENT -0.0000001 // landing directly on 0.5 screen (real screen) pixels caused seams on DJGPP
+double glPixelCenterX = -0.5+SEAMPREVENT;
+double glPixelCenterY = -0.5+SEAMPREVENT;
 double glTexelCenterX = -0.5;
 double glTexelCenterY = -0.5;
 unsigned int *glFrameBufferDedicated = NULL; // linear framebuffer
