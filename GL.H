@@ -13,6 +13,10 @@
 #ifndef __GL_H__
 #define __GL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ------------------------
 // ------------------------
 
@@ -225,7 +229,7 @@ void glVertex2d(GLdouble x, GLdouble y); // :mad: // supported
 void glVertex2dv(const GLdouble *v); // supported
 void glVertex3d(GLdouble x, GLdouble y, GLdouble z); // :mad: // supported
 void glVertex3dv (const GLdouble *v); // supported
-void glVertex4d(GLdouble x, GLdouble y, GLdouble z); // :mad: // supported
+void glVertex4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w); // :mad: // supported
 void glVertex4dv (const GLdouble *v); // supported
 void glTexCoord1d(GLdouble x); // :mad: // supported
 void glTexCoord1f(GLfloat x); // :mad: // supported
@@ -749,6 +753,10 @@ float glGetZoomY(); // also non standard, hopefully you don't need it
 // ------------------------
 // ------------------------
 
+#ifdef __cplusplus
+}
+#endif
+
 class _GLContext {
 public:
   _GLContext();
@@ -859,6 +867,10 @@ public:
   bool wireframe[2];
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct glVertex {
   GLfloat colorRed;
   GLfloat colorGreen;
@@ -920,5 +932,8 @@ void glSetTriangleDrawer(TriangleDrawer drawer); // you can implement your own t
 
 // ------------------------
 // ------------------------
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __GL_H__

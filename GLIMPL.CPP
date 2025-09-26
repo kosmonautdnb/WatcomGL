@@ -16,6 +16,10 @@
 #include <math.h>
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef PI
 #  define PI 3.14159265358979323846
 #endif
@@ -120,6 +124,10 @@ void initTexture(glTexture &t) {
   t.borderColorAlpha=1.f;
   t.texEnvMode=GL_MODULATE;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 _GLContext::_GLContext() {
   int i;
@@ -292,6 +300,10 @@ _GLContext::_GLContext() {
 void _GLContext::enable(GLenum prop, bool enable) {enabledCaps[prop&255]=enable;}
 
 GLboolean _GLContext::isEnabled(GLenum prop) {return enabledCaps[prop&255];}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void glSetTriangleDrawer(TriangleDrawer drawer) {
   glDrawTriangle = drawer;
@@ -2443,7 +2455,7 @@ void glBlendEquation(GLenum mode) {
 // -----------
 // -----------
 // -----------
-static void MulMatVec(float *dest, float *m, float *v) {
+static void MulMatVecf(float *dest, float *m, float *v) {
   float x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
   float y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
   float z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
@@ -2454,7 +2466,7 @@ static void MulMatVec(float *dest, float *m, float *v) {
   dest[3] = w;
 }
 
-static void MulMatVec(double *dest, double *m, double *v) {
+static void MulMatVecd(double *dest, double *m, double *v) {
   double x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
   double y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
   double z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
@@ -2465,11 +2477,11 @@ static void MulMatVec(double *dest, double *m, double *v) {
   dest[3] = w;
 }
 
-static void MulMatMat(float *dest, float *m1, float *m2) {
+static void MulMatMatf(float *dest, float *m1, float *m2) {
   glMatMulf(m1,m2,dest);
 }
 
-static void MulMatMat(double *dest, double *m1, double *m2) {
+static void MulMatMatd(double *dest, double *m1, double *m2) {
   glMatMul(m1,m2,dest);
 }
 
@@ -2511,7 +2523,7 @@ void __glFrustum(double *matrix, double left, double right, double bottom, doubl
   matrix2[13] = 0;
   matrix2[14] = (-temp*zfar)/temp4;
   matrix2[15] = 0.0;
-  MulMatMat(matrix, matrix, matrix2);
+  MulMatMatd(matrix, matrix, matrix2);
 }
 
 void __glPerspective(double *matrix, double fovyInDegrees, double aspectRatio, double znear, double zfar) {
@@ -2790,7 +2802,7 @@ int glUnProjectf(float winx, float winy, float winz,
   float m[16], A[16];
   float in[4], out[4];
   
-  MulMatMat(A, projection, modelview);
+  MulMatMatf(A, projection, modelview);
   if(glInvertMatrixf(A, m)==0)
     return 0;
   
@@ -2799,7 +2811,7 @@ int glUnProjectf(float winx, float winy, float winz,
   in[2]=(float)(2.0*winz-1.0);
   in[3]=(float)(1.0);
   
-  MulMatVec(out, m, in);
+  MulMatVecf(out, m, in);
   if(out[3]==0.0)
     return 0;
   out[3]=(float)(1.0/out[3]);
@@ -2817,7 +2829,7 @@ int glUnProject(double winx, double winy, double winz,
   double m[16], A[16];
   double in[4], out[4];
   
-  MulMatMat(A, projection, modelview);
+  MulMatMatd(A, projection, modelview);
   if(glInvertMatrix(A, m)==0)
     return 0;
   
@@ -2826,7 +2838,7 @@ int glUnProject(double winx, double winy, double winz,
   in[2]=2.0*winz-1.0;
   in[3]=1.0;
   
-  MulMatVec(out, m, in);
+  MulMatVecd(out, m, in);
   if(out[3]==0.0)
     return 0;
   out[3]=1.0/out[3];
@@ -2845,8 +2857,8 @@ int glProjectfx(float objx, float objy, float objz,
   in[1] = objy;
   in[2] = objz;
   in[3] = 1;
-  MulMatVec(in, modelview, in);
-  MulMatVec(in, projection, in);
+  MulMatVecf(in, modelview, in);
+  MulMatVecf(in, projection, in);
   if (in[3]==0) return 0;
   in[0]/=in[3];
   in[1]/=in[3];
@@ -2871,8 +2883,8 @@ int glProjectx(double objx, double objy, double objz,
   in[1] = objy;
   in[2] = objz;
   in[3] = 1;
-  MulMatVec(in, modelview, in);
-  MulMatVec(in, projection, in);
+  MulMatVecd(in, modelview, in);
+  MulMatVecd(in, projection, in);
   if (in[3]==0) return 0;
   in[0]/=in[3];
   in[1]/=in[3];
@@ -3021,7 +3033,7 @@ void glOrtho(float left, float right, float bottom, float top, float znear, floa
   matrix2[14]=(-zfar-znear)/temp4;
   matrix2[15]=1.0;
   double *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  MulMatMat(matrix, matrix, matrix2);
+  MulMatMatd(matrix, matrix, matrix2);
   glUpdateMatrix();
 }
 
@@ -5099,3 +5111,7 @@ bool glVesa(int xRes,int yRes, int bPP) {return false;}
 // --------------------------------------
 // --------------------------------------
 // --------------------------------------
+
+#ifdef __cplusplus
+}
+#endif
