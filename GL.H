@@ -744,6 +744,11 @@ float glGetZoomY(); // also non standard, hopefully you don't need it
 // ------------------------
 // ------------------------
 
+#ifdef WATCOMGLAPI
+
+// ------------------------
+// ------------------------
+
 class _GLContext {
 public:
   _GLContext();
@@ -907,6 +912,11 @@ extern glTexture glTextures[GLMAXTEXTURES]; // statically allocated -> you can l
 typedef void (*TriangleDrawer)(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 void glDrawTrianglePrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 void glSetTriangleDrawer(TriangleDrawer drawer); // you can implement your own triangle renderer here
+
+// ------------------------
+// ------------------------
+
+#endif // WATCOMGLAPI
 
 // ------------------------
 // ------------------------

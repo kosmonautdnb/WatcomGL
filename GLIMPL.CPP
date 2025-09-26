@@ -10,6 +10,7 @@
 // - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math), maybe add 0.001 to the coordinates
 // - Better take public domain PModeW for 256MB of memory.
 // --
+#define WATCOMGLAPI
 #include "gl.h"
 #include <string.h>
 #include <math.h>
