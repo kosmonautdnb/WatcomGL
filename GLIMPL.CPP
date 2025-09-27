@@ -3632,7 +3632,6 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   bool textured = glIsEnabled2(context,GL_TEXTURE_2D) && t->data != NULL && t->name != 0;
   bool filtering = (t->magFilter != GL_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_NEAREST)&&(t->magFilter != GL_NEAREST_MIPMAP_LINEAR);
-  bool fastTexturing = glFastTexturing;
   float tx0,ty0;
   float tx1,ty1;
   float tx2,ty2;
@@ -3968,6 +3967,7 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
   __PAINTPOLYQUAD_INITBARYFORX__
   if (dontPaint) return;
 #ifdef __FASTTEXTURING__
+  bool fastTexturing = glFastTexturing;
   int fastApprox = 0;
   double xbaryAdd0 = baryAdd0*glFastTextureSpanWidth;
   double xbaryAdd1 = baryAdd1*glFastTextureSpanWidth;
