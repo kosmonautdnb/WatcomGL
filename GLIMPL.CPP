@@ -3991,8 +3991,10 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
                   tpx = (int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
                   tpy = (int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
                   if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
-                  tpxa = ((int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/glFastTextureSpanWidth;
-                  tpya = ((int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/glFastTextureSpanWidth;
+                  int k = glFastTextureSpanWidth;
+                  tpxa = ((int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/k;
+                  tpya = ((int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/k;
+                  if (k+x>=dmaxx) fastTexturing = false; // this is maybe not the triangle edge
                 }
                 const int kx = tpx>>16;
                 const int ky = tpy>>16;
@@ -4063,8 +4065,10 @@ void glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVerte
                   tpx = (int)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
                   tpy = (int)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
                   if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
-                  tpxa = ((int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/glFastTextureSpanWidth;
-                  tpya = ((int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/glFastTextureSpanWidth;
+                  int k = glFastTextureSpanWidth;
+                  tpxa = ((int)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/k;
+                  tpya = ((int)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/k;
+                  if (k+x>=dmaxx) fastTexturing = false; // this is maybe not the triangle edge
                 }
                 int tix0 = textureWrap(tpx>>16, twidth0, wrapS);
                 int tiy0 = textureWrap(tpy>>16, theight0, wrapT);
