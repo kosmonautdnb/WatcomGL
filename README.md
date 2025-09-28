@@ -35,9 +35,9 @@ void main() {
 
 ## Mesa
 Comparing DJGPP Mesa to DJGPP WatcomGL:  
-https://youtu.be/Hwof2DcAREU?si=CWSjkz_khNZ4ciQo  
+https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
-OSMesa seems to be slower in the average usecase.  
+OSMesa seems to be slower in the average usecase. On Wipout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS.  
   
 If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional software OpenGL option:  
 https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ  
