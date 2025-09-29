@@ -41,12 +41,12 @@ typedef void GLvoid;
 // in C++ the context is already constructed at program start
 // in C glVesa,glVGA,glDirect firstly construct the context
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP); // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors (only 32 bit, yet)
-GLboolean glVGA(); // 320x200 with 6 bit green + 3 bit blue + 4 bit red 320x400 so to say (green on one line, blue+red on the other, 200*2=400 lines) // may return true even if it's not supported (it's a fallback for no vesa320x200x32)
+GLboolean glVGA(); // 320x200 with 6 bit green, 3 bit blue, 4 bit red, actually it's 320x400
 GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height); // to Setup direct rendering to a buffer+depth buffer // look also at glSetRenderTarget() // you need to delete the buffers yourself
 
-GLvoid glRefresh(); // to be called in a loop, copies the frameBuffer to the screen and updates per frame stuff
+GLvoid glRefresh(); // copies the frameBuffer to the actual screen and updates per frame stuff
 
-GLvoid glDone(); // can be called to close the vesa/vga mode and clean up opengl again
+GLvoid glDone(); // to close the vesa/vga mode and clean up opengl again
 
 // ------------------------
 // ------------------------
@@ -55,15 +55,15 @@ extern GLint glFrameBufferWidth;
 extern GLint glFrameBufferHeight;
 extern GLuint *glFrameBuffer;
 extern GLfloat *glDepthBuffer;
-extern GLint glFrameBufferBytesPerPixel; // 4
-extern GLdouble glPixelCenterX; // -0.5 (screenX += glPixelCenterX)
-extern GLdouble glPixelCenterY; // -0.5
-extern GLdouble glTexelCenterX; // -0.5 (texCoord += glTexelCenterX)
-extern GLdouble glTexelCenterY; // -0.5
+extern GLint glFrameBufferBytesPerPixel;
+extern GLdouble glPixelCenterX;
+extern GLdouble glPixelCenterY;
+extern GLdouble glTexelCenterX;
+extern GLdouble glTexelCenterY;
 extern GLdouble glMonitorAspectRatio; // use glSetMonitorAspectRatio()
 extern GLboolean useNearPointers; // option for DJGPP
-extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require different
-extern GLboolean glFastTexturing; // use perspective approximations default false
+extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong by reflection vector
+extern GLboolean glFastTexturing; // use perspective approximations for speed, default false
 extern GLint glFastTextureSpanWidth; // default 16
 
 // ------------------------
@@ -74,20 +74,20 @@ GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint
 // ------------------------
 // ------------------------
 
-GLdouble glSeconds(); // tells the seconds ellapsed since the start of OpenGL (granularity seems to be 18.2 Hz, better use speaker.hpp for "non stuttering") // better reprogram timer interrupt, this one is quite stuttery
-GLvoid glSetTime(GLdouble seconds); // sets the time to <seconds>
+GLdouble glSeconds(); // seconds ellapsed since the start of OpenGL (it's quite stuttery on WatcomC)
+GLvoid glSetTime(GLdouble seconds); // sets the time in seconds
                         
-GLushort glNextKey(); // gets the next pressed key from the keyboard buffer (GL_VK_xxxx)
+GLushort glNextKey(); // gets the next pressed key from the keyboard buffer (GL_VK_xxxx or 'a' etc..)
 GLvoid glNextMouseDelta(GLdouble *deltaX, GLdouble *deltaY); // gets the current mouse delta and prepares for a new mouse delta (mousePos+=delta)
-GLubyte glMouseButtons(); // gets the current mouseButtons (& GL_MOUSE_BUTTON_xxxx)
-GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey); // gets the currently pressed special keys
+GLubyte glMouseButtons(); // the current mouseButtons (GL_MOUSE_BUTTON_xxxx)
+GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey);
 
 GLuint glGetTextureWidth(GLuint textureId);
 GLuint glGetTextureHeight(GLuint textureId);
 
 GLvoid glExplicitAlpha(GLboolean useExplicitAlpha, GLfloat alpha); // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer")
 GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat GLzp, GLint x, GLint y, GLuint color); // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp, without it, it will take the last one)
-GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for having point sprites quadratic on e.g. 16:9 screens
+GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for quadratic point sprites and lines on e.g. 16:9 screens
 
 // ------------------------
 // ------------------------

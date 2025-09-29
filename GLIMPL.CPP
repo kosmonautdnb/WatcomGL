@@ -60,7 +60,7 @@
 #endif // __DJGPP__
 
 #ifndef INLINE
-#define INLINE inline
+#  define INLINE inline
 #  define __FASTTEXTURING__ 1
 #endif // INLINE
 
