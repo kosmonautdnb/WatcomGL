@@ -21,7 +21,7 @@ Needs a fairly fast FreeDOS/DOS machine. It looks not so well optimized but does
 
 ## DJGPP OSMesa on DOS
 In this video featuring Wipeout on DOS it's:
-- OSMesa with around 40 FPS
+- OSMesa(around 2007) with around 40 FPS
 - WatcomGL with around 100 FPS
 
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
