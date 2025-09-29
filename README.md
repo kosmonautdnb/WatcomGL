@@ -32,7 +32,7 @@ https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip zip not b
 There is a also the TinyGL project.  
 https://github.com/erysdren/TinyGL.git  
 
-# Features
+# WatcomGL Features
 - Header Compatible With OpenGL
 - More Performant Than The Early OSMesa (The Original OpenGL)
 - MIT License For Ease Of Use
@@ -61,7 +61,7 @@ https://github.com/erysdren/TinyGL.git
 - Possible Two Sided Lighting
 - Complete Fixed Function OpenGL Pipeline
 
-# Drawbacks
+# WatcomGL Drawbacks
 - No MultiThreading
 - No MultiTexturing
 - No Assembly/MMX/SSE etc..
