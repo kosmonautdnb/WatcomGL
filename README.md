@@ -15,7 +15,7 @@ Example **void main()** in GL.H
 
 File names are upper case / DOS default. 
 
-# Repositories
+#  
 
 #### WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
