@@ -16,24 +16,6 @@ Yellow Rose of Texas is a 4k demo by FIT/BANDWAGON (_YELLOW.CPP)
 Needs a fairly fast FreeDOS/DOS machine. It looks not so well optimized but doesn't get faster by disabling all non fancy stuff. Main limiting factor by far seems to be memory bandwidth(+cache). File names are upper case which is DOS default.  
 
 (Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of the normal 32 MB in WatcomC++)  
-## Typical usage
-#include "GL.H"  
-
-void main() {  
-&emsp;if (!glVesa(640,480,32))  // try to use Vesa 640x480x32 + Linear Frame Buffer  
-&emsp;&emsp;glVGA(); // use 320x200 with pseudo 8192 Colors  
-
-&emsp;while(true) {  
-&emsp;&emsp;int key = glNextKey(); if (key == GL_VK_ESCAPE) break;  
-&emsp;&emsp;double mouseX, mouseY; glNextMouseDelta(&mouseX,&mouseY); int mouseButtons = glMouseButtons();  
-&emsp;&emsp;double time = glSeconds(); // rather bad granularity of 18.1 hz  
-&emsp;&emsp;glClearColor(0.25,0.5,1.0,0.0);  
-&emsp;&emsp;glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);  
-&emsp;&emsp; .. Render something ..  
-&emsp;&emsp;glRefresh(); // important  
-&emsp;}  
-&emsp;glDone();  
-}
 
 ## DJGPP OSMesa on DOS
 Comparing DJGPP OSMesa to DJGPP WatcomGL:  
