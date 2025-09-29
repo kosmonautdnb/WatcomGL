@@ -15,9 +15,7 @@ You can use this library as a general **C** software rasterizer, it is not limit
 
 Example **void main()** in GL.H  
 
-**Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)  
-
-(Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of the normal 32 MB in WatcomC++)  
+**Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 
 File names are upper case / DOS default. 
 
