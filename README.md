@@ -17,7 +17,7 @@ Needs a fairly fast FreeDOS/DOS machine. It looks not so well optimized but does
 
 (Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of the normal 32 MB in WatcomC++)  
 ## Typical usage
-#include "gl.h"  
+#include "GL.H"  
 
 void main() {  
 &emsp;if (!glVesa(640,480,32))  // try to use Vesa 640x480x32 + Linear Frame Buffer  
