@@ -1,9 +1,9 @@
-# Software OpenGL for DOS WatcomC++ and DOS DJGPP and just C
+# Software OpenGL for DOS WatcomC and DOS DJGPP and C/C++
 
 #### Just include and link:  
   GL.H  
   GLIMPL.CPP  
-#### to your WatcomC++/DJGPP/C project.  
+#### to your WatcomC/DJGPP/C project.  
 
 WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
