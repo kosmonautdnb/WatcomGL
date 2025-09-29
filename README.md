@@ -24,7 +24,6 @@ In this video featuring Wipeout on DOS it's:
 - OSMesa with around 40 FPS
 - WatcomGL with around 100 FPS
 
-Comparing DJGPP OSMesa to DJGPP WatcomGL:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
 DJGPP OSMesa library compile (DOS/OpenGL):
