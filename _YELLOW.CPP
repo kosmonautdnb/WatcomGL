@@ -1,4 +1,4 @@
-#include "gl.h"
+#include "GL.H"
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>

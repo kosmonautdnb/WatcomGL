@@ -38,7 +38,7 @@
 #include <dos.h>
 
 #define GLAD_GL_IMPLEMENTATION
-#include "gl.h"
+#include "GL.H"
 #define GLFW_INCLUDE_NONE
 //#include <GLFW/glfw3.h>
 class GLFWwindow;

@@ -1,6 +1,6 @@
 // Tests similar to the ones at nehe.gamedev.net in the internet
 //----
-#include "gl.h"
+#include "GL.H"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

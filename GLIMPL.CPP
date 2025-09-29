@@ -11,7 +11,7 @@
 // - Better take public domain PModeW for 256MB of memory.
 // --
 #define WATCOMGLAPI
-#include "gl.h"
+#include "GL.H"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
