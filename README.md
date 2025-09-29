@@ -7,7 +7,7 @@
 
 WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
-WatcomC library collection (with ImGui): https://github.com/kosmonautdnb/WatcomLibs  
+WatcomC library collection with e.g. ImGui: https://github.com/kosmonautdnb/WatcomLibs  
 
 You can use this library as a general C software rasterizer, it is not limited to DOS.
 
