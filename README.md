@@ -20,10 +20,10 @@ Needs a fairly fast FreeDOS/DOS machine. It looks not so well optimized but does
 # Other software OpenGL options
 
 ## DJGPP OSMesa on DOS
+In this video featuring Wipeout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS. 
+
 Comparing DJGPP OSMesa to DJGPP WatcomGL:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
-  
-In this video featuring Wipeout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS.  
   
 OSMesa library compile:
 https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip zip not by me.  
