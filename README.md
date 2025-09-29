@@ -29,7 +29,7 @@ Example **void main()** in GL.H
 
 #### WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs 
 
-# Other software OpenGL options
+## Other software OpenGL options
 
 ## DJGPP OSMesa on DOS
 OSMesa is providing the original software based OpenGL. Maintained for DOS until around 2007.
