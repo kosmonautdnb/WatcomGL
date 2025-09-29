@@ -1,4 +1,4 @@
-# Software OpenGL for WatcomC, DJGPP on DOS and any C/C++
+es# Software OpenGL for WatcomC, DJGPP on DOS and any C/C++
 
 #### Just include and link:  
   GL.H  
@@ -84,6 +84,7 @@ https://github.com/erysdren/TinyGL.git
 - No DisplayLists/VertexBuffers/IndexBuffers
 - No Shaders
 - Currently Just RGBA 32Bit Framebuffer
+- Uses Doubles and Floats
 - Just the very oldschool OpenGL
 
 This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
