@@ -7,7 +7,7 @@
 
 WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
-WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs  
+WatcomC library collection with e.g. Dear ImGui: https://github.com/kosmonautdnb/WatcomLibs  
 
 Yellow Rose of Texas is a 4K demo by FIT/BANDWAGON (_YELLOW.CPP)  
 
