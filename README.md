@@ -45,6 +45,7 @@ DJGPP OSMesa library compile (DOS/OpenGL):
 https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip **zip and compilation not by me**.  
 
 ## TinyGL
+TinyGL somehow emulates OpenGL in software, too.  
 https://github.com/erysdren/TinyGL.git  
 
 # WatcomGL Features
