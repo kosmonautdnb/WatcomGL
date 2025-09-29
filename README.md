@@ -56,6 +56,7 @@ https://github.com/erysdren/TinyGL.git
 
 # Features
 - Header Compatible With OpenGL
+- More performant than the early OSMesa (the original OpenGL)
 - MIT License For Ease Of Use
 - Vesa2.0 Calls For 32Bit Graphics Modes
 - Optional Fallback To VGA Mode With 320x200 And 8192 Simulated Colors
