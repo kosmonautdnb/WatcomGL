@@ -11,7 +11,7 @@ You can use this library as a general **C** software rasterizer, it is not limit
 
 Example **void main()** in GL.H  
 
-#### Stuff
+# Stuff
 
 **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 
