@@ -18,22 +18,22 @@
 
 //#define __GLDISABLEDOSFUNCTIONS__ 1
 #if (!defined(__WATCOMC__))&&(!defined(__DJGPP__))
-#  define __GLDISABLEDOSFUNCTIONS__ 1 // use glDirect()
+#define __GLDISABLEDOSFUNCTIONS__ 1 // use glDirect()
 #endif
 
 #ifndef __GLDISABLEDOSFUNCTIONS__ 
-#  include <time.h>
-#  ifdef __WATCOMC__
-#    include <i86.h>
-#    include <conio.h>
-#  endif // __WATCOMC__
-#  ifdef __DJGPP__
-#    include <dos.h>
-#    include <go32.h>
-#    include <dpmi.h>
-#    include <sys/nearptr.h>
-#    include <sys/farptr.h>
-#  endif // __DJGPP__
+#include <time.h>
+#ifdef __WATCOMC__
+#include <i86.h>
+#include <conio.h>
+#endif // __WATCOMC__
+#ifdef __DJGPP__
+#include <dos.h>
+#include <go32.h>
+#include <dpmi.h>
+#include <sys/nearptr.h>
+#include <sys/farptr.h>
+#endif // __DJGPP__
 #endif // __GLDISABLEDOSFUNCTIONS__ 
 
 #ifdef __cplusplus
@@ -46,22 +46,22 @@
 #endif // __cplusplus
 
 #ifndef PI
-#  define PI 3.14159265358979323846
+#define PI 3.14159265358979323846
 #endif // PI
 
 #ifdef __WATCOMC__
-#  define INLINE __inline
-#  define __FASTTEXTURING__ 1
+#define INLINE __inline
+#define __FASTTEXTURING__ 1
 #endif // __WATCOMC__
 
 #ifdef __DJGPP__
-#  define INLINE inline
-#  define __FASTTEXTURING__ 1
+#define INLINE inline
+#define __FASTTEXTURING__ 1
 #endif // __DJGPP__
 
 #ifndef INLINE
-#  define INLINE inline
-#  define __FASTTEXTURING__ 1
+#define INLINE inline
+#define __FASTTEXTURING__ 1
 #endif // INLINE
 
 #ifdef __cplusplus
