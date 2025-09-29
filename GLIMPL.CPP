@@ -2478,7 +2478,7 @@ GLvoid glBlendEquation(GLenum mode) {
 // -----------
 // -----------
 // -----------
-static GLvoid MulMatVecf(GLfloat *dest, GLfloat *m, GLfloat *v) {
+GLvoid glMulMatVecf(GLfloat *dest, GLfloat *m, GLfloat *v) {
   GLfloat x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
   GLfloat y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
   GLfloat z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
@@ -2489,7 +2489,7 @@ static GLvoid MulMatVecf(GLfloat *dest, GLfloat *m, GLfloat *v) {
   dest[3] = w;
 }
 
-static GLvoid MulMatVecd(GLdouble *dest, GLdouble *m, GLdouble *v) {
+GLvoid glMulMatVecd(GLdouble *dest, GLdouble *m, GLdouble *v) {
   GLdouble x = v[0] * m[0*4+0] + v[1] * m[1*4+0] + v[2] * m[2*4+0] + v[3] * m[3*4+0];
   GLdouble y = v[0] * m[0*4+1] + v[1] * m[1*4+1] + v[2] * m[2*4+1] + v[3] * m[3*4+1];
   GLdouble z = v[0] * m[0*4+2] + v[1] * m[1*4+2] + v[2] * m[2*4+2] + v[3] * m[3*4+2];
@@ -2500,15 +2500,15 @@ static GLvoid MulMatVecd(GLdouble *dest, GLdouble *m, GLdouble *v) {
   dest[3] = w;
 }
 
-static GLvoid MulMatMatf(GLfloat *dest, GLfloat *m1, GLfloat *m2) {
+GLvoid glMulMatMatf(GLfloat *dest, GLfloat *m1, GLfloat *m2) {
   glMatMulf(m1,m2,dest);
 }
 
-static GLvoid MulMatMatd(GLdouble *dest, GLdouble *m1, GLdouble *m2) {
+GLvoid glMulMatMatd(GLdouble *dest, GLdouble *m1, GLdouble *m2) {
   glMatMul(m1,m2,dest);
 }
 
-static GLvoid normalize(GLdouble *v) {
+GLvoid glNormalize(GLdouble *v) {
   GLdouble l = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   if (l > 0) {
     v[0] /= l;
@@ -2517,7 +2517,7 @@ static GLvoid normalize(GLdouble *v) {
   }
 }
 
-static GLvoid planeNormal(GLdouble *normal, GLdouble *pvector1, GLdouble *pvector2) {
+GLvoid glPlaneNormal(GLdouble *normal, GLdouble *pvector1, GLdouble *pvector2) {
   normal[0]=(pvector1[1]*pvector2[2])-(pvector1[2]*pvector2[1]);
   normal[1]=(pvector1[2]*pvector2[0])-(pvector1[0]*pvector2[2]);
   normal[2]=(pvector1[0]*pvector2[1])-(pvector1[1]*pvector2[0]);
@@ -2546,7 +2546,7 @@ GLvoid __glFrustum(GLdouble *matrix, GLdouble left, GLdouble right, GLdouble bot
   matrix2[13] = 0;
   matrix2[14] = (-temp*zfar)/temp4;
   matrix2[15] = 0.0;
-  MulMatMatd(matrix, matrix, matrix2);
+  glMulMatMatd(matrix, matrix, matrix2);
 }
 
 GLvoid __glPerspective(GLdouble *matrix, GLdouble fovyInDegrees, GLdouble aspectRatio, GLdouble znear, GLdouble zfar) {
@@ -2562,10 +2562,10 @@ GLvoid glLookAt(GLdouble *matrix, GLdouble *eyePosition3D, GLdouble *center3D, G
   forward[0] = center3D[0]-eyePosition3D[0];
   forward[1] = center3D[1]-eyePosition3D[1];
   forward[2] = center3D[2]-eyePosition3D[2];
-  normalize(forward);
-  planeNormal(side, forward, upVector3D);
-  normalize(side);
-  planeNormal(up, side, forward);
+  glNormalize(forward);
+  glPlaneNormal(side, forward, upVector3D);
+  glNormalize(side);
+  glPlaneNormal(up, side, forward);
   matrix2[0] = side[0];
   matrix2[4] = side[1];
   matrix2[8] = side[2];
@@ -2822,7 +2822,7 @@ GLint glUnProjectf(GLfloat winx, GLfloat winy, GLfloat winz, GLfloat *modelview,
   GLfloat m[16], A[16];
   GLfloat in[4], out[4];
   
-  MulMatMatf(A, projection, modelview);
+  glMulMatMatf(A, projection, modelview);
   if(glInvertMatrixf(A, m) == 0)
     return 0;
   
@@ -2831,7 +2831,7 @@ GLint glUnProjectf(GLfloat winx, GLfloat winy, GLfloat winz, GLfloat *modelview,
   in[2]=(GLfloat)(2.0*winz-1.0);
   in[3]=(GLfloat)(1.0);
   
-  MulMatVecf(out, m, in);
+  glMulMatVecf(out, m, in);
   if(out[3] == 0.0)
     return 0;
   out[3]=(GLfloat)(1.0/out[3]);
@@ -2846,7 +2846,7 @@ GLint glUnProject(GLdouble winx, GLdouble winy, GLdouble winz, GLdouble *modelvi
   GLdouble m[16], A[16];
   GLdouble in[4], out[4];
   
-  MulMatMatd(A, projection, modelview);
+  glMulMatMatd(A, projection, modelview);
   if(glInvertMatrix(A, m) == 0)
     return 0;
   
@@ -2855,7 +2855,7 @@ GLint glUnProject(GLdouble winx, GLdouble winy, GLdouble winz, GLdouble *modelvi
   in[2]=2.0*winz-1.0;
   in[3]=1.0;
   
-  MulMatVecd(out, m, in);
+  glMulMatVecd(out, m, in);
   if(out[3] == 0.0)
     return 0;
   out[3]=1.0/out[3];
@@ -2871,8 +2871,8 @@ GLint glProjectfx(GLfloat objx, GLfloat objy, GLfloat objz, GLfloat *modelview, 
   in[1] = objy;
   in[2] = objz;
   in[3] = 1;
-  MulMatVecf(in, modelview, in);
-  MulMatVecf(in, projection, in);
+  glMulMatVecf(in, modelview, in);
+  glMulMatVecf(in, projection, in);
   if (in[3] == 0) return 0;
   in[0]/=in[3];
   in[1]/=in[3];
@@ -2894,8 +2894,8 @@ GLint glProjectx(GLdouble objx, GLdouble objy, GLdouble objz, GLdouble *modelvie
   in[1] = objy;
   in[2] = objz;
   in[3] = 1;
-  MulMatVecd(in, modelview, in);
-  MulMatVecd(in, projection, in);
+  glMulMatVecd(in, modelview, in);
+  glMulMatVecd(in, projection, in);
   if (in[3] == 0) return 0;
   in[0]/=in[3];
   in[1]/=in[3];
@@ -3036,7 +3036,7 @@ GLvoid glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat
   matrix2[14]=(-zfar-znear)/temp4;
   matrix2[15]=1.0;
   GLdouble *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  MulMatMatd(matrix, matrix, matrix2);
+  glMulMatMatd(matrix, matrix, matrix2);
   glUpdateMatrix();
 }
 
@@ -3151,12 +3151,12 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
 // -----------
 // -----------
 // -----------
-static GLboolean dontPaint = GL_FALSE;
+GLboolean glDontPaint = GL_FALSE;
 INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   GLdouble nx = v2->sy - v1->sy;
   GLdouble ny = -(v2->sx - v1->sx);
   GLdouble l = (v0->sx - v1->sx)*nx + (v0->sy - v1->sy)*ny;
-  if (fabs(l) < 0.001) {l = 0.001;dontPaint=GL_TRUE;}
+  if (fabs(l) < 0.001) {l = 0.001;glDontPaint=GL_TRUE;}
   GLdouble p = (x - v1->sx)*nx + (y - v1->sy)*ny;
   return (p/l); // actually it must have been g/l and nx and ny been normalized
 }
@@ -3945,10 +3945,10 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   const GLuint wrapT = forceWrapRepeat ? GL_REPEAT : t->wrapT;
   GLint tpx,tpy,tpxa,tpya;
 
-  dontPaint = GL_FALSE;
+  glDontPaint = GL_FALSE;
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
-  if (dontPaint) return;
+  if (glDontPaint) return;
 #ifdef __FASTTEXTURING__
   GLboolean fastTexturing = glFastTexturing;
   GLint fastApprox = 0;
@@ -4438,8 +4438,8 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
 // --------------------------------------
 GLvoid glSetupMouse();
 GLushort glGetBiosGraphicsMode();
-static GLboolean glHiColor = GL_FALSE;
-static GLboolean glOtherFrame = GL_FALSE;
+GLboolean glHiColor = GL_FALSE;
+GLboolean glOtherFrame = GL_FALSE;
 GLubyte glHiRedTab[256];
 GLushort glGraphicsModeToRestore=0x02;
 GLint glKey = 0;
@@ -4565,7 +4565,7 @@ typedef struct {
 } _glRMREGS;
 typedef struct {
   uint16_t es,ds,fs,gs,ip,cs,sp,ss;
-} RMSREGS;
+} glRMSREGS;
 
 GLvoid *glVesaPointer(const GLvoid *d) {
   GLint segment = ((GLuint)d) >> 16;
@@ -4617,7 +4617,7 @@ uint16_t glDPMI_int386(uint32_t intno, glRMREGS *in, glRMREGS *out) {
   return out->ax;
 }
 
-uint16_t glDPMI_int386x(uint32_t intno, glRMREGS *in, glRMREGS *out, RMSREGS *sregs) {
+uint16_t glDPMI_int386x(uint32_t intno, glRMREGS *in, glRMREGS *out, glRMSREGS *sregs) {
   _glRMREGS rmregs;
   union REGS r;
   struct SREGS sr;
@@ -4653,7 +4653,7 @@ GLvoid glVBE_initRMBuf() {
 }
 
 GLvoid glVBE_callESDI(glRMREGS *regs, GLvoid *buffer, GLint size) {
-  RMSREGS sregs;
+  glRMSREGS sregs;
   glVBE_initRMBuf();
   sregs.es = (uint16_t)glVESABUF_rseg;
   regs->di = 0;
@@ -4762,7 +4762,7 @@ GLboolean glUnmapPhysical(GLuint linearAddress) {
   return GL_TRUE;
 }
 
-static GLvoid glExitVBEBuf() {
+GLvoid glExitVBEBuf() {
   _go32_dpmi_free_dos_memory(&glVESABUF_sel); // called at exit of app
 }
 
