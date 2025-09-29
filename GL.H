@@ -13,6 +13,25 @@
 #ifndef __GL_H__
 #define __GL_H__
 
+/*
+#include "GL.H"
+
+int main(int argc, const char **argv) {
+  if (!glVesa(640,480,32))
+    glVGA();
+
+  while(1) {
+    if (glNextKey() == GL_VK_ESCAPE) break;
+    glClearColor(0.2,0.4,0.6,1);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glRefresh();
+  }
+
+  glDone();
+  return 0;
+}
+*/
+
 #ifdef __cplusplus
 extern "C" {
 #endif
