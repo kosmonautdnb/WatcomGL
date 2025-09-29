@@ -5,9 +5,9 @@
   GLIMPL.CPP
 ####  
 
-WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
+#### WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
-WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs   
+#### WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs   
 
 Main limiting factor by far seems to be memory bandwidth with cache but you need a fast machine.
 
