@@ -40,7 +40,7 @@ Video:
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
 DJGPP OSMesa library compile (DOS/OpenGL):
-https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip **zip and compile not by me**.  
+https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip **zip and compilation not by me**.  
 
 ## TinyGL
 There is a also the TinyGL project.  
