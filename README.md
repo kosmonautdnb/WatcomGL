@@ -82,8 +82,9 @@ https://github.com/erysdren/TinyGL.git
 - Complete Fixed Function OpenGL Pipeline
 
 # Drawbacks
+- No MultiThreading
 - No MultiTexturing
-- No assembly/mmx/sse etc..
+- No Assembly/MMX/SSE etc..
 - No DisplayLists/VertexBuffers/IndexBuffers
 - No Shaders
 - Just the very oldschool OpenGL
