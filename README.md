@@ -9,7 +9,7 @@ Main performance limiting factor by far seems to be memory bandwidth with cache.
 
 You can use this library as a general **C** software rasterizer, it is not limited to DOS.  
 
-#   
+# Examples 
 
 Example **void main()** in GL.H  
 
