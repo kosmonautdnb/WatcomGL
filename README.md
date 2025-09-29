@@ -43,7 +43,6 @@ DJGPP OSMesa library compile (DOS/OpenGL):
 https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip **zip and compilation not by me**.  
 
 ## TinyGL
-There is a also the TinyGL project.  
 https://github.com/erysdren/TinyGL.git  
 
 # WatcomGL Features
