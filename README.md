@@ -50,7 +50,7 @@ https://github.com/erysdren/TinyGL.git
 
 # Features
 - Header Compatible With OpenGL
-- More performant than the early OSMesa (the original OpenGL)
+- More Performant Than The Early OSMesa (The Original OpenGL)
 - MIT License For Ease Of Use
 - Vesa2.0 Calls For 32Bit Graphics Modes
 - Optional Fallback To VGA Mode With 320x200 And 8192 Simulated Colors
@@ -59,6 +59,7 @@ https://github.com/erysdren/TinyGL.git
 - GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS  
 - glVertex3f And Alikes (Also glVertex3d And Alikes)  
 - Bilinear Texture Filtering And Nearest Point Texture Filtering  
+- Pixel And Texel Center
 - Perspective Correct Gouraud And Texture Mapping  
 - All OpenGL Blending / Transparency Modes  
 - Alpha Test  
