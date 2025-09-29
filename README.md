@@ -11,11 +11,11 @@ You can use this library as a general **C** software rasterizer, it is not limit
 
 Example **void main()** in GL.H  
 
-# Stuff
-
 **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 
 File names are upper case / DOS default. 
+
+# Stuff
 
 #### WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
