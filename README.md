@@ -34,7 +34,7 @@ Example **void main()** in GL.H
 ## DJGPP OSMesa on DOS
 OSMesa is providing the original software based OpenGL. Maintained for DOS until around 2007.
   
-In this rather trashy video featuring **Wipeout** on DOS it's ingame:
+In this rather trashy video featuring **Wipeout** on DOS, it's ingame:
 - DJGPP OSMesa around **40** FPS
 - DJGPP WatcomGL around **100** FPS  
 
