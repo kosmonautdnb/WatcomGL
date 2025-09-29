@@ -15,7 +15,7 @@ File names are upper case which is DOS default.
 
 Main limiting factor by far seems to be memory bandwidth with cache but you need a fast machine.
 
-You can use this library as a general C software rasterizer, it is not limited to DOS.  
+You can use this library as a general **C** software rasterizer, it is not limited to DOS.  
 
 (Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of the normal 32 MB in WatcomC++)  
 
