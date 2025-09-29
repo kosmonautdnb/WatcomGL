@@ -84,7 +84,7 @@ https://github.com/erysdren/TinyGL.git
 - No DisplayLists/VertexBuffers/IndexBuffers
 - No Shaders
 - Currently Just RGBA 32Bit Framebuffer
-- Uses Doubles and Floats
+- Uses Doubles And Floats
 - Just the very oldschool OpenGL
 
 This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
