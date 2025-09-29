@@ -39,7 +39,7 @@ void main() {
 Comparing DJGPP OSMesa to DJGPP WatcomGL:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
-OSMesa seems to be slower in the average usecase. On Wipeout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS.  
+In this video featuring Wipeout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS.  
   
 If you use DJGPP instead of WatcomC++, OSMesa would be an option:
 https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip (not by me).  
