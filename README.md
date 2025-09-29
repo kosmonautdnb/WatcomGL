@@ -26,7 +26,7 @@ Example **void main()** in GL.H
 ## DJGPP OSMesa on DOS
 In this video featuring **Wipeout** on DOS it's ingame:
 - OSMesa(around 2007) around 40 FPS
-- WatcomGL around 100 FPS
+- WatcomGL around 100 FPS  
 video:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
