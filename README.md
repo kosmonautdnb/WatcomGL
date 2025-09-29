@@ -11,6 +11,8 @@ You can use this library as a general **C** software rasterizer, it is not limit
 
 File names are upper case / DOS default.  
 
+# Quirks
+
 Just on WatcomC glSeconds() is stuttery (18.2Hz).
 
 # Examples 
