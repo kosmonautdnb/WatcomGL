@@ -36,7 +36,7 @@ https://github.com/erysdren/TinyGL.git
 # WatcomGL Features
 - Header Compatible With OpenGL
 - Just One Header And One C File
-- More Performant Than The Early OSMesa (The Original OpenGL)
+- More Performant Than The Early OSMesa (The Original DOS OpenGL)
 - MIT License For Ease Of Use
 - Vesa2.0 Calls For 32Bit Graphics Modes
 - Optional Fallback To VGA Mode With 320x200 And 8192 Simulated Colors
