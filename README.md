@@ -13,7 +13,7 @@ Yellow Rose of Texas is a 4k demo by FIT/BANDWAGON (_YELLOW.CPP)
 
 File names are upper case which is DOS default.  
 
-Needs a fairly fast FreeDOS/DOS machine. Main limiting factor by far seems to be memory bandwidth and cache.  
+Needs a fairly fast FreeDOS/DOS machine. Main limiting factor by far seems to be memory bandwidth with cache.  
 
 You can use this library as a general C software rasterizer, it is not limited to DOS.  
 
