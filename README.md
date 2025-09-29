@@ -35,8 +35,8 @@ void main() {
 &emsp;glDone();  
 }
 
-## Mesa
-Comparing DJGPP Mesa to DJGPP WatcomGL:  
+## (early)DOS OSMesa
+Comparing DJGPP OSMesa to DJGPP WatcomGL:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
 OSMesa seems to be slower in the average usecase. On Wipeout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS.  
