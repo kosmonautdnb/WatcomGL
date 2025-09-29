@@ -27,7 +27,7 @@ In this video featuring Wipeout on DOS it's:
 Comparing DJGPP OSMesa to DJGPP WatcomGL:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
-OSMesa library compile (OpenGL):
+DJGPP OSMesa library compile (OpenGL):
 https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip zip not by me.  
 
 ## TinyGL
