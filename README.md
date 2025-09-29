@@ -83,6 +83,7 @@ https://github.com/erysdren/TinyGL.git
 - No Assembly/MMX/SSE etc..
 - No DisplayLists/VertexBuffers/IndexBuffers
 - No Shaders
+- Currently Just RGBA 32Bit Framebuffer
 - Just the very oldschool OpenGL
 
 This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
