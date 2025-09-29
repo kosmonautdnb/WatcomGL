@@ -17,6 +17,8 @@ Main limiting factor by far seems to be memory bandwidth with cache but you need
 
 You can use this library as a general **C** software rasterizer, it is not limited to DOS.  
 
+Example **void main()** in GL.H  
+
 (Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of the normal 32 MB in WatcomC++)  
 
 # Other software OpenGL options
