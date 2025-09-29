@@ -17,7 +17,7 @@ Needs a fairly fast FreeDOS/DOS machine. It looks not so well optimized but does
 
 (Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of the normal 32 MB in WatcomC++)  
 
-## Other software OpenGL options
+# Other software OpenGL options
 
 ## DJGPP OSMesa on DOS
 Comparing DJGPP OSMesa to DJGPP WatcomGL:  
