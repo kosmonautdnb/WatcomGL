@@ -41,7 +41,7 @@ https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv
   
 In this video featuring Wipeout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS.  
   
-If you use DJGPP instead of WatcomC++, OSMesa would be an option:
+OSMesa library compile:
 https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip zip not by me.  
 
 ## TinyGL
