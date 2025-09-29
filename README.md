@@ -9,13 +9,13 @@ Main performance limiting factor by far seems to be memory bandwidth with cache.
 
 You can use this library as a general **C** software rasterizer, it is not limited to DOS.   
 
-# Quirks
+# - Quirks
 
 Just on WatcomC glSeconds() is stuttery (18.2Hz).
 
 File names are upper case / DOS default. 
 
-# Examples 
+# - Examples 
 
 Example **void main()** in GL.H  
 
