@@ -28,7 +28,7 @@ In this video featuring **Wipeout** on DOS it's ingame:
 - OSMesa(around 2007) around 40 FPS
 - WatcomGL around 100 FPS  
 
-video:  
+Video:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
 DJGPP OSMesa library compile (DOS/OpenGL):
