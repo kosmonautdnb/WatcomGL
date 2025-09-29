@@ -1,4 +1,4 @@
-# Software OpenGL for DOS WatcomC and DOS DJGPP and C/C++
+# Software OpenGL for WatcomC and DJGPP and C/C++
 
 #### Just include and link:  
   GL.H  
