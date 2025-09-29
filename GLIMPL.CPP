@@ -12,49 +12,75 @@
 // --
 #define WATCOMGLAPI
 #include "gl.h"
-#include <string.h>
 #include <math.h>
-#include <time.h>
+#include <string.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
+//#define __GLDISABLEDOSFUNCTIONS__ 1
+#if (!defined(__WATCOMC__))&&(!defined(__DJGPP__))
+#  define __GLDISABLEDOSFUNCTIONS__ 1 // use glDirect()
 #endif
+
+#ifndef __GLDISABLEDOSFUNCTIONS__ 
+#  include <time.h>
+#  ifdef __WATCOMC__
+#    include <i86.h>
+#    include <conio.h>
+#  endif // __WATCOMC__
+#  ifdef __DJGPP__
+#    include <dos.h>
+#    include <go32.h>
+#    include <dpmi.h>
+#    include <sys/nearptr.h>
+#    include <sys/farptr.h>
+#  endif // __DJGPP__
+#endif // __GLDISABLEDOSFUNCTIONS__ 
+
+#ifdef __cplusplus
+  extern "C" {GLvoid _GLContext_init(); GLvoid construtGL() {}}
+  class GLConstructor {public: GLConstructor() {_GLContext_init();}};
+  GLConstructor glConstruct;
+#else // __cplusplus
+  GLvoid _GLContext_init();
+  GLvoid construtGL() {_GLContext_init();}
+#endif // __cplusplus
 
 #ifndef PI
 #  define PI 3.14159265358979323846
-#endif
-
-//#define __GLDISABLEDOSFUNCTIONS__ 1 // you may use only glDirect();
-
-#define FLOOR(__v__) (__v__) // not needed since conversion to int truncates
-#define FABSF fabs
-#define DIVE255 /= 255 // >>= 8
-#define DIVQ255 / 255 // >> 8
-
-#define SWAP_ROWS_DOUBLE(a, b) { GLdouble *_tmp = a; (a)=(b); (b)=_tmp; }
-#define SWAP_ROWS_FLOAT(a, b) { GLfloat *_tmp = a; (a)=(b); (b)=_tmp; }
-#define MAT(m,r,c) (m)[(c)*4+(r)]
-#define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
-#define __MATRIX_STACK_SIZE__ 16
-#define __ATTRIB_STACK_SIZE__ 4
+#endif // PI
 
 #ifdef __WATCOMC__
 #  define INLINE __inline
 #  define __FASTTEXTURING__ 1
-#endif
+#endif // __WATCOMC__
 
 #ifdef __DJGPP__
 #  define INLINE inline
 #  define __FASTTEXTURING__ 1
-#endif
+#endif // __DJGPP__
 
 #ifndef INLINE
-#define INLINE
+#define INLINE inline
 #  define __FASTTEXTURING__ 1
-#endif
+#endif // INLINE
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
+#define __MATRIX_STACK_SIZE__ 16
+#define __ATTRIB_STACK_SIZE__ 4
+#define SWAP_ROWS_DOUBLE(a, b) { GLdouble *_tmp = a; (a)=(b); (b)=_tmp; }
+#define SWAP_ROWS_FLOAT(a, b) { GLfloat *_tmp = a; (a)=(b); (b)=_tmp; }
+#define MAT(m,r,c) (m)[(c)*4+(r)]
+#define FLIPRB(__v__) (((__v__)&0xff00ff00)|(((__v__)>>16) & 0x000000ff)|(((__v__)<<16) & 0x00ff0000))
 #define SEAMPREVENT -0.0000001 // landing directly on 0.5 screen (real screen) pixels caused seams on DJGPP
+#define FLOOR(__v__) (__v__) // not needed since conversion to int truncates (floor() is extremely slow)
+#define DIVE255 /= 255 // >>= 8
+#define DIVQ255 / 255 // >> 8
+
+glTexture glTextures[GLMAXTEXTURES]={0};
+
 GLdouble glPixelCenterX = -0.5+SEAMPREVENT;
 GLdouble glPixelCenterY = -0.5+SEAMPREVENT;
 GLdouble glTexelCenterX = -0.5;
@@ -85,8 +111,7 @@ GLint glCurrentVertexElement = 0;
 GLdouble additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
 
-glTexture glTextures[GLMAXTEXTURES]={{0,0,0,NULL,0,0,GL_LINEAR,1000,1000,GL_NEAREST,0,GL_REPEAT,GL_REPEAT,GL_REPEAT,1.f,0.f,1.f,1.f,GL_MODULATE}};
-
+GLvoid glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
 INLINE GLfloat glClampf(GLfloat a, GLfloat n, GLfloat x) {
   return a < n ? n : (a > x ? x : a);
@@ -306,29 +331,9 @@ INLINE GLboolean glIsEnabled2(_GLContext *context, GLenum prop) {
   return context->enabledCaps[prop&255];
 }
 
-#ifdef __cplusplus
-// in C++ the context is already constructed at program start
-}
-  class GLConstructor {
-  public:
-    GLConstructor() {_GLContext_init();}
-  };
-  GLConstructor glConstruct;
-extern "C" {
-GLvoid construtGL() {;}
-#endif
-#ifndef __cplusplus
-// in C glVesa,glVGA,glDirect firstly construct the context
-GLvoid construtGL() {
-  _GLContext_init();
-}
-#endif
-
 GLvoid glSetTriangleDrawer(TriangleDrawer drawer) {
   glDrawTriangle = drawer;
 }
-
-GLvoid glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
 GLuint glNewTexture() {
   for (GLint i = 1; i < GLMAXTEXTURES; i++) {
@@ -2421,8 +2426,7 @@ GLvoid glTexCoord4fv(const GLfloat *v) {
   glTexCoord4f(v[0],v[1],v[2],v[3]);
 }
 
-// mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
-GLvoid glPushAttrib(GLbitfield mask) {
+GLvoid glPushAttrib(GLbitfield mask) { // mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
   glContext.pushAttribBitsHere = mask; // maybe evaluate at glPopAttrib later
   memcpy(&glAttribStack[glAttribStackPos], &glContext, sizeof(_GLContext));
   glContext.pushAttribBitsHere = 0;
@@ -2608,9 +2612,9 @@ GLint glInvertMatrixf(const GLfloat *m, GLfloat *out)
    r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
 
    /* choose pivot - or die */
-   if (FABSF(r3[0]) > FABSF(r2[0])) SWAP_ROWS_FLOAT(r3, r2);
-   if (FABSF(r2[0]) > FABSF(r1[0])) SWAP_ROWS_FLOAT(r2, r1);
-   if (FABSF(r1[0]) > FABSF(r0[0])) SWAP_ROWS_FLOAT(r1, r0);
+   if (fabs(r3[0]) > fabs(r2[0])) SWAP_ROWS_FLOAT(r3, r2);
+   if (fabs(r2[0]) > fabs(r1[0])) SWAP_ROWS_FLOAT(r2, r1);
+   if (fabs(r1[0]) > fabs(r0[0])) SWAP_ROWS_FLOAT(r1, r0);
    if (0.0 == r0[0])  return GL_FALSE;
 
    /* eliminate first variable     */
@@ -2628,8 +2632,8 @@ GLint glInvertMatrixf(const GLfloat *m, GLfloat *out)
    if (s != 0.0) { r1[7] -= m1 * s; r2[7] -= m2 * s; r3[7] -= m3 * s; }
 
    /* choose pivot - or die */
-   if (FABSF(r3[1]) > FABSF(r2[1])) SWAP_ROWS_FLOAT(r3, r2);
-   if (FABSF(r2[1]) > FABSF(r1[1])) SWAP_ROWS_FLOAT(r2, r1);
+   if (fabs(r3[1]) > fabs(r2[1])) SWAP_ROWS_FLOAT(r3, r2);
+   if (fabs(r2[1]) > fabs(r1[1])) SWAP_ROWS_FLOAT(r2, r1);
    if (0.0 == r1[1])  return GL_FALSE;
 
    /* eliminate second variable */
@@ -2642,7 +2646,7 @@ GLint glInvertMatrixf(const GLfloat *m, GLfloat *out)
    s = r1[7]; if (0.0 != s) { r2[7] -= m2 * s; r3[7] -= m3 * s; }
 
    /* choose pivot - or die */
-   if (FABSF(r3[2]) > FABSF(r2[2])) SWAP_ROWS_FLOAT(r3, r2);
+   if (fabs(r3[2]) > fabs(r2[2])) SWAP_ROWS_FLOAT(r3, r2);
    if (0.0 == r2[2])  return GL_FALSE;
 
    /* eliminate third variable */
@@ -2720,9 +2724,9 @@ GLint glInvertMatrix(const GLdouble *m, GLdouble *out)
    r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
 
    /* choose pivot - or die */
-   if (FABSF(r3[0]) > FABSF(r2[0])) SWAP_ROWS_DOUBLE(r3, r2);
-   if (FABSF(r2[0]) > FABSF(r1[0])) SWAP_ROWS_DOUBLE(r2, r1);
-   if (FABSF(r1[0]) > FABSF(r0[0])) SWAP_ROWS_DOUBLE(r1, r0);
+   if (fabs(r3[0]) > fabs(r2[0])) SWAP_ROWS_DOUBLE(r3, r2);
+   if (fabs(r2[0]) > fabs(r1[0])) SWAP_ROWS_DOUBLE(r2, r1);
+   if (fabs(r1[0]) > fabs(r0[0])) SWAP_ROWS_DOUBLE(r1, r0);
    if (0.0 == r0[0])  return GL_FALSE;
 
    /* eliminate first variable     */
@@ -2740,8 +2744,8 @@ GLint glInvertMatrix(const GLdouble *m, GLdouble *out)
    if (s != 0.0) { r1[7] -= m1 * s; r2[7] -= m2 * s; r3[7] -= m3 * s; }
 
    /* choose pivot - or die */
-   if (FABSF(r3[1]) > FABSF(r2[1])) SWAP_ROWS_DOUBLE(r3, r2);
-   if (FABSF(r2[1]) > FABSF(r1[1])) SWAP_ROWS_DOUBLE(r2, r1);
+   if (fabs(r3[1]) > fabs(r2[1])) SWAP_ROWS_DOUBLE(r3, r2);
+   if (fabs(r2[1]) > fabs(r1[1])) SWAP_ROWS_DOUBLE(r2, r1);
    if (0.0 == r1[1])  return GL_FALSE;
 
    /* eliminate second variable */
@@ -2754,7 +2758,7 @@ GLint glInvertMatrix(const GLdouble *m, GLdouble *out)
    s = r1[7]; if (0.0 != s) { r2[7] -= m2 * s; r3[7] -= m3 * s; }
 
    /* choose pivot - or die */
-   if (FABSF(r3[2]) > FABSF(r2[2])) SWAP_ROWS_DOUBLE(r3, r2);
+   if (fabs(r3[2]) > fabs(r2[2])) SWAP_ROWS_DOUBLE(r3, r2);
    if (0.0 == r2[2])  return GL_FALSE;
 
    /* eliminate third variable */
@@ -2813,10 +2817,7 @@ GLint gluInvertMatrix(const GLdouble *m, GLdouble *dest) {
   return glInvertMatrix(m,dest);
 }
 
-GLint glUnProjectf(GLfloat winx, GLfloat winy, GLfloat winz,
-     GLfloat *modelview, GLfloat *projection,
-     GLint *viewport,
-     GLfloat *objectCoordinate)
+GLint glUnProjectf(GLfloat winx, GLfloat winy, GLfloat winz, GLfloat *modelview, GLfloat *projection, GLint *viewport, GLfloat *objectCoordinate)
 {
   GLfloat m[16], A[16];
   GLfloat in[4], out[4];
@@ -2840,10 +2841,7 @@ GLint glUnProjectf(GLfloat winx, GLfloat winy, GLfloat winz,
   return 1;
 }
 
-GLint glUnProject(GLdouble winx, GLdouble winy, GLdouble winz,
-     GLdouble *modelview, GLdouble *projection,
-     GLint *viewport,
-     GLdouble *objectCoordinate)
+GLint glUnProject(GLdouble winx, GLdouble winy, GLdouble winz, GLdouble *modelview, GLdouble *projection, GLint *viewport, GLdouble *objectCoordinate)
 {
   GLdouble m[16], A[16];
   GLdouble in[4], out[4];
@@ -2867,10 +2865,7 @@ GLint glUnProject(GLdouble winx, GLdouble winy, GLdouble winz,
   return 1;
 }
 
-GLint glProjectfx(GLfloat objx, GLfloat objy, GLfloat objz,
-  GLfloat *modelview, GLfloat *projection,
-  GLint *viewport,
-  GLfloat *windowCoordinate) {
+GLint glProjectfx(GLfloat objx, GLfloat objy, GLfloat objz, GLfloat *modelview, GLfloat *projection, GLint *viewport, GLfloat *windowCoordinate) {
   GLfloat in[4];
   in[0] = objx;
   in[1] = objy;
@@ -2893,10 +2888,7 @@ GLint glProjectfx(GLfloat objx, GLfloat objy, GLfloat objz,
   return 1;
 }
 
-GLint glProjectx(GLdouble objx, GLdouble objy, GLdouble objz,
-  GLdouble *modelview, GLdouble *projection,
-  GLint *viewport,
-  GLdouble *windowCoordinate) {
+GLint glProjectx(GLdouble objx, GLdouble objy, GLdouble objz, GLdouble *modelview, GLdouble *projection, GLint *viewport, GLdouble *windowCoordinate) {
   GLdouble in[4];
   in[0] = objx;
   in[1] = objy;
@@ -2919,11 +2911,7 @@ GLint glProjectx(GLdouble objx, GLdouble objy, GLdouble objz,
   return 1;
 }
 
-GLint glProjectf(GLfloat objx, GLfloat objy, GLfloat objz,
-  GLfloat *modelview, GLfloat *projection,
-  GLint *viewport,
-  GLfloat *windowCoordinate)
-{
+GLint glProjectf(GLfloat objx, GLfloat objy, GLfloat objz, GLfloat *modelview, GLfloat *projection, GLint *viewport, GLfloat *windowCoordinate) {
   GLfloat fTempo[8];
   fTempo[0]=modelview[0]*objx+
   modelview[4]*objy+
@@ -2969,11 +2957,7 @@ GLint glProjectf(GLfloat objx, GLfloat objy, GLfloat objz,
   return 1;
 }
 
-GLint glProject(GLdouble objx, GLdouble objy, GLdouble objz,
- GLdouble *modelview, GLdouble *projection,
- GLint *viewport,
- GLdouble *windowCoordinate)
-{
+GLint glProject(GLdouble objx, GLdouble objy, GLdouble objz, GLdouble *modelview, GLdouble *projection, GLint *viewport, GLdouble *windowCoordinate) {
   GLdouble fTempo[8];
   fTempo[0]=modelview[0]*objx+
   modelview[4]*objy+
@@ -3153,7 +3137,6 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
   return r;
 }
 
-
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
@@ -3234,7 +3217,7 @@ INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVert
   GLint dmaxx = pmaxx;\
   pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
   zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth];\
-  GLint xp[3]; int xc=0;\
+  GLint xp[3]; GLint xc=0;\
   if ((y >= vk0->sy) && (y < vk1->sy)) xp[xc++]=(GLint)((vk1->sx-vk0->sx)*(y-vk0->sy)/(vk1->sy-vk0->sy)+vk0->sx);\
   if ((y >= vk0->sy) && (y < vk2->sy)) xp[xc++]=(GLint)((vk2->sx-vk0->sx)*(y-vk0->sy)/(vk2->sy-vk0->sy)+vk0->sx);\
   if ((y >= vk1->sy) && (y < vk2->sy)) xp[xc++]=(GLint)((vk2->sx-vk1->sx)*(y-vk1->sy)/(vk2->sy-vk1->sy)+vk1->sx);\
@@ -4295,16 +4278,177 @@ GLvoid glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glV
   glDrawTriangle(context,v2,v3,v0);
 }
 
-GLboolean noRefresh = GL_FALSE;
+// ------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+
+GLfloat glPixelLastSX = 0;
+GLfloat glPixelLastSY = 0;
+GLboolean glPixelLastValid = GL_FALSE;
+GLboolean glDirectBlit = GL_FALSE;
+
+GLvoid glSetMonitorAspectRatio(GLfloat aspect) {
+  glContext.zoomX = 1.0/(aspect*glFrameBufferHeight0/glFrameBufferWidth0);
+  glContext.zoomY = 1.0;
+}
+
+GLdouble glGetMonitorAspectRatio() {
+  return 1.0/glContext.zoomX/((GLdouble)glFrameBufferHeight0/glFrameBufferWidth0);
+}
+
+GLvoid glZoomX(GLfloat zoom) {
+  glContext.zoomX = zoom;
+}
+
+GLvoid glZoomY(GLfloat zoom) {
+  glContext.zoomY = zoom;
+}
+
+GLfloat glGetZoomX() {
+  return (GLfloat)glContext.zoomX;
+}
+
+GLfloat glGetZoomY() {
+  return (GLfloat)glContext.zoomY;
+}
+
+GLvoid glExplicitAlpha(GLboolean useExplicitAlpha, GLfloat alpha) {
+  glContext.explicitAlpha = alpha;
+  glContext.useExplicitAlpha = useExplicitAlpha;
+}
+
+GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat zp, GLint x, GLint y, GLuint color) {
+  if (newXYZ) {
+    glVertex v;
+    v.vertexX = xp;
+    v.vertexY = yp;
+    v.vertexZ = zp;
+    v.vertexW = 1;
+    glPixelLastValid = (glTransformVertex(&glContext, &v, GL_TRUE) == 0);
+    glPixelLastSX = (GLfloat)v.sx;
+    glPixelLastSY = (GLfloat)v.sy;
+  }
+  if (glPixelLastValid)
+  {
+    GLint glClipRectX0 = 0;
+    GLint glClipRectY0 = 0;
+    GLint glClipRectX1 = glFrameBufferWidth;
+    GLint glClipRectY1 = glFrameBufferHeight;
+    combineIntoWindow(&glClipRectX0,&glClipRectY0,&glClipRectX1,&glClipRectY1,glContext.viewportX0,glContext.viewportY0,glContext.viewportX1,glContext.viewportY1);
+    if (glIsEnabled(GL_SCISSOR_TEST)) {
+      combineIntoWindow(&glClipRectX0,&glClipRectY0,&glClipRectX1,&glClipRectY1,glContext.scissorX0,glContext.scissorY0,glContext.scissorX1,glContext.scissorY1);
+    }
+    GLint px = (GLint)(glPixelLastSX+x);
+    GLint py = (GLint)(glPixelLastSY+y);
+    if (px < glClipRectX0) return GL_FALSE; 
+    if (py < glClipRectY0) return GL_FALSE;
+    if (px >= glClipRectX1) return GL_FALSE;
+    if (py >= glClipRectY1) return GL_FALSE;
+    glFrameBuffer[px+py*glFrameBufferWidth] = color;
+    return GL_TRUE;
+  }
+  return GL_FALSE;
+}
+
+GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData) {
+  if (glContext.boundTextures[glContext.activeTexture] == 0) 
+    return;
+  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
+  if (t->data != NULL)  {
+    free(t->data);
+    t->data = NULL;
+  }
+  t->data = textureData;
+  t->width = width;
+  t->height = height;
+}
+
+GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height) {
+  if (frameBufferOrNULL == NULL) {
+    glFrameBufferWidth = glFrameBufferWidth0;
+    glFrameBufferHeight = glFrameBufferHeight0;
+    glFrameBuffer = glFrameBuffer0;
+    glDepthBuffer = glDepthBuffer0;
+  } else {
+    glFrameBufferWidth = width;
+    glFrameBufferHeight = height;
+    glFrameBuffer = frameBufferOrNULL;
+    glDepthBuffer = depthBuffer;
+  }
+  glViewport(0,0,glFrameBufferWidth,glFrameBufferHeight);
+}
+
+GLuint glGetTextureWidth(GLuint textureId) {
+  glTexture *t = &glTextures[textureId];
+  if (t->name == 0x00) return 0;
+  return t->width;
+
+}
+
+GLuint glGetTextureHeight(GLuint textureId) {
+  glTexture *t = &glTextures[textureId];
+  if (t->name == 0x00) return 0;
+  return t->height;
+}
+
+GLuint *glGetTexturePointer(GLuint textureId) {
+  glTexture *t = &glTextures[textureId];
+  if (t->name == 0x00) return NULL;
+  return t->data;
+}
+
+GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height) {
+  construtGL();
+  glFrameBufferWidth = width;
+  glFrameBufferHeight = height;
+  glFrameBuffer = frameBuffer;
+  glDepthBuffer = depthBuffer;
+  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*glFrameBufferBytesPerPixel);
+  memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
+  glFrameBufferWidth0 = glFrameBufferWidth;
+  glFrameBufferHeight0 = glFrameBufferHeight;
+  glFrameBuffer0 = glFrameBuffer;
+  glDepthBuffer0 = glDepthBuffer;
+  glSetTime(0);
+  glViewport(0,0,width,height);
+  glDirectBlit = GL_TRUE;
+  return GL_TRUE;
+}
+// --------------------------------------
+
+// --------------------------------------
+#ifdef __GLDISABLEDOSFUNCTIONS__
+// --------------------------------------
+GLdouble glSeconds() {return 0;}
+GLvoid glSetTime(GLdouble seconds) {;}
+GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey) {;}
+GLvoid glSetupMouse() {;}
+GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {;}
+GLubyte glMouseButtons() {return 0;}
+GLvoid glSetMousePos(GLint x, GLint y) {;}
+GLushort glNextKey() {return 0;}
+GLvoid glDone() {;}
+GLvoid glRefresh() {;}
+GLboolean glVGA() {return GL_FALSE;}
+GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
+// --------------------------------------
+#else // __GLDISABLEDOSFUNCTIONS__
+// --------------------------------------
 GLvoid glSetupMouse();
-
-// --------------------------------------
-typedef GLubyte uint8_t;
-typedef GLushort uint16_t;
-typedef GLuint uint32_t;
-// --------------------------------------
-
-#ifndef __GLDISABLEDOSFUNCTIONS__
+GLushort glGetBiosGraphicsMode();
+static GLboolean glHiColor = GL_FALSE;
+static GLboolean glOtherFrame = GL_FALSE;
+GLubyte glHiRedTab[256];
+GLushort glGraphicsModeToRestore=0x02;
+GLint glKey = 0;
+GLint glLastMouseX = 0;
+GLint glLastMouseY = 0;
+GLint glLastMouseB = 0;
+GLint glMouseX = 0;
+GLint glMouseY = 0;
+GLint glMouseB = 0;
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
@@ -4316,18 +4460,10 @@ typedef GLuint uint32_t;
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
-// -----------
-// -----------
-// -----------
-#ifdef __DJGPP__
-#define DJGPPVESA 1
-#endif
-
-extern uint16_t glGraphicsModeToRestore;
-uint16_t getBiosGraphicsMode();
 GLboolean glVesaBGRA = GL_TRUE;
-
-// --------------------------------------
+typedef GLubyte uint8_t;
+typedef GLushort uint16_t;
+typedef GLuint uint32_t;
 #pragma pack(push)
 #pragma pack(1)
 typedef struct glVbeInfoBlock {
@@ -4381,22 +4517,26 @@ typedef struct glVbeModeInfo {
   uint8_t reserved1[256-50];
 } glVbeModeInfo;
 #pragma pack(pop)
+// --------------------------------------
 
 // --------------------------------------
 // ---- DPMI for VESA ---
 // --------------------------------------
 
 // --------------------------------------
-#ifndef DJGPPVESA
+#ifdef __WATCOMC__
 // --------------------------------------
 
-#include <i86.h>
 #define DJGPPVGAMEMON
 #define DJGPPVGAMEMOFF
 #define VGARAMBASE (0xa0000)
+#define IN(reg) rmregs.e##reg = in->##reg
+#define OUT(reg) out->##reg = (uint16_t)rmregs.e##reg
 
-#include <conio.h>
-#include <stdio.h>
+GLint glVESABUF_sel=0x00;
+GLint glVESABUF_rseg=0x00;
+GLint glVESABUF_len=1024;
+
 typedef struct {
   uint16_t di;
   uint16_t si;
@@ -4409,7 +4549,8 @@ typedef struct {
   uint16_t flags;
   uint16_t es,ds,fs,gs,ip,cs,sp,ss;
   uint32_t cflag;
-} RMREGS;
+} glRMREGS;
+
 typedef struct {
   uint32_t edi;
   uint32_t esi;
@@ -4421,22 +4562,18 @@ typedef struct {
   uint32_t eax;
   uint16_t flags;
   uint16_t es,ds,fs,gs,ip,cs,sp,ss;
-} _RMREGS;
+} _glRMREGS;
 typedef struct {
   uint16_t es,ds,fs,gs,ip,cs,sp,ss;
 } RMSREGS;
 
-#define IN(reg) rmregs.e##reg = in->##reg
-#define OUT(reg) out->##reg = (uint16_t)rmregs.e##reg
 GLvoid *glVesaPointer(const GLvoid *d) {
   GLint segment = ((GLuint)d) >> 16;
   GLint offset = ((GLuint)d) & 0xffff;
   return (GLvoid*)(((GLuint)segment<<4)+offset);
 }
-GLint VESABUF_sel=0x00;
-GLint VESABUF_rseg=0x00;
-GLint VESABUF_len=1024;
-GLvoid DPMI_allocRealSeg(GLint size, GLint *sel, GLint *r_seg) {
+
+GLvoid glDPMI_allocRealSeg(GLint size, GLint *sel, GLint *r_seg) {
   union REGS r;
   r.w.ax = 0x100;
   r.w.bx = (uint16_t)((size+0x0f)>>4);
@@ -4446,17 +4583,20 @@ GLvoid DPMI_allocRealSeg(GLint size, GLint *sel, GLint *r_seg) {
   *sel = r.w.dx;
   *r_seg = r.w.ax;
 }
-GLvoid DPMI_freeRealSeg(uint16_t sel) {
+
+GLvoid glDPMI_freeRealSeg(uint16_t sel) {
   union REGS r;
   r.w.ax = 0x101;
   r.w.dx = (uint16_t)sel;
   int386(0x31,&r,&r);
 }
-static GLvoid ExitVBEBuf() {
-  DPMI_freeRealSeg((uint16_t)VESABUF_sel);
+
+GLvoid glExitVBEBuf() {
+  glDPMI_freeRealSeg((uint16_t)glVESABUF_sel);
 }
-uint16_t DPMI_int386(uint32_t intno, RMREGS *in, RMREGS *out) {
-  _RMREGS rmregs;
+
+uint16_t glDPMI_int386(uint32_t intno, glRMREGS *in, glRMREGS *out) {
+  _glRMREGS rmregs;
   union REGS r;
   struct SREGS sr;
 
@@ -4476,8 +4616,9 @@ uint16_t DPMI_int386(uint32_t intno, RMREGS *in, RMREGS *out) {
   out->cflag = rmregs.flags & 0x01;
   return out->ax;
 }
-uint16_t DPMI_int386x(uint32_t intno, RMREGS *in, RMREGS *out, RMSREGS *sregs) {
-  _RMREGS rmregs;
+
+uint16_t glDPMI_int386x(uint32_t intno, glRMREGS *in, glRMREGS *out, RMSREGS *sregs) {
+  _glRMREGS rmregs;
   union REGS r;
   struct SREGS sr;
 
@@ -4492,7 +4633,7 @@ uint16_t DPMI_int386x(uint32_t intno, RMREGS *in, RMREGS *out, RMSREGS *sregs) {
   r.h.bh = 0;
   r.w.cx = 0;
   sr.es = sr.ds;
-  r.x.edi = (unsigned)&rmregs;
+  r.x.edi = (GLuint)&rmregs;
   int386x(0x31,&r,&r,&sr);
 
   OUT(ax); OUT(bx); OUT(cx); OUT(dx); OUT(si); OUT(di);
@@ -4503,23 +4644,25 @@ uint16_t DPMI_int386x(uint32_t intno, RMREGS *in, RMREGS *out, RMSREGS *sregs) {
   out->cflag = rmregs.flags & 0x01;
   return out->ax;
 }
-GLvoid VBE_initRMBuf() {
-  if (!VESABUF_sel) {
-    DPMI_allocRealSeg(VESABUF_len,&VESABUF_sel,&VESABUF_rseg);
-    atexit(ExitVBEBuf);
+
+GLvoid glVBE_initRMBuf() {
+  if (!glVESABUF_sel) {
+    glDPMI_allocRealSeg(glVESABUF_len,&glVESABUF_sel,&glVESABUF_rseg);
+    atexit(glExitVBEBuf);
   }
 }
-GLvoid VBE_callESDI(RMREGS *regs, GLvoid *buffer, GLint size) {
+
+GLvoid glVBE_callESDI(glRMREGS *regs, GLvoid *buffer, GLint size) {
   RMSREGS sregs;
-  VBE_initRMBuf();
-  sregs.es = (uint16_t)VESABUF_rseg;
+  glVBE_initRMBuf();
+  sregs.es = (uint16_t)glVESABUF_rseg;
   regs->di = 0;
-  _fmemcpy(MK_FP(VESABUF_sel,0),buffer,size);
-  DPMI_int386x(0x10,regs,regs,&sregs);
-  _fmemcpy(buffer,MK_FP(VESABUF_sel,0),size);
-  //ExitVBEBuf();
+  _fmemcpy(MK_FP(glVESABUF_sel,0),buffer,size);
+  glDPMI_int386x(0x10,regs,regs,&sregs);
+  _fmemcpy(buffer,MK_FP(glVESABUF_sel,0),size);
 }
-uint32_t mapPhysicalToLinear(GLuint physicalAddress, GLuint size) {
+
+uint32_t glMapPhysicalToLinear(GLuint physicalAddress, GLuint size) {
   union REGS r;
   r.w.ax = 0x800;
   r.w.bx = (uint16_t)(physicalAddress>>16);
@@ -4531,7 +4674,8 @@ uint32_t mapPhysicalToLinear(GLuint physicalAddress, GLuint size) {
     return 0;
   return (((uint32_t)r.w.bx)<<16)+r.w.cx;
 }
-GLboolean unmapPhysical(GLuint linearAddress) {
+
+GLboolean glUnmapPhysical(GLuint linearAddress) {
   union REGS r;
   r.w.ax = 0x801;
   r.w.bx = (uint16_t)(linearAddress>>16);
@@ -4541,16 +4685,14 @@ GLboolean unmapPhysical(GLuint linearAddress) {
     return GL_FALSE;
   return GL_TRUE;
 }
-// --------------------------------------
-// --------------------------------------
-// --------------------------------------
+
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
-  glGraphicsModeToRestore = getBiosGraphicsMode();
+  glGraphicsModeToRestore = glGetBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
   glVbeModeInfo modeInfo;
-  RMREGS regs;
+  glRMREGS regs;
   regs.ax = 0x4f00;
-  VBE_callESDI(&regs,&vbeInfo,sizeof(glVbeInfoBlock));
+  glVBE_callESDI(&regs,&vbeInfo,sizeof(glVbeInfoBlock));
   if (regs.ax != 0x004f) return GL_FALSE;
   uint16_t *u = (uint16_t *)glVesaPointer(vbeInfo.videoModes);
   uint16_t *v = u;
@@ -4562,16 +4704,16 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     GLint mode = *v;
     regs.ax = 0x4f01;
     regs.cx = (uint16_t)mode;
-    VBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
+    glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
       construtGL();
       regs.ax = 0x4f02;
       regs.bx = (uint16_t)(mode|0x4000);
-      DPMI_int386(0x10,&regs,&regs); // needed here for later mouse setup
+      glDPMI_int386(0x10,&regs,&regs); // needed here for later mouse setup
       glVesaBGRA = (modeInfo.bluePosition == 0) ? GL_TRUE : GL_FALSE;
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
-      glFrameBufferDedicated = (GLuint*)mapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
+      glFrameBufferDedicated = (GLuint*)glMapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
       glFrameBuffer = (GLuint *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
       glDepthBuffer = (GLfloat *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
       memset(glFrameBufferDedicated,0,glFrameBufferWidth*glFrameBufferHeight*4);
@@ -4585,7 +4727,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glSetTime(0);
       glViewport(0,0,xRes,yRes);
       free(w);
-      noRefresh = GL_FALSE;
+      glDirectBlit = GL_FALSE;
       return GL_TRUE;
     }
     v++;
@@ -4594,45 +4736,47 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
   return GL_FALSE;
 }
 // --------------------------------------
-#else // DJGPPVESA
+#endif // __WATCOMC__
+// --------------------------------------
+#ifdef __DJGPP__
 // --------------------------------------
 
-#include <dos.h>
-#include <go32.h>
-#include <dpmi.h>
-#include <sys/nearptr.h>
-#include <sys/farptr.h>
 #define VGARAMBASE (0xa0000+__djgpp_conventional_base)
 #define DJGPPVGAMEMON if (useNearPointers) __djgpp_nearptr_enable();
 #define DJGPPVGAMEMOFF if (useNearPointers) __djgpp_nearptr_disable();
 
-GLint VESABUF_len=1024; // length of struct to work on with realmode es:di
-GLboolean VESABUF_sel_init = GL_FALSE; // we need VESABUF_sel just once
-__dpmi_meminfo linearFrameBufferStruct; // physical to linear address mapping for linear framebuffer
-_go32_dpmi_seginfo VESABUF_sel; // struct to work on with realmode es:di
-GLint vesasel; // final linear framebuffer accessor (_farpokel)
+GLint glVESABUF_len=1024; // length of struct to work on with realmode es:di
 
-GLboolean unmapPhysical(GLuint linearAddress) {
-  __dpmi_free_physical_address_mapping(&linearFrameBufferStruct);
-  __dpmi_free_ldt_descriptor(vesasel);
+GLboolean glVESABUF_sel_init = GL_FALSE; // we need VESABUF_sel just once
+
+GLint glVesasel; // final linear framebuffer accessor (_farpokel)
+
+_go32_dpmi_seginfo glVESABUF_sel; // struct to work on with realmode es:di
+
+__dpmi_meminfo glLinearFrameBufferStruct; // physical to linear address mapping for linear framebuffer
+
+
+GLboolean glUnmapPhysical(GLuint linearAddress) {
+  __dpmi_free_physical_address_mapping(&glLinearFrameBufferStruct);
+  __dpmi_free_ldt_descriptor(glVesasel);
   return GL_TRUE;
 }
 
-static GLvoid ExitVBEBuf() {
-  _go32_dpmi_free_dos_memory(&VESABUF_sel); // called at exit of app
+static GLvoid glExitVBEBuf() {
+  _go32_dpmi_free_dos_memory(&glVESABUF_sel); // called at exit of app
 }
 
-GLvoid VBE_callESDI(__dpmi_regs *regs, GLvoid *buffer, GLint size) {
-  if (!VESABUF_sel_init) {
-    VESABUF_sel_init = GL_TRUE;
-    VESABUF_sel.size = (VESABUF_len+15)/16;
-    _go32_dpmi_allocate_dos_memory(&VESABUF_sel);
-    atexit(ExitVBEBuf);
+GLvoid glVBE_callESDI(__dpmi_regs *regs, GLvoid *buffer, GLint size) {
+  if (!glVESABUF_sel_init) {
+    glVESABUF_sel_init = GL_TRUE;
+    glVESABUF_sel.size = (glVESABUF_len+15)/16;
+    _go32_dpmi_allocate_dos_memory(&glVESABUF_sel);
+    atexit(glExitVBEBuf);
   }
-  regs->x.es = VESABUF_sel.rm_segment;
-  regs->x.di = VESABUF_sel.rm_offset;
-  unsigned long addr; // 32 bit
-  __dpmi_get_segment_base_address(VESABUF_sel.pm_selector, &addr);
+  regs->x.es = glVESABUF_sel.rm_segment;
+  regs->x.di = glVESABUF_sel.rm_offset;
+  unsigned long addr; // here long seems to be 64bit
+  __dpmi_get_segment_base_address(glVESABUF_sel.pm_selector, &addr);
   DJGPPVGAMEMON
   GLvoid *ptr = (GLvoid*)(addr+__djgpp_conventional_base);
   memcpy(ptr,buffer,size);
@@ -4641,14 +4785,15 @@ GLvoid VBE_callESDI(__dpmi_regs *regs, GLvoid *buffer, GLint size) {
   //printf("%c%c%c%c\n",((GLbyte*)buffer)[0],((GLbyte*)buffer)[1],((GLbyte*)buffer)[2],((GLbyte*)buffer)[3]);
   DJGPPVGAMEMOFF
 }
+
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
-  glGraphicsModeToRestore = getBiosGraphicsMode();
+  glGraphicsModeToRestore = glGetBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
   glVbeModeInfo modeInfo;
   __dpmi_regs regs;
   memset(&regs,0,sizeof(__dpmi_regs));
   regs.x.ax = 0x4f00;
-  VBE_callESDI(&regs,&vbeInfo,sizeof(glVbeInfoBlock));
+  glVBE_callESDI(&regs,&vbeInfo,sizeof(glVbeInfoBlock));
   if (regs.x.ax != 0x004f) return GL_FALSE;
 
   GLuint videoModes = (((GLuint)vbeInfo.videoModes)>>16<<4)+(((GLuint)vbeInfo.videoModes) & 0xffff);
@@ -4668,7 +4813,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     memset(&regs,0,sizeof(__dpmi_regs));
     regs.x.ax = 0x4f01;
     regs.x.cx = (uint16_t)mode;
-    VBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
+    glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
       construtGL();
       memset(&regs,0,sizeof(__dpmi_regs));
@@ -4680,15 +4825,15 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glFrameBufferHeight = yRes;
       // linear framebuffer mapping to vesasel not glFrameBufferDedicated
       glFrameBufferDedicated = NULL;
-      linearFrameBufferStruct.size = 4096*1024-1;
-      linearFrameBufferStruct.address = modeInfo.linearFrameBuffer;
-      __dpmi_physical_address_mapping(&linearFrameBufferStruct);
-      vesasel = __dpmi_allocate_ldt_descriptors(1);
-      __dpmi_set_segment_base_address(vesasel,linearFrameBufferStruct.address);
-      __dpmi_set_segment_limit(vesasel,linearFrameBufferStruct.size-1);
+      glLinearFrameBufferStruct.size = 4096*1024-1;
+      glLinearFrameBufferStruct.address = modeInfo.linearFrameBuffer;
+      __dpmi_physical_address_mapping(&glLinearFrameBufferStruct);
+      glVesasel = __dpmi_allocate_ldt_descriptors(1);
+      __dpmi_set_segment_base_address(glVesasel,glLinearFrameBufferStruct.address);
+      __dpmi_set_segment_limit(glVesasel,glLinearFrameBufferStruct.size-1);
       glFrameBuffer = (GLuint *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
       glDepthBuffer = (GLfloat *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
-      for (GLint i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) _farpokel(vesasel,i<<2,0);
+      for (GLint i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) _farpokel(glVesasel,i<<2,0);
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       glFrameBufferWidth0 = glFrameBufferWidth;
@@ -4699,7 +4844,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glSetTime(0);
       glViewport(0,0,xRes,yRes);
       free(w);
-      noRefresh = GL_FALSE;
+      glDirectBlit = GL_FALSE;
       return GL_TRUE;
     }
     v++;
@@ -4708,25 +4853,23 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
   return GL_FALSE;
 }
 // --------------------------------------
-#endif // DJGPPVESA
+#endif // __DJGPP__
 // --------------------------------------
 
-uint16_t glGraphicsModeToRestore=0x02;
-
-GLvoid setBiosGraphicsMode(uint16_t mode) {
+GLvoid glSetBiosGraphicsMode(uint16_t mode) {
     union REGS regs;
     regs.w.ax = mode;
     int386(0x10, &regs, &regs);
 }
 
-uint16_t getBiosGraphicsMode() {
+uint16_t glGetBiosGraphicsMode() {
     union REGS regs;
     regs.w.ax = 0x0f00;
     int386 (0x10, &regs, &regs);
     return regs.h.al;
 }
 
-static GLuint toColor(GLint r,GLint g,GLint b) {
+GLuint glToColor(GLint r,GLint g,GLint b) {
   if (r < 0) r = 0;
   if (g < 0) g = 0;
   if (b < 0) b = 0;
@@ -4735,18 +4878,21 @@ static GLuint toColor(GLint r,GLint g,GLint b) {
   if (b > 255) b = 255;
   return r|(g<<8)|(b<<16)|0xff000000;
 }
-static GLvoid setPalette(GLint index, GLuint color) {
+
+GLvoid glSetPalette(GLint index, GLuint color) {
   outp(0x3c8,index);
   outp(0x3c9,(color & 255)>>2);
   outp(0x3c9,((color>>8) & 255)>>2);
   outp(0x3c9,((color>>16) & 255)>>2);
 }
-static GLvoid setHiColorPalette() {
+
+GLvoid glSetHiColorPalette() {
   GLint i;
-  for (i = 0; i < 64; i++) setPalette(i,toColor(0,i*4+3,0));
-  for (i = 0; i < 16*8; i++) setPalette(i+128,toColor((i/8)*16+15,0,(i & 7)*32+31));
+  for (i = 0; i < 64; i++) glSetPalette(i,glToColor(0,i*4+3,0));
+  for (i = 0; i < 16*8; i++) glSetPalette(i+128,glToColor((i/8)*16+15,0,(i & 7)*32+31));
 }
-static GLvoid setModeX() {
+
+GLvoid glSetModeX() {
   outp(0x3c4,4);
   GLint a = inp(0x3c5);
   a &= 255-8;
@@ -4761,35 +4907,35 @@ static GLvoid setModeX() {
   a |= 64;
   outp(0x3d5,a);
 }
-static GLvoid set400Lines() {
+
+GLvoid glSet400Lines() {
   outp(0x3d4,9);
   GLint a = inp(0x3d5);
   a &= 16+32+64;//001110000b
   outp(0x3d5,a);
 }
-static GLvoid setVGABufferStart(GLuint adr) {
+
+GLvoid glSetVGABufferStart(GLuint adr) {
   outp(0x3d4,0x0c);
   outp(0x3d5,(adr >> 8) & 255);
   outp(0x3d4,0x0d);
   outp(0x3d5,adr & 255);
 }
-static GLboolean hiColor = GL_FALSE;
-static GLboolean otherFrame = GL_FALSE;
-uint8_t hiRedTab[256];
+
 GLboolean glVGA() {
-  glGraphicsModeToRestore = getBiosGraphicsMode();
+  glGraphicsModeToRestore = glGetBiosGraphicsMode();
   construtGL();
-  setBiosGraphicsMode(0x13);
-  setModeX();
-  set400Lines();
-  setHiColorPalette();
-  hiColor = GL_TRUE;
-  otherFrame = GL_FALSE;
+  glSetBiosGraphicsMode(0x13);
+  glSetModeX();
+  glSet400Lines();
+  glSetHiColorPalette();
+  glHiColor = GL_TRUE;
+  glOtherFrame = GL_FALSE;
   uint8_t *vga = (uint8_t*)(VGARAMBASE);
   DJGPPVGAMEMON
   memset(vga,0,0x10000);
   DJGPPVGAMEMOFF
-  setVGABufferStart(otherFrame ? 0x8000 : 0x0000);
+  glSetVGABufferStart(glOtherFrame ? 0x8000 : 0x0000);
   GLint xRes = 320;
   GLint yRes = 200;
   glFrameBufferWidth = xRes;
@@ -4806,14 +4952,15 @@ GLboolean glVGA() {
   glSetTime(0);
   glViewport(0,0,xRes,yRes);
   for (GLint i = 0; i < 256; i++) {
-    hiRedTab[i] = (uint8_t)(128+(((i>>4)&15)<<3));
+    glHiRedTab[i] = (uint8_t)(128+(((i>>4)&15)<<3));
   }
-  noRefresh = GL_FALSE;
+  glDirectBlit = GL_FALSE;
   return GL_TRUE;
 }
+
 GLvoid glRefreshHiColor() {
   DJGPPVGAMEMON
-  uint8_t *vga = (uint8_t*)(VGARAMBASE+(otherFrame ? 0x8000 : 0x00));
+  uint8_t *vga = (uint8_t*)(VGARAMBASE+(glOtherFrame ? 0x8000 : 0x00));
   for (GLint p = 0; p < 4; p++) {
     outp(0x3c4,0x02);
     outp(0x3c5,1<<p);
@@ -4823,141 +4970,57 @@ GLvoid glRefreshHiColor() {
       uint8_t *w2 = &vga[y*(320/4*2)+320/4];
       for (GLint x = 320/4; x > 0; x--) {
         *w2++ = (uint8_t)(s[1]>>2);
-        *w1++ = (uint8_t)((s[2]>>5)|hiRedTab[s[0]]);
+        *w1++ = (uint8_t)((s[2]>>5)|glHiRedTab[s[0]]);
         s += 16;
       }
     }
   }
   DJGPPVGAMEMOFF
-  setVGABufferStart(otherFrame ? 0x8000 : 0x0000);
-  otherFrame = !otherFrame;   
+  glSetVGABufferStart(glOtherFrame ? 0x8000 : 0x0000);
+  glOtherFrame = !glOtherFrame;   
 }
+
 GLvoid glRefresh() {
-  if (noRefresh) return;
-  if (hiColor) {glRefreshHiColor();return;}
+  
+  if (glDirectBlit) 
+    return;
+  
+  if (glHiColor) {
+    glRefreshHiColor();
+    return;
+  }
+
   GLuint rgba;
   if (glVesaBGRA) {
     for (GLint i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
       rgba = glFrameBuffer0[i];
-#  if __DJGPP__
-      _farpokel(vesasel,i<<2,(rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000));
-#  else
+#ifdef __DJGPP__
+      _farpokel(glVesasel,i<<2,(rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000));
+#else // __DJGPP__
       glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000);
-#  endif
+#endif // __DJGPP__
     }
   } else {
     for (GLint i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
       rgba = glFrameBuffer0[i];
-#  if __DJGPP__
-      _farpokel(vesasel,i<<2,rgba);
-#  else
+#ifdef __DJGPP__
+      _farpokel(glVesasel,i<<2,rgba);
+#else // __DJGPP__
       glFrameBufferDedicated[i] = rgba;
-#  endif
+#endif // __DJGPP__
     }
   }
+
 }
+
 GLvoid glDone() {
-  if (!noRefresh) { // glDirect?
+  if (!glDirectBlit) { // glDirect?
     if (glFrameBuffer0 != NULL) free(glFrameBuffer0);
     if (glDepthBuffer0 != NULL) free(glDepthBuffer0);
-    if (!hiColor) unmapPhysical((GLuint)glFrameBufferDedicated);
-    setBiosGraphicsMode(glGraphicsModeToRestore);
+    if (!glHiColor) glUnmapPhysical((GLuint)glFrameBufferDedicated);
+    glSetBiosGraphicsMode(glGraphicsModeToRestore);
   }
 }
-#endif // __GLDISABLEDOSFUNCTIONS__
-
-GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height) {
-  construtGL();
-  glFrameBufferWidth = width;
-  glFrameBufferHeight = height;
-  glFrameBuffer = frameBuffer;
-  glDepthBuffer = depthBuffer;
-  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*glFrameBufferBytesPerPixel);
-  memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
-  glFrameBufferWidth0 = glFrameBufferWidth;
-  glFrameBufferHeight0 = glFrameBufferHeight;
-  glFrameBuffer0 = glFrameBuffer;
-  glDepthBuffer0 = glDepthBuffer;
-  glSetupMouse();
-  glSetTime(0);
-  glViewport(0,0,width,height);
-  noRefresh = GL_TRUE;
-  return GL_FALSE;
-}
-
-GLvoid glSetMonitorAspectRatio(GLfloat aspect) {
-  glContext.zoomX = 1.0/(aspect*glFrameBufferHeight0/glFrameBufferWidth0);
-  glContext.zoomY = 1.0;
-}
-
-GLdouble glGetMonitorAspectRatio() {
-  return 1.0/glContext.zoomX/((GLdouble)glFrameBufferHeight0/glFrameBufferWidth0);
-}
-
-GLvoid glZoomX(GLfloat zoom) {
-  glContext.zoomX = zoom;
-}
-
-GLvoid glZoomY(GLfloat zoom) {
-  glContext.zoomY = zoom;
-}
-
-GLfloat glGetZoomX() {
-  return (GLfloat)glContext.zoomX;
-}
-
-GLfloat glGetZoomY() {
-  return (GLfloat)glContext.zoomY;
-}
-
-GLvoid glExplicitAlpha(GLboolean useExplicitAlpha, GLfloat alpha) {
-  glContext.explicitAlpha = alpha;
-  glContext.useExplicitAlpha = useExplicitAlpha;
-}
-                                                                                                                                                                         
-GLfloat glPixelLastSX = 0;
-GLfloat glPixelLastSY = 0;
-GLboolean glPixelLastValid = GL_FALSE;
-
-GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat zp, GLint x, GLint y, GLuint color) {
-  if (newXYZ) {
-    glVertex v;
-    v.vertexX = xp;
-    v.vertexY = yp;
-    v.vertexZ = zp;
-    v.vertexW = 1;
-    glPixelLastValid = (glTransformVertex(&glContext, &v, GL_TRUE) == 0);
-    glPixelLastSX = (GLfloat)v.sx;
-    glPixelLastSY = (GLfloat)v.sy;
-  }
-  if (glPixelLastValid)
-  {
-    GLint glClipRectX0 = 0;
-    GLint glClipRectY0 = 0;
-    GLint glClipRectX1 = glFrameBufferWidth;
-    GLint glClipRectY1 = glFrameBufferHeight;
-    combineIntoWindow(&glClipRectX0,&glClipRectY0,&glClipRectX1,&glClipRectY1,glContext.viewportX0,glContext.viewportY0,glContext.viewportX1,glContext.viewportY1);
-    if (glIsEnabled(GL_SCISSOR_TEST)) {
-      combineIntoWindow(&glClipRectX0,&glClipRectY0,&glClipRectX1,&glClipRectY1,glContext.scissorX0,glContext.scissorY0,glContext.scissorX1,glContext.scissorY1);
-    }
-    GLint px = (GLint)(glPixelLastSX+x);
-    GLint py = (GLint)(glPixelLastSY+y);
-    if (px < glClipRectX0) return GL_FALSE; 
-    if (py < glClipRectY0) return GL_FALSE;
-    if (px >= glClipRectX1) return GL_FALSE;
-    if (py >= glClipRectY1) return GL_FALSE;
-    glFrameBuffer[px+py*glFrameBufferWidth] = color;
-    return GL_TRUE;
-  }
-  return GL_FALSE;
-}
-
-
-// --------------------------------------
-
-#ifndef __GLDISABLEDOSFUNCTIONS__
-
-GLint glKey = 0;
 
 GLushort glNextKey() {
   union REGS regs;
@@ -4973,13 +5036,6 @@ GLushort glNextKey() {
   }
   return (GLushort)glKey;
 }
-
-GLint glLastMouseX = 0;
-GLint glLastMouseY = 0;
-GLint glLastMouseB = 0;
-GLint glMouseX = 0;
-GLint glMouseY = 0;
-GLint glMouseB = 0;
 
 GLvoid glSetMousePos(GLint x, GLint y) {
   union REGS regs;
@@ -5045,93 +5101,28 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
 }
 
 #ifdef __DJGPP__
-typedef signed long long int int64_t;
-typedef unsigned long long int uint64_t;
-int64_t glStartClock = 0;
-#include <time.h>
-GLdouble glSeconds() {
-  return (GLdouble)(uclock() - glStartClock) / UCLOCKS_PER_SEC;
-}
-GLvoid glSetTime(GLdouble seconds) {
-  glStartClock = uclock() - (int64_t)(seconds * UCLOCKS_PER_SEC);
-}
+  typedef signed long long int int64_t;
+  typedef unsigned long long int uint64_t;
+  int64_t glStartClock = 0;
+  GLdouble glSeconds() {
+    return (GLdouble)(uclock() - glStartClock) / UCLOCKS_PER_SEC;
+  }
+  GLvoid glSetTime(GLdouble seconds) {
+    glStartClock = uclock() - (int64_t)(seconds * UCLOCKS_PER_SEC);
+  }
 #endif // __DJGPP__
 
 #ifdef __WATCOMC__
-GLdouble glStartClock = 0;
-// very bad resolution, things seem to stutter by that, better use speaker.hpp and it's reprogrammed timer
-GLdouble glSeconds() {
-  return (GLdouble)(clock() - glStartClock) / CLOCKS_PER_SEC;
-}
-GLvoid glSetTime(GLdouble seconds) {
-  glStartClock = clock() - seconds * CLOCKS_PER_SEC;
-}
+  GLdouble glStartClock = 0;
+  // very bad resolution, things seem to stutter by that, better use speaker.hpp and it's reprogrammed timer
+  GLdouble glSeconds() {
+    return (GLdouble)(clock() - glStartClock) / CLOCKS_PER_SEC;
+  }
+  GLvoid glSetTime(GLdouble seconds) {
+    glStartClock = clock() - seconds * CLOCKS_PER_SEC;
+  }
 #endif // __WATCOMC__
 
-#endif // __GLDISABLEDOSFUNCTIONS__
-
-
-GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData) {
-  if (glContext.boundTextures[glContext.activeTexture] == 0) 
-    return;
-  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
-  if (t->data != NULL)  {
-    free(t->data);
-    t->data = NULL;
-  }
-  t->data = textureData;
-  t->width = width;
-  t->height = height;
-}
-
-GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height) {
-  if (frameBufferOrNULL == NULL) {
-    glFrameBufferWidth = glFrameBufferWidth0;
-    glFrameBufferHeight = glFrameBufferHeight0;
-    glFrameBuffer = glFrameBuffer0;
-    glDepthBuffer = glDepthBuffer0;
-  } else {
-    glFrameBufferWidth = width;
-    glFrameBufferHeight = height;
-    glFrameBuffer = frameBufferOrNULL;
-    glDepthBuffer = depthBuffer;
-  }
-  glViewport(0,0,glFrameBufferWidth,glFrameBufferHeight);
-}
-
-GLuint glGetTextureWidth(GLuint textureId) {
-  glTexture *t = &glTextures[textureId];
-  if (t->name == 0x00) return 0;
-  return t->width;
-
-}
-
-GLuint glGetTextureHeight(GLuint textureId) {
-  glTexture *t = &glTextures[textureId];
-  if (t->name == 0x00) return 0;
-  return t->height;
-}
-
-GLuint *glGetTexturePointer(GLuint textureId) {
-  glTexture *t = &glTextures[textureId];
-  if (t->name == 0x00) return NULL;
-  return t->data;
-}
-
-#ifdef __GLDISABLEDOSFUNCTIONS__
-// you may use glDirect();
-GLdouble glSeconds() {return 0;}
-GLvoid glSetTime(GLdouble seconds) {;}
-GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey) {;}
-GLvoid glSetupMouse() {;}
-GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {;}
-GLubyte glMouseButtons() {return 0;}
-GLvoid glSetMousePos(GLint x, GLint y) {;}
-GLushort glNextKey() {return 0;}
-GLvoid glDone() {;}
-GLvoid glRefresh() {;}
-GLboolean glVGA() {return GL_FALSE;}
-GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
 #endif // __GLDISABLEDOSFUNCTIONS__
 
 // --------------------------------------
@@ -5140,4 +5131,4 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
