@@ -61,10 +61,10 @@ extern GLdouble glPixelCenterY;
 extern GLdouble glTexelCenterX;
 extern GLdouble glTexelCenterY;
 extern GLdouble glMonitorAspectRatio; // use glSetMonitorAspectRatio()
-extern GLboolean useNearPointers; // option for DJGPP
-extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong by reflection vector
-extern GLboolean glFastTexturing; // use perspective approximations for speed, default false
-extern GLint glFastTextureSpanWidth; // default 16
+extern GLboolean useNearPointers; // option for DJGPP, default GL_TRUE
+extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong by reflection vector, default GL_FALSE
+extern GLboolean glFastTexturing; // use perspective approximations for speed, default GL_FALSE
+extern GLint glFastTextureSpanWidth;
 
 // ------------------------
 // ------------------------
@@ -86,7 +86,7 @@ GLuint glGetTextureWidth(GLuint textureId);
 GLuint glGetTextureHeight(GLuint textureId);
 
 GLvoid glExplicitAlpha(GLboolean useExplicitAlpha, GLfloat alpha); // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer")
-GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat GLzp, GLint x, GLint y, GLuint color); // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns false if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp, without it, it will take the last one)
+GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat GLzp, GLint x, GLint y, GLuint color); // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns GL_FALSE if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp, without it, it will take the last one)
 GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for quadratic point sprites and lines on e.g. 16:9 screens
 
 // ------------------------
@@ -724,8 +724,8 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 // ------------------------
 
 // better use glTexImage2D()
-GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData);  // textureData needs to be bottomLeft to topRight (bindTexture must be called before)
-GLuint *glGetTexturePointer(GLuint textureId); // textures are upside down in ram
+GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData);  // bindTexture must be called before
+GLuint *glGetTexturePointer(GLuint textureId);
 
 // ------------------------
 // ------------------------
@@ -906,14 +906,15 @@ typedef struct glTexture {
 } glTexture;
 
 extern _GLContext glContext;
-extern glTexture glTextures[GLMAXTEXTURES]; // statically allocated -> you can load textures without OpenGL beeing initialized before (e.g. glTexImage2D)
+extern glTexture glTextures[GLMAXTEXTURES];
 
 // ------------------------
 // ------------------------
 
+ // you can implement your own triangle renderer here
 typedef GLvoid (*TriangleDrawer)(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 GLvoid glDrawTrianglePrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
-GLvoid glSetTriangleDrawer(TriangleDrawer drawer); // you can implement your own triangle renderer here
+GLvoid glSetTriangleDrawer(TriangleDrawer drawer);
 
 // ------------------------
 // ------------------------
