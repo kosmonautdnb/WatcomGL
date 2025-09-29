@@ -3,7 +3,7 @@
 #### Just include and link:  
   GL.H  
   GLIMPL.CPP  
-#### to your WatcomC++/DJGPP project.  
+#### to your WatcomC++/DJGPP/C project.  
 
 WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
