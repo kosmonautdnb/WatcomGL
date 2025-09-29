@@ -7,9 +7,7 @@
 
 WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
-WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs  
-  
-File names are upper case / DOS default.  
+WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs   
 
 Main limiting factor by far seems to be memory bandwidth with cache but you need a fast machine.
 
@@ -20,6 +18,8 @@ Example **void main()** in GL.H
 **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)  
 
 (Better use the public domain PModeW instead of Dos4GW for 256 MB of memory instead of the normal 32 MB in WatcomC++)  
+
+File names are upper case / DOS default. 
 
 # Other software OpenGL options
 
