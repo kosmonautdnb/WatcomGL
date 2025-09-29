@@ -45,6 +45,7 @@ https://github.com/erysdren/TinyGL.git
 - Z-Buffer: 32 Bit Float  
 - FrameBuffer: 32 Bit RGBA (8 Bit Per Channel)  
 - GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS  
+- GL_POINTS With Texture Coordinates
 - glVertex3f And Alikes (Also glVertex3d And Alikes)  
 - Bilinear Texture Filtering And Nearest Point Texture Filtering  
 - Pixel And Texel Center
