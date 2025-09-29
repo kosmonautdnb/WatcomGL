@@ -9,8 +9,6 @@ WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game
 
 WatcomC library collection: https://github.com/kosmonautdnb/WatcomLibs  
 
-_YELLOW.CPP is "Yellow Rose of Texas" a 4k by Fit and Bandwagon.  
-
 You can use this library as a general C software rasterizer, it is not limited to DOS.  
 
 Needs a fairly fast FreeDOS/DOS machine. It looks not so well optimized but doesn't get faster by disabling all non fancy stuff. Main limiting factor by far seems to be memory bandwidth(+cache). File names are upper case which is DOS default.  
