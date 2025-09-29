@@ -17,6 +17,10 @@ Example **void main()** in GL.H
 
 **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 
+**Neon Helium Tutorials** found on the net (_NEHE.CPP)  
+
+**GLFW Boing Ball** found in an old GLFW repository (_GLFWBNG.CPP)  
+
 #  
 
 #### WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
