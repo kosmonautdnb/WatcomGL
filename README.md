@@ -22,7 +22,7 @@ You can use this library as a general C software rasterizer, it is not limited t
 # Other software OpenGL options
 
 ## DJGPP OSMesa on DOS
-In this video featuring Wipeout on DOS it's ingame:
+In this video featuring **Wipeout** on DOS it's ingame:
 - OSMesa(around 2007) around 40 FPS
 - WatcomGL around 100 FPS
 
