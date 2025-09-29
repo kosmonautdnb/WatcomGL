@@ -19,7 +19,7 @@ Example **void main()** in GL.H
 
 **Neon Helium Tutorials** found on the net (_NEHE.CPP)  
 
-**GLFW Amiga Boing Ball** found in an old GLFW repository (_GLFWBNG.CPP)  
+**GLFW Amiga Boing Ball** found in an old **GLFW** repository (_GLFWBNG.CPP)  
 
 #### WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
