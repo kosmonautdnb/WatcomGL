@@ -41,14 +41,8 @@ https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv
   
 OSMesa seems to be slower in the average usecase. On Wipeout it's OSMesa with around 40 FPS and WatcomGL with around 100 FPS.  
   
-If you use DJGPP instead of WatcomC++ on DOS maybe this is an additional software OpenGL option:  
-https://github.com/EMGD-Community/mesa/blob/master/docs/README.DJ  
-Current Mesa Version is: 25.1.6. DJGPP was removed again from support as of Mesa6.5.3, in 2007, though.  
-You can find the compiled Mesa libraries in the comments of this video (video not by me):  
-https://www.youtube.com/watch?v=vkUwT9U1GzA  
-or directly at:
-https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip  
-Attention to the inverted y pixel positions of the screenbuffer.
+If you use DJGPP instead of WatcomC++, OSMesa would be an option:
+https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip (not by me).  
 
 ## TinyGL
 There is a also the TinyGL project.  
