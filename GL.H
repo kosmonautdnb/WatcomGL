@@ -34,7 +34,7 @@ int main(int argc, const char **argv) {
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 
 // ------------------------
 // ------------------------
@@ -944,6 +944,6 @@ GLvoid glSetTriangleDrawer(TriangleDrawer drawer);
 // ------------------------
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #endif // __GL_H__
