@@ -35,7 +35,7 @@ void main() {
 &emsp;glDone();  
 }
 
-## (early)DOS OSMesa
+## DOS OSMesa
 Comparing DJGPP OSMesa to DJGPP WatcomGL:  
 https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
