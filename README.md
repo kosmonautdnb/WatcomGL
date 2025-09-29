@@ -9,7 +9,7 @@ WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game
 
 WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs  
   
-File names are upper case which is DOS default.  
+File names are upper case / DOS default.  
 
 Main limiting factor by far seems to be memory bandwidth with cache but you need a fast machine.
 
