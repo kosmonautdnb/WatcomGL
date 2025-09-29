@@ -51,7 +51,7 @@ https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip
 Attention to the inverted y pixel positions of the screenbuffer.
 
 ## TinyGL
-There is a also the TinyGL project. Which seems to do the same. I don't know anything about it maybe it's rendering is a lot faster (but they implemented a lot less), however here is the link:  
+There is a also the TinyGL project.  
 https://github.com/erysdren/TinyGL.git  
 
 # Features
