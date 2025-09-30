@@ -4700,6 +4700,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
   uint16_t *u = (uint16_t *)glVesaPointer(vbeInfo.videoModes);
   uint16_t *v = u;
   while(*v != 0xffff) {v++;}
+  v++; // 0xffff
   uint16_t *w=(uint16_t*)__MALLOC((v-u)*sizeof(uint16_t));
   memcpy(w,u,((GLuint)v)-((GLuint)u));
   v = w;
