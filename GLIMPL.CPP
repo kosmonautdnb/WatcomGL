@@ -37,12 +37,12 @@
 #endif // __GLDISABLEDOSFUNCTIONS__ 
 
 #ifdef __cplusplus
-  extern "C" {GLvoid _GLContext_init(); GLvoid construtGL() {}}
+  extern "C" {GLvoid _GLContext_init(); GLvoid constructGL() {}}
   class GLConstructor {public: GLConstructor() {_GLContext_init();}};
   GLConstructor glConstruct;
 #else // __cplusplus
   GLvoid _GLContext_init();
-  GLvoid construtGL() {_GLContext_init();}
+  GLvoid constructGL() {_GLContext_init();}
 #endif // __cplusplus
 
 #ifndef PI
@@ -67,6 +67,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
+
+#define __MALLOC malloc
+#define __FREE free
 
 #define __MATRIX_STACK_SIZE__ 16
 #define __ATTRIB_STACK_SIZE__ 4
@@ -353,7 +356,7 @@ GLvoid glDeleteTexture(GLuint i) {
   if (i > 0 && glTextures[i].name != 0) {
     glTextures[i].name = 0;
     if (glTextures[i].data != NULL) {
-      free(glTextures[i].data);
+      __FREE(glTextures[i].data);
       glTextures[i].data = NULL;
     }
   }
@@ -2087,10 +2090,10 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
   if (t->data != NULL)  {
-    free(t->data);
+    __FREE(t->data);
     t->data = NULL;
   }
-  t->data = (GLuint*)malloc(sizeof(GLuint)*width*height);
+  t->data = (GLuint*)__MALLOC(sizeof(GLuint)*width*height);
   t->width = width;
   t->height = height;
   GLint rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
@@ -4284,10 +4287,11 @@ GLvoid glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glV
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 
+GLboolean glDirectBlit = GL_FALSE;
+GLboolean glHiColor = GL_FALSE;
 GLfloat glPixelLastSX = 0;
 GLfloat glPixelLastSY = 0;
 GLboolean glPixelLastValid = GL_FALSE;
-GLboolean glDirectBlit = GL_FALSE;
 
 GLvoid glSetMonitorAspectRatio(GLfloat aspect) {
   glContext.zoomX = 1.0/(aspect*glFrameBufferHeight0/glFrameBufferWidth0);
@@ -4357,7 +4361,7 @@ GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData) {
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
   if (t->data != NULL)  {
-    free(t->data);
+    __FREE(t->data);
     t->data = NULL;
   }
   t->data = textureData;
@@ -4400,7 +4404,7 @@ GLuint *glGetTexturePointer(GLuint textureId) {
 }
 
 GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height) {
-  construtGL();
+  constructGL();
   glFrameBufferWidth = width;
   glFrameBufferHeight = height;
   glFrameBuffer = frameBuffer;
@@ -4414,6 +4418,7 @@ GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLui
   glSetTime(0);
   glViewport(0,0,width,height);
   glDirectBlit = GL_TRUE;
+  glHiColor = GL_FALSE;
   return GL_TRUE;
 }
 // --------------------------------------
@@ -4438,10 +4443,9 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
 // --------------------------------------
 GLvoid glSetupMouse();
 GLushort glGetBiosGraphicsMode();
-GLboolean glHiColor = GL_FALSE;
 GLboolean glOtherFrame = GL_FALSE;
 GLubyte glHiRedTab[256];
-GLushort glGraphicsModeToRestore=0x02;
+GLint glGraphicsModeToRestore=-1;
 GLint glKey = 0;
 GLint glLastMouseX = 0;
 GLint glLastMouseY = 0;
@@ -4687,7 +4691,6 @@ GLboolean glUnmapPhysical(GLuint linearAddress) {
 }
 
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
-  glGraphicsModeToRestore = glGetBiosGraphicsMode();
   glVbeInfoBlock vbeInfo;
   glVbeModeInfo modeInfo;
   glRMREGS regs;
@@ -4697,7 +4700,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
   uint16_t *u = (uint16_t *)glVesaPointer(vbeInfo.videoModes);
   uint16_t *v = u;
   while(*v != 0xffff) {v++;}
-  uint16_t *w=(uint16_t*)malloc((v-u)*sizeof(uint16_t));
+  uint16_t *w=(uint16_t*)__MALLOC((v-u)*sizeof(uint16_t));
   memcpy(w,u,((GLuint)v)-((GLuint)u));
   v = w;
   while(*v != 0xffff) {
@@ -4706,7 +4709,8 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     regs.cx = (uint16_t)mode;
     glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
-      construtGL();
+      constructGL();
+      glGraphicsModeToRestore = glGetBiosGraphicsMode();
       regs.ax = 0x4f02;
       regs.bx = (uint16_t)(mode|0x4000);
       glDPMI_int386(0x10,&regs,&regs); // needed here for later mouse setup
@@ -4714,8 +4718,8 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
       glFrameBufferDedicated = (GLuint*)glMapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
-      glFrameBuffer = (GLuint *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
-      glDepthBuffer = (GLfloat *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
+      glFrameBuffer = (GLuint *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
+      glDepthBuffer = (GLfloat *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
       memset(glFrameBufferDedicated,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
@@ -4726,13 +4730,14 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glSetupMouse();
       glSetTime(0);
       glViewport(0,0,xRes,yRes);
-      free(w);
+      __FREE(w);
       glDirectBlit = GL_FALSE;
+      glHiColor = GL_FALSE;
       return GL_TRUE;
     }
     v++;
   }
-  free(w);
+  __FREE(w);
   return GL_FALSE;
 }
 // --------------------------------------
@@ -4787,7 +4792,7 @@ GLvoid glVBE_callESDI(__dpmi_regs *regs, GLvoid *buffer, GLint size) {
 }
 
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
-  glGraphicsModeToRestore = glGetBiosGraphicsMode();
+
   glVbeInfoBlock vbeInfo;
   glVbeModeInfo modeInfo;
   __dpmi_regs regs;
@@ -4801,10 +4806,10 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
   do {
     uint16_t k = 0;
     dosmemget(ofs,2,&k);
-    if (k == 0xffff) break;
     ofs += 2;
+    if (k == 0xffff) break;
   } while(GL_TRUE);
-  uint16_t *w=(uint16_t*)malloc((ofs-videoModes)/2*sizeof(uint16_t));
+  uint16_t *w=(uint16_t*)__MALLOC((ofs-videoModes)/2*sizeof(uint16_t));
   uint16_t *v=w;
   dosmemget(videoModes,ofs-videoModes,w);
 
@@ -4815,7 +4820,8 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     regs.x.cx = (uint16_t)mode;
     glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
-      construtGL();
+      constructGL();
+      glGraphicsModeToRestore = glGetBiosGraphicsMode();
       memset(&regs,0,sizeof(__dpmi_regs));
       regs.x.ax = 0x4f02;
       regs.x.bx = (uint16_t)(mode|0x4000);
@@ -4824,15 +4830,15 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glFrameBufferWidth = xRes;
       glFrameBufferHeight = yRes;
       // linear framebuffer mapping to vesasel not glFrameBufferDedicated
-      glFrameBufferDedicated = NULL;
+      glFrameBufferDedicated = (GLuint*)0x10101010; // not NULL so glDone calls unmap
       glLinearFrameBufferStruct.size = 4096*1024-1;
       glLinearFrameBufferStruct.address = modeInfo.linearFrameBuffer;
       __dpmi_physical_address_mapping(&glLinearFrameBufferStruct);
       glVesasel = __dpmi_allocate_ldt_descriptors(1);
       __dpmi_set_segment_base_address(glVesasel,glLinearFrameBufferStruct.address);
       __dpmi_set_segment_limit(glVesasel,glLinearFrameBufferStruct.size-1);
-      glFrameBuffer = (GLuint *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
-      glDepthBuffer = (GLfloat *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
+      glFrameBuffer = (GLuint *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
+      glDepthBuffer = (GLfloat *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
       for (GLint i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) _farpokel(glVesasel,i<<2,0);
       memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
       memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
@@ -4843,13 +4849,14 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glSetupMouse();
       glSetTime(0);
       glViewport(0,0,xRes,yRes);
-      free(w);
+      __FREE(w);
       glDirectBlit = GL_FALSE;
+      glHiColor = GL_FALSE;
       return GL_TRUE;
     }
     v++;
   }
-  free(w);
+  __FREE(w);
   return GL_FALSE;
 }
 // --------------------------------------
@@ -4924,12 +4931,11 @@ GLvoid glSetVGABufferStart(GLuint adr) {
 
 GLboolean glVGA() {
   glGraphicsModeToRestore = glGetBiosGraphicsMode();
-  construtGL();
+  constructGL();
   glSetBiosGraphicsMode(0x13);
   glSetModeX();
   glSet400Lines();
   glSetHiColorPalette();
-  glHiColor = GL_TRUE;
   glOtherFrame = GL_FALSE;
   uint8_t *vga = (uint8_t*)(VGARAMBASE);
   DJGPPVGAMEMON
@@ -4940,8 +4946,8 @@ GLboolean glVGA() {
   GLint yRes = 200;
   glFrameBufferWidth = xRes;
   glFrameBufferHeight = yRes;
-  glFrameBuffer = (GLuint *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
-  glDepthBuffer = (GLfloat *)malloc(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
+  glFrameBuffer = (GLuint *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
+  glDepthBuffer = (GLfloat *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
   memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
   memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
   glFrameBufferWidth0 = glFrameBufferWidth;
@@ -4955,6 +4961,7 @@ GLboolean glVGA() {
     glHiRedTab[i] = (uint8_t)(128+(((i>>4)&15)<<3));
   }
   glDirectBlit = GL_FALSE;
+  glHiColor = GL_TRUE;
   return GL_TRUE;
 }
 
@@ -5014,12 +5021,29 @@ GLvoid glRefresh() {
 }
 
 GLvoid glDone() {
+
   if (!glDirectBlit) { // glDirect?
-    if (glFrameBuffer0 != NULL) free(glFrameBuffer0);
-    if (glDepthBuffer0 != NULL) free(glDepthBuffer0);
-    if (!glHiColor) glUnmapPhysical((GLuint)glFrameBufferDedicated);
-    glSetBiosGraphicsMode(glGraphicsModeToRestore);
+
+    if (glFrameBuffer0 != NULL) {
+      __FREE(glFrameBuffer0); glFrameBuffer0 = NULL;
+    }
+
+    if (glDepthBuffer0 != NULL) {
+      __FREE(glDepthBuffer0); glDepthBuffer0 = NULL;
+    }
+
+    if (glFrameBufferDedicated != NULL) {
+      glUnmapPhysical((GLuint)glFrameBufferDedicated);
+      glFrameBufferDedicated = NULL;
+    }
+
+    if (glGraphicsModeToRestore>=0) {
+      glSetBiosGraphicsMode(glGraphicsModeToRestore);
+      glGraphicsModeToRestore = -1;
+    }
+
   }
+
 }
 
 GLushort glNextKey() {
