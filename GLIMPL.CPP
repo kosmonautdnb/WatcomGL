@@ -64,12 +64,14 @@
 #define __FASTTEXTURING__ 1
 #endif // INLINE
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
 #define __MALLOC malloc
 #define __FREE free
+#define __UNUSED(__x__) (void)(__x__)
 
 #define __MATRIX_STACK_SIZE__ 16
 #define __ATTRIB_STACK_SIZE__ 4
@@ -82,7 +84,7 @@ extern "C" {
 #define DIVE255 /= 255 // >>= 8
 #define DIVQ255 / 255 // >> 8
 
-glTexture glTextures[GLMAXTEXTURES]={0};
+glTexture glTextures[GLMAXTEXTURES];
 
 GLdouble glPixelCenterX = -0.5+SEAMPREVENT;
 GLdouble glPixelCenterY = -0.5+SEAMPREVENT;
@@ -539,7 +541,6 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
     GLfloat diffuseRed = 0;
     GLfloat diffuseGreen = 0;
     GLfloat diffuseBlue = 0;
-    GLfloat diffuseAlpha = 0;
     GLfloat specularRed = 0;
     GLfloat specularGreen = 0;
     GLfloat specularBlue = 0;
@@ -559,9 +560,6 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
     GLfloat materialEmissionGreen = context->materialGreen[face][3];
     GLfloat materialEmissionBlue = context->materialBlue[face][3];
     GLfloat materialShininessRed = context->materialRed[face][4];
-    GLfloat materialShininessGreen = context->materialGreen[face][4];
-    GLfloat materialShininessBlue = context->materialBlue[face][4];
-
 
     if (glIsEnabled2(context,GL_COLOR_MATERIAL)) {
       switch(glContext.colorMaterial[face]) {
@@ -588,8 +586,6 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
         } break;
         case GL_SHININESS: {
           materialShininessRed = v->colorRed;
-          materialShininessGreen = v->colorGreen;
-          materialShininessBlue = v->colorBlue;
         } break;
         case GL_AMBIENT_AND_DIFFUSE: {
           materialAmbientRed = v->colorRed;
@@ -622,7 +618,6 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
         const GLfloat lightDiffuseRed = (GLfloat)context->lightRed[1][i];
         const GLfloat lightDiffuseGreen = (GLfloat)context->lightGreen[1][i];
         const GLfloat lightDiffuseBlue = (GLfloat)context->lightBlue[1][i];
-        const GLfloat lightDiffuseAlpha = (GLfloat)context->lightAlpha[1][i];
         const GLfloat lightSpecularRed = (GLfloat)context->lightRed[2][i];
         const GLfloat lightSpecularGreen = (GLfloat)context->lightGreen[2][i];
         const GLfloat lightSpecularBlue = (GLfloat)context->lightBlue[2][i];
@@ -1194,6 +1189,7 @@ GLvoid glBegin(GLenum mode) {
 }
 
 GLvoid glBindTexture(GLenum target, GLuint texture) {
+  __UNUSED(target);
   glContext.boundTextures[glContext.activeTexture] = texture;
 }
 
@@ -1378,6 +1374,7 @@ GLvoid glDisable(GLenum cap) {
 }
 
 GLvoid glDisableClientState(GLenum array) {
+  __UNUSED(array);
 }
 
 GLvoid glEnable(GLenum cap) {
@@ -1385,6 +1382,7 @@ GLvoid glEnable(GLenum cap) {
 }
 
 GLvoid glEnableClientState(GLenum array) {
+  __UNUSED(array);
 }
 
 GLvoid glEnd() {
@@ -1692,6 +1690,7 @@ GLvoid glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
 }
 
 const GLubyte *glGetString(GLenum name) {
+  __UNUSED(name);
   return (const GLubyte *)"";
 }
 
@@ -2065,9 +2064,13 @@ GLvoid glStencilOp(GLenum fail, GLenum zfail, GLenum zpass) {
 }
 
 GLvoid glTexEnvfv(GLenum target, GLenum pname, const GLfloat *params) {
+  __UNUSED(target);
+  __UNUSED(pname);
+  __UNUSED(params);
 }
 
 GLvoid glTexEnvi(GLenum target, GLenum pname, GLint param) {
+  __UNUSED(target);
   if (glContext.boundTextures[glContext.activeTexture] == 0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -2079,6 +2082,7 @@ GLvoid glTexEnvi(GLenum target, GLenum pname, GLint param) {
 }
 
 GLvoid glTexGeni(GLenum coord, GLenum pname, GLint param) {
+  __UNUSED(pname);
   switch(coord) {
   case GL_S: {glContext.texGenS = param;} break;
   case GL_T: {glContext.texGenT = param;} break;
@@ -2086,6 +2090,11 @@ GLvoid glTexGeni(GLenum coord, GLenum pname, GLint param) {
 }
 
 GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
+  __UNUSED(target);
+  __UNUSED(level);
+  __UNUSED(internalformat);
+  __UNUSED(border);
+  __UNUSED(type);
   if (glContext.boundTextures[glContext.activeTexture] == 0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -2096,7 +2105,7 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
   t->data = (GLuint*)__MALLOC(sizeof(GLuint)*width*height);
   t->width = width;
   t->height = height;
-  GLint rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
+  GLint rIn=-1,gIn=-1,bIn=-1,aIn=-1;
   GLint formatStride = 4;
   switch(format) {
   case GL_ALPHA:{aIn=0;formatStride = 1;} break;
@@ -2112,9 +2121,6 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
   case GL_BGR_INTEGER:{rIn=2;gIn=1;bIn=0;} break;
   case GL_RGBA_INTEGER:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
   case GL_BGRA_INTEGER:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
-  case GL_STENCIL_INDEX:{sIn=0;} break;
-  case GL_DEPTH_COMPONENT:{dIn=0;} break;
-  case GL_DEPTH_STENCIL:{dIn=0;sIn=1;} break;
   }
   GLint input[4];
   input[0]=0xff;
@@ -2147,6 +2153,7 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
 }
 
 GLvoid glTexParameteri(GLenum target, GLenum pname, GLint param) {
+  __UNUSED(target);
   if (glContext.boundTextures[glContext.activeTexture] == 0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -2165,11 +2172,14 @@ GLvoid glTexParameteri(GLenum target, GLenum pname, GLint param) {
 }
 
 GLvoid glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
+  __UNUSED(target);
+  __UNUSED(level);
+  __UNUSED(type);
   if (glContext.boundTextures[glContext.activeTexture] == 0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
   if (t->data == NULL) return;
-  GLint rIn=-1,gIn=-1,bIn=-1,aIn=-1,dIn=-1,sIn=-1;
+  GLint rIn=-1,gIn=-1,bIn=-1,aIn=-1;
   GLint formatStride = 4;
   switch(format) {
   case GL_ALPHA:{aIn=0;formatStride = 1;} break;
@@ -2185,9 +2195,6 @@ GLvoid glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset,
   case GL_BGR_INTEGER:{rIn=2;gIn=1;bIn=0;} break;
   case GL_RGBA_INTEGER:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
   case GL_BGRA_INTEGER:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
-  case GL_STENCIL_INDEX:{sIn=0;} break;
-  case GL_DEPTH_COMPONENT:{dIn=0;} break;
-  case GL_DEPTH_STENCIL:{dIn=0;sIn=1;} break;
   }
   GLint input[4];
   input[0]=0xff;
@@ -2443,6 +2450,7 @@ GLvoid glPopAttrib() {
 }
 
 GLvoid glTexParameterfv(GLenum target, GLenum pname, GLfloat *param) {
+  __UNUSED(target);
   if (glContext.boundTextures[glContext.activeTexture] == 0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -3593,7 +3601,6 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   if (fullyClipped) 
     return;
 
-  GLboolean stencil = glIsEnabled2(context,GL_STENCIL_TEST); // not supported
   GLboolean blending = glIsEnabled2(context,GL_BLEND);
   GLboolean maskRed = context->maskRed;
   GLboolean maskGreen = context->maskGreen;
@@ -3668,7 +3675,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     borderColor |= ((GLint)FLOOR(glClampf(t->borderColorBlue*255.f,0.f,255.f)))<<16;
     borderColor |= ((GLint)FLOOR(glClampf(t->borderColorAlpha*255.f,0.f,255.f)))<<24;
 
-    if ((filtering) && (t->minFilter == GL_NEAREST) || (t->minFilter == GL_NEAREST_MIPMAP_NEAREST) || (t->minFilter == GL_NEAREST_MIPMAP_LINEAR)) {
+    if ((filtering) && ((t->minFilter == GL_NEAREST) || (t->minFilter == GL_NEAREST_MIPMAP_NEAREST) || (t->minFilter == GL_NEAREST_MIPMAP_LINEAR))) {
       const GLfloat tw = (GLfloat)twidth0;
       const GLfloat th = (GLfloat)theight0;
       const GLfloat lengtht0 = (GLfloat)sqrt((v1->textureX-v0->textureX)*(v1->textureX-v0->textureX)*tw*tw+(v1->textureY-v0->textureY)*(v1->textureY-v0->textureY)*th*th);
@@ -4289,6 +4296,7 @@ GLvoid glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glV
 
 GLboolean glDirectBlit = GL_FALSE;
 GLboolean glHiColor = GL_FALSE;
+GLboolean glOtherFrame = GL_FALSE;
 GLfloat glPixelLastSX = 0;
 GLfloat glPixelLastSY = 0;
 GLboolean glPixelLastValid = GL_FALSE;
@@ -4403,22 +4411,29 @@ GLuint *glGetTexturePointer(GLuint textureId) {
   return t->data;
 }
 
-GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height) {
+GLvoid glCleanSetup(GLuint width, GLuint height, GLuint *frameBuffer, GLfloat *depthBuffer) {
   constructGL();
-  glFrameBufferWidth = width;
-  glFrameBufferHeight = height;
-  glFrameBuffer = frameBuffer;
-  glDepthBuffer = depthBuffer;
-  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*glFrameBufferBytesPerPixel);
-  memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
-  glFrameBufferWidth0 = glFrameBufferWidth;
-  glFrameBufferHeight0 = glFrameBufferHeight;
-  glFrameBuffer0 = glFrameBuffer;
-  glDepthBuffer0 = glDepthBuffer;
-  glSetTime(0);
-  glViewport(0,0,width,height);
-  glDirectBlit = GL_TRUE;
+  glDirectBlit = GL_FALSE;
   glHiColor = GL_FALSE;
+  glOtherFrame = GL_FALSE;
+  glFrameBufferDedicated = NULL;
+  glFrameBufferWidth = width;
+  glFrameBufferWidth0 = width;
+  glFrameBufferHeight = height;
+  glFrameBufferHeight0 = height;
+  glFrameBuffer = frameBuffer;
+  glFrameBuffer0 = frameBuffer;
+  glDepthBuffer = depthBuffer;
+  glDepthBuffer0 = depthBuffer;
+  memset(glFrameBuffer,0,width*height*glFrameBufferBytesPerPixel);
+  memset(glDepthBuffer,0,width*height*sizeof(GLfloat));
+  glViewport(0,0,width,height);
+  glSetTime(0);
+}
+
+GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height) {
+  glCleanSetup(width, height, frameBuffer, depthBuffer);
+  glDirectBlit = GL_TRUE;
   return GL_TRUE;
 }
 // --------------------------------------
@@ -4443,7 +4458,6 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
 // --------------------------------------
 GLvoid glSetupMouse();
 GLushort glGetBiosGraphicsMode();
-GLboolean glOtherFrame = GL_FALSE;
 GLubyte glHiRedTab[256];
 GLint glGraphicsModeToRestore=-1;
 GLint glKey = 0;
@@ -4710,30 +4724,24 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     regs.cx = (uint16_t)mode;
     glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
-      constructGL();
+
+      __FREE(w);
+
       glGraphicsModeToRestore = glGetBiosGraphicsMode();
+      glVesaBGRA = (modeInfo.bluePosition == 0) ? GL_TRUE : GL_FALSE;
+
       regs.ax = 0x4f02;
       regs.bx = (uint16_t)(mode|0x4000);
       glDPMI_int386(0x10,&regs,&regs); // needed here for later mouse setup
-      glVesaBGRA = (modeInfo.bluePosition == 0) ? GL_TRUE : GL_FALSE;
-      glFrameBufferWidth = xRes;
-      glFrameBufferHeight = yRes;
-      glFrameBufferDedicated = (GLuint*)glMapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
-      glFrameBuffer = (GLuint *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
-      glDepthBuffer = (GLfloat *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
-      memset(glFrameBufferDedicated,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      glFrameBufferWidth0 = glFrameBufferWidth;
-      glFrameBufferHeight0 = glFrameBufferHeight;
-      glFrameBuffer0 = glFrameBuffer;
-      glDepthBuffer0 = glDepthBuffer;
+
+      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+      glCleanSetup(xRes, yRes, frameBuffer, depthBuffer);
       glSetupMouse();
-      glSetTime(0);
-      glViewport(0,0,xRes,yRes);
-      __FREE(w);
-      glDirectBlit = GL_FALSE;
-      glHiColor = GL_FALSE;
+
+      glFrameBufferDedicated = (GLuint*)glMapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
+      memset(glFrameBufferDedicated,0,xRes*yRes*sizeof(GLuint));
+
       return GL_TRUE;
     }
     v++;
@@ -4763,6 +4771,7 @@ __dpmi_meminfo glLinearFrameBufferStruct; // physical to linear address mapping 
 
 
 GLboolean glUnmapPhysical(GLuint linearAddress) {
+  __UNUSED(linearAddress);
   __dpmi_free_physical_address_mapping(&glLinearFrameBufferStruct);
   __dpmi_free_ldt_descriptor(glVesasel);
   return GL_TRUE;
@@ -4821,38 +4830,32 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     regs.x.cx = (uint16_t)mode;
     glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
-      constructGL();
+
+      __FREE(w);
+
       glGraphicsModeToRestore = glGetBiosGraphicsMode();
+      glVesaBGRA = (modeInfo.bluePosition == 0) ? GL_TRUE : GL_FALSE;
+
       memset(&regs,0,sizeof(__dpmi_regs));
       regs.x.ax = 0x4f02;
       regs.x.bx = (uint16_t)(mode|0x4000);
       __dpmi_simulate_real_mode_interrupt(0x10, &regs); // needed here for later mouse setup
-      glVesaBGRA = (modeInfo.bluePosition == 0) ? GL_TRUE : GL_FALSE;
-      glFrameBufferWidth = xRes;
-      glFrameBufferHeight = yRes;
+
+      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+      glCleanSetup(xRes, yRes, frameBuffer, depthBuffer);
+      glSetupMouse();
+
       // linear framebuffer mapping to vesasel not glFrameBufferDedicated
-      glFrameBufferDedicated = (GLuint*)0x10101010; // not NULL so glDone calls unmap
       glLinearFrameBufferStruct.size = 4096*1024-1;
       glLinearFrameBufferStruct.address = modeInfo.linearFrameBuffer;
       __dpmi_physical_address_mapping(&glLinearFrameBufferStruct);
       glVesasel = __dpmi_allocate_ldt_descriptors(1);
       __dpmi_set_segment_base_address(glVesasel,glLinearFrameBufferStruct.address);
       __dpmi_set_segment_limit(glVesasel,glLinearFrameBufferStruct.size-1);
-      glFrameBuffer = (GLuint *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
-      glDepthBuffer = (GLfloat *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
-      for (GLint i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) _farpokel(glVesasel,i<<2,0);
-      memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-      glFrameBufferWidth0 = glFrameBufferWidth;
-      glFrameBufferHeight0 = glFrameBufferHeight;
-      glFrameBuffer0 = glFrameBuffer;
-      glDepthBuffer0 = glDepthBuffer;
-      glSetupMouse();
-      glSetTime(0);
-      glViewport(0,0,xRes,yRes);
-      __FREE(w);
-      glDirectBlit = GL_FALSE;
-      glHiColor = GL_FALSE;
+      for (GLint i = 0; i < xRes*yRes; i++) _farpokel(glVesasel,i<<2,0);
+      glFrameBufferDedicated = (GLuint*)0x10101010; // not NULL so glDone calls unmap
+
       return GL_TRUE;
     }
     v++;
@@ -4931,38 +4934,27 @@ GLvoid glSetVGABufferStart(GLuint adr) {
 }
 
 GLboolean glVGA() {
+  GLuint xRes = 320;
+  GLuint yRes = 200;
+
   glGraphicsModeToRestore = glGetBiosGraphicsMode();
-  constructGL();
+
+  DJGPPVGAMEMON  
+  memset((uint8_t*)(VGARAMBASE),0,0x10000);
+  DJGPPVGAMEMOFF
   glSetBiosGraphicsMode(0x13);
   glSetModeX();
   glSet400Lines();
   glSetHiColorPalette();
-  glOtherFrame = GL_FALSE;
-  uint8_t *vga = (uint8_t*)(VGARAMBASE);
-  DJGPPVGAMEMON
-  memset(vga,0,0x10000);
-  DJGPPVGAMEMOFF
-  glSetVGABufferStart(glOtherFrame ? 0x8000 : 0x0000);
-  GLint xRes = 320;
-  GLint yRes = 200;
-  glFrameBufferWidth = xRes;
-  glFrameBufferHeight = yRes;
-  glFrameBuffer = (GLuint *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLuint));
-  glDepthBuffer = (GLfloat *)__MALLOC(glFrameBufferWidth*glFrameBufferHeight*sizeof(GLfloat));
-  memset(glFrameBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-  memset(glDepthBuffer,0,glFrameBufferWidth*glFrameBufferHeight*4);
-  glFrameBufferWidth0 = glFrameBufferWidth;
-  glFrameBufferHeight0 = glFrameBufferHeight;
-  glFrameBuffer0 = glFrameBuffer;
-  glDepthBuffer0 = glDepthBuffer;
+  glSetVGABufferStart(0);
+  for (GLint i = 0; i < 256; i++) glHiRedTab[i] = (uint8_t)(128+(((i>>4)&15)<<3));
+
+  GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+  GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+  glCleanSetup(xRes, yRes, frameBuffer, depthBuffer);
   glSetupMouse();
-  glSetTime(0);
-  glViewport(0,0,xRes,yRes);
-  for (GLint i = 0; i < 256; i++) {
-    glHiRedTab[i] = (uint8_t)(128+(((i>>4)&15)<<3));
-  }
-  glDirectBlit = GL_FALSE;
   glHiColor = GL_TRUE;
+
   return GL_TRUE;
 }
 
@@ -5039,7 +5031,7 @@ GLvoid glDone() {
     }
 
     if (glGraphicsModeToRestore>=0) {
-      glSetBiosGraphicsMode(glGraphicsModeToRestore);
+      glSetBiosGraphicsMode((GLushort)glGraphicsModeToRestore);
       glGraphicsModeToRestore = -1;
     }
 
