@@ -57,8 +57,10 @@ typedef void GLvoid;
 
 // ------------------------
 // ------------------------
+
 // in C++ the context is already constructed at program start
 // in C glVesa,glVGA,glDirect firstly construct the context
+
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP); // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors (only 32 bit, yet)
 GLboolean glVGA(); // 320x200 with 6 bit green, 3 bit blue, 4 bit red, actually it's 320x400
 GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height); // to Setup direct rendering to a buffer+depth buffer // look also at glSetRenderTarget() // you need to delete the buffers yourself
@@ -83,6 +85,7 @@ extern GLdouble glMonitorAspectRatio; // use glSetMonitorAspectRatio()
 extern GLboolean useNearPointers; // option for DJGPP, default GL_TRUE
 extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong by reflection vector, default GL_FALSE
 extern GLboolean glFastTexturing; // use perspective approximations for speed, default GL_FALSE
+extern GLboolean glVGACheckered; // glVGA() with "dithering", default GL_FALSE
 extern GLint glFastTextureSpanWidth;
 
 // ------------------------

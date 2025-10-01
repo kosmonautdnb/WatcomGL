@@ -99,6 +99,7 @@ GLfloat *glDepthBuffer = NULL;
 GLboolean useNearPointers = GL_TRUE;
 GLboolean glUseHalveVector = GL_FALSE; // OSMesa seems to use the halvevector, instead of the "real" phong described in the docs of OpenGL
 GLboolean glFastTexturing = GL_FALSE; // only with #define __FASTTEXTURING__
+GLboolean glVGACheckered = GL_FALSE;
 GLint glFastTextureSpanWidth = 16;
 GLint glFrameBufferWidth0 = 0;
 GLint glFrameBufferHeight0 = 0;
@@ -4970,8 +4971,10 @@ GLvoid glRefreshHiColor() {
     outp(0x3c5,1<<p);
     uint8_t *s = (uint8_t*)&glFrameBuffer[p];
     for (GLint y = 0; y < 200; y++) {
-      uint8_t *w1 = &vga[y*(320/4*2)];
-      uint8_t *w2 = &vga[y*(320/4*2)+320/4];
+      int k0 = glVGACheckered ? (p & 1) : 0;
+      int k1 = 1-k0;
+      uint8_t *w1 = &vga[y*(320/4*2)+k0*320/4];
+      uint8_t *w2 = &vga[y*(320/4*2)+k1*320/4];
       for (GLint x = 320/4; x > 0; x--) {
         *w2++ = (uint8_t)(s[1]>>2);
         *w1++ = (uint8_t)((s[2]>>5)|glHiRedTab[s[0]]);
