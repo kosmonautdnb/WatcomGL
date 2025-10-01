@@ -1,5 +1,4 @@
 ![ScreenShot](https://raw.github.com/kosmonautdnb/OpenGLDemoGame_DOS/main/watcomgl.png)  
-by Stefan Mader in 2025
 # Software OpenGL for WatcomC, DJGPP on DOS and any C/C++
 
 #### Just include and link:  
