@@ -1206,7 +1206,7 @@ GLvoid glClear(GLbitfield mask) {
   if (glIsEnabled(GL_SCISSOR_TEST)) {
     combineIntoWindow(&minX,&minY,&maxX,&maxY,glContext.scissorX0,glContext.scissorY0,glContext.scissorX1,glContext.scissorY1);
   }
-  if (mask & GL_COLOR_BUFFER_BIT) {
+  if ((mask & GL_COLOR_BUFFER_BIT) && (glFrameBuffer != NULL)) {
     GLint r = (GLint)FLOOR(glContext.clearRed*255.f);
     GLint g = (GLint)FLOOR(glContext.clearGreen*255.f);
     GLint b = (GLint)FLOOR(glContext.clearBlue*255.f);
@@ -1226,7 +1226,7 @@ GLvoid glClear(GLbitfield mask) {
           glFrameBuffer[x+y*glFrameBufferWidth] = rgba;
     }
   }    
-  if (mask & GL_DEPTH_BUFFER_BIT) {
+  if ((mask & GL_DEPTH_BUFFER_BIT) && (glDepthBuffer != NULL)) {
     for (GLint y = minY; y < maxY; y++)
       for (GLint x = minX; x < maxX; x++)
         glDepthBuffer[x+y*glFrameBufferWidth] = glContext.clearDepth; // clamping?
@@ -3700,6 +3700,10 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   GLint depthFunction = context->depthFunc;
   GLboolean depthTest = glIsEnabled2(context,GL_DEPTH_TEST);
   if (depthTest && (depthFunction == GL_ALWAYS)) depthTest=GL_FALSE;
+  if (glDepthBuffer == NULL) {
+    depthTest=GL_FALSE;
+    writeDepth=GL_FALSE;
+  }
   GLint alphaFunction = context->alphaFunc;
   GLint alphaRef = (GLint)FLOOR(context->alphaFuncRef*255.f);
   GLboolean alphaTest = glIsEnabled2(context,GL_ALPHA_TEST);
