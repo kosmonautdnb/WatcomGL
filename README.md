@@ -47,7 +47,7 @@ In this rather cheesy video featuring **Wipeout** on DOS, it's ingame:
 Video:  
 - https://youtu.be/eBOSpH6WCXY?si=uEAl7VEM6rkouTIv 
   
-DJGPP OSMesa library compile (DOS/OpenGL):
+DOS OpenGL library compile (DJGPP/OSMesa):
 - https://bisqwit.iki.fi/jutut/kuvat/programming_examples/djgpp_mesa.zip **zip and compilation not by me**.  
 
 ## TinyGL
