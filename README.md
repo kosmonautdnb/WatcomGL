@@ -12,11 +12,11 @@ You can use this library as a general-purpose C software rasterizer; it's not li
 
 # Quirks
 
-Just on WatcomC glSeconds() is stuttery (18.2Hz).
+Only with WatcomC does glSeconds() stutter (18.2 Hz).
 
-File names are upper case / DOS default. 
+File names are written in uppercase (DOS standard).
 
-If you don't use **WatcomC++**, that is wcl386.exe/wpp386.exe, but pure **WatcomC**, that is wcc386.exe, the -za99 option for an upgrade to the **C** standard **"C99"** is needed. -za99 is only available with **Open Watcom**.
+If you are using pure **WatcomC** (wcc386.exe) instead of **WatcomC++** (wcl386.exe/wpp386.exe), you need the -za99 option to upgrade to the **C** standard **"C99"**. -za99 is only available with **Open Watcom**.
 
 # Examples 
 
