@@ -23,8 +23,8 @@ If you are using pure **WatcomC** (wcc386.exe) instead of **WatcomC++** (wcl386.
 There is an example **void main()** in GL.H  
 
 Build examples with:
-- **!WATCOM.BAT**
-- **!DJGPP.BAT**
+- !WATCOM.BAT for **WatcomC++**
+- !DJGPP.BAT for **DJGPP**
 
 **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 
