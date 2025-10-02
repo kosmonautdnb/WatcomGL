@@ -28,9 +28,9 @@ There is an example **void main()** in GL.H
 
 **GLFW Amiga Boing Ball** found in an old **GLFW** repository (_GLFWBNG.CPP)  
 
-#### WatcomGL demo game: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
+WatcomGL **demo game**:   https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 
-#### WatcomC library collection with e.g. dear ImGui: https://github.com/kosmonautdnb/WatcomLibs 
+WatcomC library collection with e.g. **dear ImGui**:     https://github.com/kosmonautdnb/WatcomLibs 
 
 ## Other software OpenGL options
 
