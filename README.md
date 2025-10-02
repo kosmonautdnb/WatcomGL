@@ -6,9 +6,9 @@
   GLIMPL.CPP
 ####    
 
-Main performance limiting factor by far seems to be memory bandwidth with cache. You need a fast machine to run this on.
+By far the biggest performance limiting factor seems to be memory bandwidth with cache. You'll need a fast machine to run this on.
 
-You can use this library as a general **C** software rasterizer, it is not limited to DOS.   
+You can use this library as a general-purpose C software rasterizer; it's not limited to DOS.
 
 # Quirks
 
