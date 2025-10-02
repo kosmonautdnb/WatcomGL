@@ -29,7 +29,8 @@ Build the examples with:
 Files:
 - **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 - **Neon Helium Tutorials** found on the net (_NEHE.CPP)  
-- **GLFW Amiga Boing Ball** found in an old **GLFW** repository (_GLFWBNG.CPP)  
+- **GLFW Amiga Boing Ball** found in an old **GLFW** repository (_GLFWBNG.CPP)
+- You find example compiles of these samples (.exe) in the main folder.
 
 Repositories:  
 - WatcomGL **demo game**: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
