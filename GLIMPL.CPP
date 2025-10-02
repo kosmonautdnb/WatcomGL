@@ -36,6 +36,7 @@
 #endif // __DJGPP__
 #endif // __GLDISABLEDOSFUNCTIONS__ 
 
+
 #ifdef __cplusplus
   extern "C" {GLvoid _GLContext_init(); GLvoid constructGL() {}}
   class GLConstructor {public: GLConstructor() {_GLContext_init();}};
@@ -500,7 +501,7 @@ GLvoid glTexGen_(_GLContext *context, glVertex *v, GLdouble x, GLdouble y, GLdou
   }
   switch(context->texGenT) {
   case GL_SPHERE_MAP: {v->textureY = -reflectionY*0.5+0.5;} break;
-  case GL_SPHERE_MAP_ATAN2: {v->textureY = -acos(-reflectionY)/PI;} break;
+  case GL_SPHERE_MAP_ATAN2: {v->textureY = -acos((GLdouble)(-reflectionY))/PI;} break;
   case GL_SPHERE_MAP_DUAL_PARABOLOID: {v->textureY = -reflectionY/(fabs(reflectionZ)+1.0)*0.5+0.5;} break;
   }
 }
@@ -1675,7 +1676,7 @@ GLvoid glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
   case GL_LINEAR_ATTENUATION: {params[0]=glContext.linearAttenuation[light-GL_LIGHT0];} break;
   case GL_QUADRATIC_ATTENUATION: {params[0]=glContext.quadraticAttenuation[light-GL_LIGHT0];} break;
   case GL_SPOT_EXPONENT: {params[0]=glContext.spotExponent[light-GL_LIGHT0];} break;
-  case GL_SPOT_CUTOFF: {params[0]=(GLfloat)(acos(glContext.spotCutOff[light-GL_LIGHT0])*180.0/PI);} break;
+  case GL_SPOT_CUTOFF: {params[0]=(GLfloat)(acos((GLdouble)(glContext.spotCutOff[light-GL_LIGHT0])*180.0/PI));} break;
   case GL_SPOT_DIRECTION: // spot_direction already normalized
   case GL_POSITION:
   case GL_DIFFUSE:
@@ -1938,9 +1939,9 @@ GLvoid glRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, 
   GLdouble m[16], rotate[16];
   GLdouble OneMinusCosAngle, CosAngle, SinAngle;
   GLdouble A_OneMinusCosAngle, C_OneMinusCosAngle;
-  CosAngle = cos(angleInRadians);
+  CosAngle = cos((GLdouble)angleInRadians);
   OneMinusCosAngle = 1.f - CosAngle;
-  SinAngle = sin(angleInRadians);
+  SinAngle = sin((GLdouble)angleInRadians);
   A_OneMinusCosAngle = x*OneMinusCosAngle;
   C_OneMinusCosAngle = z*OneMinusCosAngle;
   for (GLint i = 0; i < 16; i++) m[i] = matrix[i];
@@ -1978,7 +1979,7 @@ GLvoid glRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, 
 
 GLvoid glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
   GLdouble *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  GLfloat l = (GLfloat)sqrt(x*x+y*y+z*z);
+  GLfloat l = (GLfloat)sqrt((GLdouble)(x*x+y*y+z*z));
   if (l > 0) {
     x/=l;
     y/=l;

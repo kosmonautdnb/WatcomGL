@@ -358,7 +358,7 @@ void NEHE8_Blending() {
 }
 
 int main(int argc, const char *argv[]) {
-
+  
   const bool pureVGA = false;
   if (pureVGA) {
     glVGA();
@@ -385,10 +385,10 @@ int main(int argc, const char *argv[]) {
   glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
   glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
 
-  unsigned char *textureData = new unsigned char[256*256*3];
+  unsigned char *textureData = (unsigned char *)malloc(256*256*3);
   for (int y = 0; y < 256; y++)
   for (int x = 0; x < 256; x++) {
-    unsigned int col = (int)(sin(x/100.f/5.f+y/33.f/5.f)*0xffffff)|0xff000000;
+    unsigned int col = (int)(sin(x/100.0/5.0+y/33.0/5.0)*0xffffff)|0xff000000;
     textureData[(x+y*256)*3+0] = col & 255;
     textureData[(x+y*256)*3+1] = (col>>8) & 255;
     textureData[(x+y*256)*3+2] = (col>>16) & 255;
@@ -399,6 +399,7 @@ int main(int argc, const char *argv[]) {
   glTexImage2D(GL_TEXTURE_2D,0,3,256,256,0,GL_RGB,GL_UNSIGNED_BYTE,textureData);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  free(textureData);
 
   while(true)
   {    
