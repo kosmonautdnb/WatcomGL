@@ -98,4 +98,4 @@ TinyGL also emulates OpenGL in software.
 
 ### (c)2025 by Stefan Mader
 
-This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
+The original WatcomGL repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
