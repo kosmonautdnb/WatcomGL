@@ -20,7 +20,7 @@ If you are using pure **WatcomC** (wcc386.exe) instead of **WatcomC++** (wcl386.
 
 # Examples 
 
-Example **void main()** in GL.H  
+An example **void main()** in GL.H  
 
 **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 
