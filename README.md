@@ -37,7 +37,7 @@ Repositories:
 
 ## Other software OpenGL options
 
-## OSMesa
+## Mesa
 OSMesa is providing the original software based OpenGL. It was maintained for DOS until around 2007.
   
 In this rather cheesy video featuring **Wipeout** on DOS, it's ingame:
