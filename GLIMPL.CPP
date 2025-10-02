@@ -64,7 +64,6 @@
 #define __FASTTEXTURING__ 1
 #endif // INLINE
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -2599,8 +2598,10 @@ GLvoid glLookAt(GLdouble *matrix, GLdouble *eyePosition3D, GLdouble *center3D, G
 
 GLint glInvertMatrixf(const GLfloat *m, GLfloat *out)
 {
-   //https://archive.mesa3d.org/older-versions/9.x/9.0/
-   //MesaLib-9.0.zip/Mesa-9.0\src\mesa\math\m_matrix.c
+   // https://archive.mesa3d.org/older-versions/9.x/9.0/
+   // MesaLib-9.0.zip/Mesa-9.0\src\mesa\math\m_matrix.c
+   // (MIT License) The default Mesa license is as follows: 
+   // Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
    GLfloat wtmp[4][8];
    GLfloat m0, m1, m2, m3, s;
    GLfloat *r0, *r1, *r2, *r3;
@@ -2711,8 +2712,10 @@ GLint glInvertMatrixf(const GLfloat *m, GLfloat *out)
 
 GLint glInvertMatrix(const GLdouble *m, GLdouble *out)
 {
-   //https://archive.mesa3d.org/older-versions/9.x/9.0/
-   //MesaLib-9.0.zip/Mesa-9.0\src\mesa\math\m_matrix.c
+   // https://archive.mesa3d.org/older-versions/9.x/9.0/
+   // MesaLib-9.0.zip/Mesa-9.0\src\mesa\math\m_matrix.c
+   // (MIT License) The default Mesa license is as follows: 
+   // Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
    GLdouble wtmp[4][8];
    GLdouble m0, m1, m2, m3, s;
    GLdouble *r0, *r1, *r2, *r3;
@@ -3164,6 +3167,7 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
 // -----------
 // -----------
 GLboolean glDontPaint = GL_FALSE;
+typedef GLdouble GLraster; // floats are to imprecise (text rendering failed) and not faster (even slower) here
 INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   GLdouble nx = v2->sy - v1->sy;
   GLdouble ny = -(v2->sx - v1->sx);
@@ -3203,19 +3207,19 @@ INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVert
 
 #define __PAINTPOLYQUAD_BEGINY__\
   GLint x,y;\
-  GLdouble bary0,bary1,bary2;\
-  GLdouble baryAdd0,baryAdd1,baryAdd2;\
+  GLraster bary0,bary1,bary2;\
+  GLraster baryAdd0,baryAdd1,baryAdd2;\
   GLuint *pDest;\
   GLfloat *zDest;\
   for (y = pminy;y < pmaxy;y++) {
 
 #define __PAINTPOLYQUAD_INITBARYFORX__\
-  bary0 = getBary(pminx,y,v0,v1,v2);\
-  bary1 = getBary(pminx,y,v1,v2,v0);\
-  bary2 = getBary(pminx,y,v2,v0,v1);\
-  baryAdd0 = (getBary(pmaxx,y,v0,v1,v2)-bary0)/(pmaxx-pminx);\
-  baryAdd1 = (getBary(pmaxx,y,v1,v2,v0)-bary1)/(pmaxx-pminx);\
-  baryAdd2 = (getBary(pmaxx,y,v2,v0,v1)-bary2)/(pmaxx-pminx);
+  bary0 = (GLraster)getBary(pminx,y,v0,v1,v2);\
+  bary1 = (GLraster)getBary(pminx,y,v1,v2,v0);\
+  bary2 = (GLraster)getBary(pminx,y,v2,v0,v1);\
+  baryAdd0 = (GLraster)((getBary(pmaxx,y,v0,v1,v2)-bary0)/(pmaxx-pminx));\
+  baryAdd1 = (GLraster)((getBary(pmaxx,y,v1,v2,v0)-bary1)/(pmaxx-pminx));\
+  baryAdd2 = (GLraster)((getBary(pmaxx,y,v2,v0,v1)-bary2)/(pmaxx-pminx));
 
 #define __PAINTPOLYQUAD_BEGINX__QUADREGION\
   GLint dminx = pminx;\
@@ -3243,9 +3247,9 @@ INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVert
       dminx += addx;\
       pDest += addx;\
       zDest += addx;\
-      bary0 += (GLdouble)addx * baryAdd0;\
-      bary1 += (GLdouble)addx * baryAdd1;\
-      bary2 += (GLdouble)addx * baryAdd2;\
+      bary0 += (GLraster)(addx * baryAdd0);\
+      bary1 += (GLraster)(addx * baryAdd1);\
+      bary2 += (GLraster)(addx * baryAdd2);\
     }\
   }\
   for (x = dminx;x < dmaxx;x++) {
@@ -3941,7 +3945,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     sb2 *= v2w;
   }
 
-  GLdouble iw = 0;
+  GLraster iw = 0;
   const GLboolean wValue = (textured || interpolateColor) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlending = (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
   const GLboolean preMultipliedAlpha = (blendFuncS == GL_ONE && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
@@ -3967,15 +3971,15 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 #ifdef __FASTTEXTURING__
   GLboolean fastTexturing = glFastTexturing;
   GLint fastApprox = 0;
-  GLdouble xbaryAdd0 = baryAdd0*glFastTextureSpanWidth;
-  GLdouble xbaryAdd1 = baryAdd1*glFastTextureSpanWidth;
-  GLdouble xbaryAdd2 = baryAdd2*glFastTextureSpanWidth;
+  GLraster xbaryAdd0 = (GLraster)(baryAdd0*glFastTextureSpanWidth);
+  GLraster xbaryAdd1 = (GLraster)(baryAdd1*glFastTextureSpanWidth);
+  GLraster xbaryAdd2 = (GLraster)(baryAdd2*glFastTextureSpanWidth);
 #endif // __FASTTEXTURING__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0 >= 0 && bary1 >= 0 && bary2 >= 0) {
-        GLdouble zp = __BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z);
+        GLraster zp = (GLraster)(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
         if ((!depthTest) || glCheckDepthFunction(*zDest,(GLfloat)zp,depthFunction)) {
-          if (wValue) iw = 1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w));
+          if (wValue) iw = (GLraster)(1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w)));
           GLuint rgba;
           GLboolean writePixel = GL_TRUE;
            GLboolean writePixel2 = GL_TRUE;
@@ -5156,3 +5160,27 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
 #ifdef __cplusplus
 }
 #endif // __cplusplus
+
+/*
+MIT License
+
+Copyright (c) 2025 Stefan Mader
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
