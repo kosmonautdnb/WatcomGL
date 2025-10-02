@@ -16,7 +16,7 @@ Only with WatcomC does glSeconds() stutter (clock=18.2 Hz). DJGPP features a goo
 
 File names are written in uppercase (DOS standard).
 
-If you are using pure **WatcomC** (wcc386.exe) instead of **WatcomC++** (wcl386.exe/wpp386.exe), you need the -za99 option to upgrade to the **C** standard **"C99"**. -za99 is only available with **Open Watcom**. The old **WatcomC++ 11.0** works fine with (wcl386.exe/wpp386.exe), but not with (wcc386.exe). 
+If you are using pure **WatcomC** (wcc386.exe) instead of **WatcomC++** (wcl386.exe/wpp386.exe), you need the -za99 option to upgrade to the **C** standard **"C99"**. -za99 is only available with **Open Watcom**. The old **WatcomC++ 11.0** works fine with (wcl386.exe/wpp386.exe), but not with (wcc386.exe). I am using Watcom C++ 11.0 most of the time.
 
 # Examples 
 
