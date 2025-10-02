@@ -22,6 +22,8 @@ If you are using pure **WatcomC** (wcc386.exe) instead of **WatcomC++** (wcl386.
 
 There is an example **void main()** in GL.H  
 
+Build examples with **!WATCOM.BAT** or **!DJGPP.BAT*"
+
 **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 
 **Neon Helium Tutorials** found on the net (_NEHE.CPP)  
