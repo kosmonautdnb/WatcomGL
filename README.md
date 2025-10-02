@@ -16,6 +16,8 @@ Just on WatcomC glSeconds() is stuttery (18.2Hz).
 
 File names are upper case / DOS default. 
 
+If you don't use WatcomC++(wcl386/wpp386) but pure WatcomC(wcc386), the -za99 option for C99 is needed. (-za99 is only available with Openwatcom.)
+
 # Examples 
 
 Example **void main()** in GL.H  
