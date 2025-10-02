@@ -12,7 +12,7 @@ You can use this library as a general-purpose C software rasterizer; it's not li
 
 # Quirks
 
-Only with WatcomC does glSeconds() stutter (18.2 Hz).
+Only with WatcomC does glSeconds() stutter (clock=18.2 Hz).
 
 File names are written in uppercase (DOS standard).
 
