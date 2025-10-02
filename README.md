@@ -22,7 +22,7 @@ If you are using pure **WatcomC** (wcc386.exe) instead of **WatcomC++** (wcl386.
 
 There is an example **void main()** in GL.H  
 
-Build examples with:
+Build the examples with:
 - !WATCOM.BAT for **WatcomC++**
 - !DJGPP.BAT for **DJGPP**
 
