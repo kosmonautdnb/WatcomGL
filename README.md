@@ -52,7 +52,7 @@ DOS OpenGL library compile (DJGPP/OSMesa):
 
 ## TinyGL
 TinyGL also emulates OpenGL in software.
-https://github.com/erysdren/TinyGL.git  
+- https://github.com/erysdren/TinyGL.git  
 
 # WatcomGL Features
 - Header Compatible With OpenGL
