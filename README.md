@@ -91,7 +91,6 @@ https://github.com/erysdren/TinyGL.git
 - Uses Doubles And Floats
 - Just the very oldschool OpenGL
 
-# WatcomGL 
 ### (c)2025 by Stefan Mader
 
 This repository lives at: https://github.com/kosmonautdnb/WatcomGL.git  
