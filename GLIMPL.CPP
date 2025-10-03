@@ -9,6 +9,7 @@
 // Issues:
 // - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math), maybe add 0.001 to the coordinates
 // - Better take public domain PModeW for 256MB of memory.
+// - On problems with Vesa on DOS, maybe UniVBE (or similar) may help. Not tested that, though.
 // --
 #define WATCOMGLAPI
 #include "GL.H"
@@ -100,6 +101,7 @@ GLboolean useNearPointers = GL_TRUE;
 GLboolean glUseHalveVector = GL_FALSE; // OSMesa seems to use the halvevector, instead of the "real" phong described in the docs of OpenGL
 GLboolean glFastTexturing = GL_FALSE; // only with #define __FASTTEXTURING__
 GLboolean glVGACheckered = GL_FALSE;
+GLboolean glWaitVSync = GL_FALSE; // Vesa function 0x4f07 and 0x4f0a are missing here, sorry. Use this with care, since this is a VGA function and not Vesa.
 GLint glFastTextureSpanWidth = 16;
 GLint glFrameBufferWidth0 = 0;
 GLint glFrameBufferHeight0 = 0;
@@ -4992,29 +4994,38 @@ GLvoid glRefreshHiColor() {
   glOtherFrame = !glOtherFrame;   
 }
 
+GLvoid glWaitVerticalRetrace() {
+  while((inp(0x03da)&8)!=0) {;}
+  while((inp(0x03da)&8)==0) {;} // wait till retrace start
+}
+
 GLvoid glRefresh() {
   
   if (glDirectBlit) 
     return;
+  
+  if (glWaitVSync) 
+    glWaitVerticalRetrace();
   
   if (glHiColor) {
     glRefreshHiColor();
     return;
   }
 
-  GLuint rgba;
+  GLuint *read = &glFrameBuffer0[0];
+  const GLint k = glFrameBufferWidth0*glFrameBufferHeight0;
   if (glVesaBGRA) {
-    for (GLint i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
-      rgba = glFrameBuffer0[i];
+    for (GLint i = 0; i < k; i++) {
+      const GLuint rgba = *read++;
 #ifdef __DJGPP__
-      _farpokel(glVesasel,i<<2,(rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000));
+      _farpokel(glVesasel,i<<2,(rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16));
 #else // __DJGPP__
-      glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba>>16)&0xff)|((rgba<<16)&0x00ff0000);
+      glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16);
 #endif // __DJGPP__
     }
   } else {
-    for (GLint i = 0; i < glFrameBufferWidth0*glFrameBufferHeight0; i++) {
-      rgba = glFrameBuffer0[i];
+    for (GLint i = 0; i < k; i++) {
+      const GLuint rgba = *read++;
 #ifdef __DJGPP__
       _farpokel(glVesasel,i<<2,rgba);
 #else // __DJGPP__

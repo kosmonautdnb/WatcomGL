@@ -9,6 +9,7 @@
 // Issues:
 // - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math), maybe add 0.001 to the coordinates
 // - Better take public domain PModeW for 256MB of memory.
+// - On problems with Vesa on DOS, maybe UniVBE (or similar) may help. Not tested that, though.
 // --
 #ifndef __GL_H__
 #define __GL_H__
@@ -86,6 +87,7 @@ extern GLboolean useNearPointers; // option for DJGPP, default GL_TRUE
 extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong by reflection vector, default GL_FALSE
 extern GLboolean glFastTexturing; // use perspective approximations for speed, default GL_FALSE
 extern GLboolean glVGACheckered; // glVGA() with "dithering", default GL_FALSE
+extern GLboolean glWaitVSync; // to achieve better "double buffer" enable this, default GL_FALSE 
 extern GLint glFastTextureSpanWidth;
 
 // ------------------------
