@@ -87,7 +87,7 @@ extern GLboolean useNearPointers; // option for DJGPP, default GL_TRUE
 extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong by reflection vector, default GL_FALSE
 extern GLboolean glFastTexturing; // use perspective approximations for speed, default GL_FALSE
 extern GLboolean glVGACheckered; // glVGA() with "dithering", default GL_FALSE
-extern GLboolean glWaitVSync; // to achieve better "double buffer" enable this, default GL_FALSE 
+extern GLboolean glWaitVSync; // to achieve better "double buffer" enable this. Use this with care, since this is a VGA function and not Vesa, default GL_FALSE 
 extern GLint glFastTextureSpanWidth;
 
 // ------------------------
