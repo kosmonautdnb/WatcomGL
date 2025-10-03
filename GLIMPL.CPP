@@ -4491,6 +4491,10 @@ GLint glMouseB = 0;
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 GLboolean glVesaBGRA = GL_TRUE;
+GLint glBits = 32;
+GLushort glHiColorTableR[256];
+GLushort glHiColorTableG[256];
+GLushort glHiColorTableB[256];
 typedef GLubyte uint8_t;
 typedef GLushort uint16_t;
 typedef GLuint uint32_t;
@@ -4548,6 +4552,17 @@ typedef struct glVbeModeInfo {
 } glVbeModeInfo;
 #pragma pack(pop)
 // --------------------------------------
+
+void glBuildHiColorTables(glVbeModeInfo *mode) {
+  const GLint redShift = 8 - mode->redMask;
+  const GLint greenShift = 8 - mode->greenMask;
+  const GLint blueShift = 8 - mode->blueMask;
+  for (GLint i = 0; i < 256; i++) {
+    glHiColorTableR[i] = (GLushort)((i>>redShift)<<mode->redPosition);
+    glHiColorTableG[i] = (GLushort)((i>>greenShift)<<mode->greenPosition);
+    glHiColorTableB[i] = (GLushort)((i>>blueShift)<<mode->bluePosition);
+  }
+}
 
 // --------------------------------------
 // ---- DPMI for VESA ---
@@ -4738,6 +4753,9 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
 
       __FREE(w);
+      glBits = bPP;
+      if (glBits == 15 || glBits == 16) 
+        glBuildHiColorTables(&modeInfo);
 
       glGraphicsModeToRestore = glGetBiosGraphicsMode();
       glVesaBGRA = (modeInfo.bluePosition == 0) ? GL_TRUE : GL_FALSE;
@@ -4844,6 +4862,9 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
 
       __FREE(w);
+      glBits = bPP;
+      if (glBits == 15 || glBits == 16) 
+        glBuildHiColorTables(&modeInfo);
 
       glGraphicsModeToRestore = glGetBiosGraphicsMode();
       glVesaBGRA = (modeInfo.bluePosition == 0) ? GL_TRUE : GL_FALSE;
@@ -5012,28 +5033,86 @@ GLvoid glRefresh() {
     return;
   }
 
-  GLuint *read = &glFrameBuffer0[0];
-  const GLint k = glFrameBufferWidth0*glFrameBufferHeight0;
-  if (glVesaBGRA) {
-    for (GLint i = 0; i < k; i++) {
-      const GLuint rgba = *read++;
+  if (glBits == 32) {
+    // 32bit
+    GLuint *read = &glFrameBuffer0[0];
+    const GLint k = glFrameBufferWidth0*glFrameBufferHeight0;
+    if (glVesaBGRA) {
+      for (GLint i = 0; i < k; i++) {
+        const GLuint rgba = *read++;
 #ifdef __DJGPP__
-      _farpokel(glVesasel,i<<2,(rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16));
+        _farpokel(glVesasel,i<<2,(rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16));
 #else // __DJGPP__
-      glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16);
+        glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16);
 #endif // __DJGPP__
+      }
+    } else {
+      for (GLint i = 0; i < k; i++) {
+        const GLuint rgba = *read++;
+#ifdef __DJGPP__
+        _farpokel(glVesasel,i<<2,rgba);
+#else // __DJGPP__
+        glFrameBufferDedicated[i] = rgba;
+#endif // __DJGPP__
+      }
     }
-  } else {
-    for (GLint i = 0; i < k; i++) {
-      const GLuint rgba = *read++;
-#ifdef __DJGPP__
-      _farpokel(glVesasel,i<<2,rgba);
-#else // __DJGPP__
-      glFrameBufferDedicated[i] = rgba;
+  } 
+
+  if (glBits == 24) { // very slow
+    //24bit
+    GLuint *read = &glFrameBuffer0[0];
+    const GLint k = glFrameBufferWidth0*glFrameBufferHeight0*3;
+#ifndef __DJGPP__
+    GLubyte *dedicated = (GLubyte*)glFrameBufferDedicated;
 #endif // __DJGPP__
+    if (glVesaBGRA) {
+      for (GLint i = 0; i < k; i += 3) {
+        const GLuint rgba = *read++;
+#ifdef __DJGPP__
+        _farpokeb(glVesasel,i,(rgba>>16) & 0xff);
+        _farpokeb(glVesasel,i+1,(rgba>>8) & 0xff);
+        _farpokeb(glVesasel,i+2,rgba & 0xff);
+#else // __DJGPP__
+        dedicated[0] = (GLubyte)((rgba>>16) & 0xff);
+        dedicated[1] = (GLubyte)((rgba>>8) & 0xff);
+        dedicated[2] = (GLubyte)(rgba & 0xff);
+        dedicated += 3;
+#endif // __DJGPP__
+      }
+    } else {
+      for (GLint i = 0; i < k; i += 3) {
+        const GLuint rgba = *read++;
+#ifdef __DJGPP__
+        _farpokeb(glVesasel,i,rgba & 0xff);
+        _farpokeb(glVesasel,i+1,(rgba>>8) & 0xff);
+        _farpokeb(glVesasel,i+2,(rgba>>16) & 0xff);
+#else // __DJGPP__
+        dedicated[0] = (GLubyte)(rgba & 0xff);
+        dedicated[1] = (GLubyte)((rgba>>8) & 0xff);
+        dedicated[2] = (GLubyte)((rgba>>16) & 0xff);
+        dedicated += 3;
+#endif // __DJGPP__
+      }
     }
   }
 
+  if (glBits == 15 || glBits == 16) {
+    //16bit
+    GLuint *read = &glFrameBuffer0[0];
+    const GLint k = glFrameBufferWidth0*glFrameBufferHeight0;
+#ifndef __DJGPP__
+    GLushort *dedicated = (GLushort*)glFrameBufferDedicated;
+#endif // __DJGPP__
+    for (GLint i = 0; i < k; i++) {
+      const GLuint rgba = *read++;
+      const GLushort in16 = (GLushort)(glHiColorTableR[rgba&0xff]|glHiColorTableG[(rgba>>8)&0xff]|glHiColorTableB[(rgba>>16)&0xff]);
+#ifdef __DJGPP__
+      _farpokew(glVesasel,i*2,in16);
+#else // __DJGPP__
+      *dedicated++ = in16;
+#endif // __DJGPP__
+    }
+  }
 }
 
 GLvoid glDone() {
