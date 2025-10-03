@@ -4750,7 +4750,8 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     regs.ax = 0x4f01;
     regs.cx = (uint16_t)mode;
     glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
-    if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
+    const GLboolean linearFrameBufferAvailable = (modeInfo.attributes & 0x90) == 0x90 ? GL_TRUE : GL_FALSE;
+    if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP && linearFrameBufferAvailable) {
 
       __FREE(w);
       glBits = bPP;
@@ -4859,7 +4860,8 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     regs.x.ax = 0x4f01;
     regs.x.cx = (uint16_t)mode;
     glVBE_callESDI(&regs,&modeInfo,sizeof(glVbeModeInfo));
-    if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP) {
+    const GLboolean linearFrameBufferAvailable = (modeInfo.attributes & 0x90) == 0x90 ? GL_TRUE : GL_FALSE;
+    if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP && linearFrameBufferAvailable) {
 
       __FREE(w);
       glBits = bPP;
