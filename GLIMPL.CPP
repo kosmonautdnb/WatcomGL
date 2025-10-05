@@ -52,17 +52,17 @@
 #endif // PI
 
 #ifdef __WATCOMC__
-#define INLINE __inline
+#define INLINE static __inline
 #define __FASTTEXTURING__ 1
 #endif // __WATCOMC__
 
 #ifdef __DJGPP__
-#define INLINE inline
+#define INLINE static  inline
 #define __FASTTEXTURING__ 1
 #endif // __DJGPP__
 
 #ifndef INLINE
-#define INLINE inline
+#define INLINE static inline
 #define __FASTTEXTURING__ 1
 #endif // INLINE
 
@@ -440,11 +440,6 @@ INLINE GLint glTransformVertex(_GLContext *context, glVertex *v, GLboolean clip)
   const GLdouble y = vx * cm[0*4+1] + vy * cm[1*4+1] + vz * cm[2*4+1] + vw * cm[3*4+1];
   GLdouble z = vx * cm[0*4+2] + vy * cm[1*4+2] + vz * cm[2*4+2] + vw * cm[3*4+2];
   const GLdouble w = vx * cm[0*4+3] + vy * cm[1*4+3] + vz * cm[2*4+3] + vw * cm[3*4+3];
-
-  if (glIsEnabled2(context,GL_POLYGON_OFFSET_FILL)) {
-    z *= 1.0 + context->polygonOffsetFactor * fabs(w); // different on every driver
-    z += context->polygonOffsetUnits; // different on every driver
-  }
 
   if (clip) {
     if (z < -w) {
@@ -3620,13 +3615,18 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   GLboolean maskBlue = context->maskBlue;
   GLboolean maskAlpha = context->maskAlpha;
   GLboolean notMasked = maskRed && maskGreen && maskBlue && maskAlpha;
+      
+  GLdouble zadd = 0;
+  if (glIsEnabled2(context,GL_POLYGON_OFFSET_FILL)) {
+    zadd -= context->polygonOffsetUnits*0.001; // todo: albeit driver dependend, maybe do a better implementation
+  }
 
   GLdouble v0w = 1.0/(v0->sw);
   GLdouble v1w = 1.0/(v1->sw);
   GLdouble v2w = 1.0/(v2->sw);
-  GLdouble v0z = (v0->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
-  GLdouble v1z = (v1->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
-  GLdouble v2z = (v2->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  GLdouble v0z = (v0->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear+zadd;
+  GLdouble v1z = (v1->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear+zadd;
+  GLdouble v2z = (v2->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear+zadd;
 
   glVertex *vk0 = v0;\
   glVertex *vk1 = v1;\
