@@ -317,6 +317,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 //GL_FOG 0x0B64 (0x64)
 //GL_TEXTURE_GEN_S 0x0c60 (0x60)
 //GL_TEXTURE_GEN_T 0x0c61 (0x61)
+//GL_POLYGON_OFFSET_FILL 0x8037 (0x37)
 #define GL_MOUSE_BUTTON_LEFT 1
 #define GL_MOUSE_BUTTON_RIGHT 2
 #define GL_VK_NONE 0

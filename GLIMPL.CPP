@@ -438,8 +438,13 @@ INLINE GLint glTransformVertex(_GLContext *context, glVertex *v, GLboolean clip)
   const GLdouble vw = v->vertexW;
   const GLdouble x = vx * cm[0*4+0] + vy * cm[1*4+0] + vz * cm[2*4+0] + vw * cm[3*4+0];
   const GLdouble y = vx * cm[0*4+1] + vy * cm[1*4+1] + vz * cm[2*4+1] + vw * cm[3*4+1];
-  const GLdouble z = vx * cm[0*4+2] + vy * cm[1*4+2] + vz * cm[2*4+2] + vw * cm[3*4+2];
+  GLdouble z = vx * cm[0*4+2] + vy * cm[1*4+2] + vz * cm[2*4+2] + vw * cm[3*4+2];
   const GLdouble w = vx * cm[0*4+3] + vy * cm[1*4+3] + vz * cm[2*4+3] + vw * cm[3*4+3];
+
+  if (glIsEnabled2(context,GL_POLYGON_OFFSET_FILL)) {
+    z *= 1.0 + context->polygonOffsetFactor * fabs(w); // different on every driver
+    z += context->polygonOffsetUnits; // different on every driver
+  }
 
   if (clip) {
     if (z < -w) {
