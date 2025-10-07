@@ -202,7 +202,7 @@ GLvoid glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloa
 GLvoid glPixelStorei(GLenum pname, GLint param);
 GLvoid glPointSize(GLfloat size); // supported
 GLvoid glPolygonMode(GLenum face, GLenum mode); // supported
-GLvoid glPolygonOffset(GLfloat factor, GLfloat units);
+GLvoid glPolygonOffset(GLfloat factor, GLfloat units); // supported (units)
 GLvoid glPolygonStipple(const GLubyte *mask);
 GLvoid glPopMatrix(); // supported
 GLvoid glPushMatrix(); // supported
