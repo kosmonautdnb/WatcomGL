@@ -4037,14 +4037,16 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 fastApprox--;
               } else {
 #endif // __FASTTEXTURING__
-                const GLfloat tx = (GLfloat)((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw);
-                const GLfloat ty = (GLfloat)((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw);
-                const GLint tix0 = textureWrap((GLint)FLOOR(tx), twidth0, wrapS);
-                GLint tiy0 = textureWrap((GLint)FLOOR(ty), theight0, wrapT);
-                const GLint tix1 = textureWrap((GLint)FLOOR(tx)+1, twidth0, wrapS);
-                GLint tiy1 = textureWrap((GLint)FLOOR(ty)+1, theight0, wrapT);
-                GLint txf = (GLint)FLOOR(tx*256.f) & 255;
-                GLint tyf = (GLint)FLOOR(ty*256.f) & 255;
+                const GLint tx = (GLint)((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*256.0*iw);
+                const GLint ty = (GLint)((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*256.0*iw);
+                const GLint kx = tx>>8;
+                const GLint ky = ty>>8;
+                const GLint tix0 = textureWrap(kx, twidth0, wrapS);
+                const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
+                GLint tiy0 = textureWrap(ky, theight0, wrapT);
+                GLint tiy1 = textureWrap(ky+1, theight0, wrapT);
+                GLint txf = tx & 255;
+                GLint tyf = ty & 255;
                 const GLint p1v = ((256-txf)*(256-tyf))>>8; 
                 const GLint p2v = ((txf)*(256-tyf))>>8; 
                 const GLint p3v = ((txf)*(tyf))>>8; 
