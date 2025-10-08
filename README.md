@@ -93,6 +93,7 @@ TinyGL also emulates OpenGL in software.
 - No Assembly/MMX/SSE etc..
 - No DisplayLists/VertexBuffers/IndexBuffers
 - No Shaders
+- No StencilBuffer
 - Currently Just RGBA 32Bit Framebuffer
 - Uses Doubles And Floats
 - Just the very oldschool OpenGL
