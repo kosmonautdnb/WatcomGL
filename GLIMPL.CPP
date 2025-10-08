@@ -3979,6 +3979,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 #ifdef __FASTTEXTURING__
   GLboolean fastTexturing = glFastTexturing;
   GLint fastApprox = 0;
+  GLint fastX = 0;
   GLraster xbaryAdd0 = (GLraster)(baryAdd0*glFastTextureSpanWidth);
   GLraster xbaryAdd1 = (GLraster)(baryAdd1*glFastTextureSpanWidth);
   GLraster xbaryAdd2 = (GLraster)(baryAdd2*glFastTextureSpanWidth);
@@ -3995,7 +3996,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
             if (filtering) {
 #ifdef __FASTTEXTURING__
               if (fastTexturing) {
-                if (fastApprox == 0) {
+                if (fastApprox == 0 || fastX != x) {
                   fastApprox=glFastTextureSpanWidth;
                   GLdouble iw2=iw*0x10000;
                   tpx = (GLint)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
@@ -4006,6 +4007,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   tpya = ((GLint)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/k;
                   if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
                 }
+                fastX=x+1;
                 const GLint kx = tpx>>16;
                 const GLint ky = tpy>>16;
                 GLint tix0 = textureWrap(kx, twidth0, wrapS);
@@ -4071,7 +4073,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
             } else {
 #ifdef __FASTTEXTURING__
               if (fastTexturing) {
-                if (fastApprox == 0) {
+                if (fastApprox == 0 || fastX != x) {
                   fastApprox=glFastTextureSpanWidth;
                   GLdouble iw2=iw*0x10000;
                   tpx = (GLint)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
@@ -4082,6 +4084,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   tpya = ((GLint)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/k;
                   if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
                 }
+                fastX=x+1;
                 GLint tix0 = textureWrap(tpx>>16, twidth0, wrapS);
                 GLint tiy0 = textureWrap(tpy>>16, theight0, wrapT);
                 if ((GLint)(tix0|tiy0) >= 0) {
