@@ -3655,7 +3655,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 
     GLdouble scx = glTexelCenterX;
     GLdouble scy = glTexelCenterY;
-    if (!filtering) {scx = 0; scy = 0;}
+    if (!filtering) {scx += 0.5; scy += 0.5;} // rounding
 
 
     tx0 = (GLfloat)v0->textureX;
