@@ -929,6 +929,28 @@ GLboolean backFaceCalc(const glVertex *v0,const glVertex *v1,const glVertex *v2)
   return GL_FALSE;
 }
 
+INLINE GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
+  const GLfloat dx0 = (GLfloat)(v1->sx - v0->sx);
+  const GLfloat dy0 = (GLfloat)(v1->sy - v0->sy);
+  const GLfloat dx1 = (GLfloat)(v2->sx - v0->sx);
+  const GLfloat dy1 = (GLfloat)(v2->sy - v0->sy);
+  return ((dx0*dy1 - dy0*dx1) >= 0.f) ? GL_TRUE : GL_FALSE;
+}
+
+
+INLINE GLboolean isBackFaceCulled(_GLContext *context, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
+  if (glIsEnabled2(context,GL_CULL_FACE)) {
+    if (context->forceNoCull == 0) {
+      GLboolean backFacing = glCCW(v0,v1,v2);
+      if (context->frontFace == GL_CCW) backFacing = (!backFacing) ? GL_TRUE : GL_FALSE;
+      if (context->cullFaceMode == GL_FRONT && backFacing) return GL_TRUE;
+      if (context->cullFaceMode == GL_BACK && (!backFacing)) return GL_TRUE;
+      if (context->cullFaceMode == GL_FRONT_AND_BACK) return GL_TRUE;
+    }
+  }   
+  return GL_FALSE;
+}
+
 GLvoid glEmitVertex() {
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
@@ -1062,14 +1084,16 @@ GLvoid glEmitVertex() {
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[2],GL_TRUE);
         if (a == 0) {
-          GLint clipFlags = glClipVertex(&glContext,&glVertices[0]);
-          clipFlags &= glClipVertex(&glContext,&glVertices[1]);
-          clipFlags &= glClipVertex(&glContext,&glVertices[2]);
-          if (clipFlags == 0) {
-            glLightVertex(&glContext,&glVertices[0]);
-            glLightVertex(&glContext,&glVertices[1]);
-            glLightVertex(&glContext,&glVertices[2]);
-            glDrawTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
+          if (!isBackFaceCulled(&glContext,&glVertices[0],&glVertices[1],&glVertices[2])) {
+            GLint clipFlags = glClipVertex(&glContext,&glVertices[0]);
+            clipFlags &= glClipVertex(&glContext,&glVertices[1]);
+            clipFlags &= glClipVertex(&glContext,&glVertices[2]);
+            if (clipFlags == 0) {
+              glLightVertex(&glContext,&glVertices[0]);
+              glLightVertex(&glContext,&glVertices[1]);
+              glLightVertex(&glContext,&glVertices[2]);
+              glDrawTriangle(&glContext,&glVertices[0],&glVertices[1],&glVertices[2]);
+            }
           }
         } else {
           if (a != 7) {
@@ -1109,16 +1133,18 @@ GLvoid glEmitVertex() {
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[3],GL_TRUE);
         if (a == 0) {
-          GLint clipFlags = glClipVertex(&glContext,&glVertices[0]);
-          clipFlags &= glClipVertex(&glContext,&glVertices[1]);
-          clipFlags &= glClipVertex(&glContext,&glVertices[2]);
-          clipFlags &= glClipVertex(&glContext,&glVertices[3]);
-          if (clipFlags == 0) {
-            glLightVertex(&glContext,&glVertices[0]);
-            glLightVertex(&glContext,&glVertices[1]);
-            glLightVertex(&glContext,&glVertices[2]);
-            glLightVertex(&glContext,&glVertices[3]);
-            glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+          if (!isBackFaceCulled(&glContext,&glVertices[0],&glVertices[1],&glVertices[2])) {
+            GLint clipFlags = glClipVertex(&glContext,&glVertices[0]);
+            clipFlags &= glClipVertex(&glContext,&glVertices[1]);
+            clipFlags &= glClipVertex(&glContext,&glVertices[2]);
+            clipFlags &= glClipVertex(&glContext,&glVertices[3]);
+            if (clipFlags == 0) {
+              glLightVertex(&glContext,&glVertices[0]);
+              glLightVertex(&glContext,&glVertices[1]);
+              glLightVertex(&glContext,&glVertices[2]);
+              glLightVertex(&glContext,&glVertices[3]);
+              glDrawQuad(&glContext,&glVertices[0],&glVertices[1],&glVertices[2],&glVertices[3]);
+            }
           }
         } else {
           if (a != 15) {
@@ -3267,14 +3293,6 @@ INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVert
 #define __BARY1PADD__(__v__) ((__v__)*(bary1+xbaryAdd1))
 #define __BARY2PADD__(__v__) ((__v__)*(bary2+xbaryAdd2))
 
-GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
-  const GLfloat dx0 = (GLfloat)(v1->sx - v0->sx);
-  const GLfloat dy0 = (GLfloat)(v1->sy - v0->sy);
-  const GLfloat dx1 = (GLfloat)(v2->sx - v0->sx);
-  const GLfloat dy1 = (GLfloat)(v2->sy - v0->sy);
-  return ((dx0*dy1 - dy0*dx1) >= 0.f) ? GL_TRUE : GL_FALSE;
-}
-
 INLINE GLboolean glCheckDepthFunction(GLfloat depthBufferValue, GLfloat newValue, GLint depthFunction) {
   switch(depthFunction) {
   case GL_NEVER: {return GL_FALSE;}
@@ -3586,15 +3604,8 @@ INLINE GLdouble __clamp__(GLdouble v, GLdouble a, GLdouble b) {
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   GLboolean forceWrapRepeat = GL_FALSE;
 
-  if (glIsEnabled2(context,GL_CULL_FACE)) {
-    if (context->forceNoCull == 0) {
-      GLboolean backFacing = glCCW(v0,v1,v2);
-      if (context->frontFace == GL_CCW) backFacing = (!backFacing) ? GL_TRUE : GL_FALSE;
-      if (context->cullFaceMode == GL_FRONT && backFacing) return;
-      if (context->cullFaceMode == GL_BACK && (!backFacing)) return;
-      if (context->cullFaceMode == GL_FRONT_AND_BACK) return;
-    }
-  }   
+  if (isBackFaceCulled(context,v0,v1,v2)) return;
+
   __CLIP_FAR_PLANE__
   __POLYMINMAX__
   GLint glClipRectX0 = 0;
@@ -4293,6 +4304,13 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
       bary2+=baryAdd2;
     }
   }
+}
+
+GLvoid glDrawTriangleNone(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2) {
+  __UNUSED(context);
+  __UNUSED(v0);
+  __UNUSED(v1);
+  __UNUSED(v2);
 }
 
 GLvoid glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3) {

@@ -939,6 +939,7 @@ extern glTexture glTextures[GLMAXTEXTURES];
  // you can implement your own triangle renderer here
 typedef GLvoid (*TriangleDrawer)(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 GLvoid glDrawTrianglePrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
+GLvoid glDrawTriangleNone(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 GLvoid glSetTriangleDrawer(TriangleDrawer drawer);
 
 // ------------------------
