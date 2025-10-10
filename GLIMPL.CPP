@@ -118,6 +118,7 @@ glVertex glVertices[4];
 GLint glCurrentVertexElement = 0;
 GLdouble additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
+GLenum glError = GL_NO_ERROR;
 
 GLvoid glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
 
@@ -161,7 +162,6 @@ GLvoid initTexture(glTexture *t) {
 
 GLvoid _GLContext_init() {
   GLint i;
-  glContext.error = 0;
   glContext.viewportX0 = 0;
   glContext.viewportY0 = 0;
   glContext.viewportX1 = 0;
@@ -327,6 +327,10 @@ GLvoid _GLContext_init() {
   }
 }
 
+GLvoid glSetError(GLenum error) {
+  glError = error;
+}
+
 GLvoid _GLContext_enable(GLenum prop, GLboolean enable) {
   glContext.enabledCaps[prop&255]=enable;
 }
@@ -354,6 +358,7 @@ GLuint glNewTexture() {
       return i;
     }
   }
+  glSetError(GL_OUT_OF_MEMORY);
   return 0;
 }
 
@@ -1219,6 +1224,10 @@ GLvoid glBegin(GLenum mode) {
 
 GLvoid glBindTexture(GLenum target, GLuint texture) {
   __UNUSED(target);
+  if (texture >= GLMAXTEXTURES) {
+    glSetError(GL_INVALID_VALUE);
+    return;
+  }
   glContext.boundTextures[glContext.activeTexture] = texture;
 }
 
@@ -1695,7 +1704,7 @@ GLvoid glGetIntegerv(GLenum pname, GLint *params) {
 }
 
 GLenum glGetError() {
-  return glContext.error;
+  return glError;
 }
 
 GLvoid glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
@@ -2132,6 +2141,10 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
     t->data = NULL;
   }
   t->data = (GLuint*)__MALLOC(sizeof(GLuint)*width*height);
+  if (t->data == NULL) {
+    glSetError(GL_OUT_OF_MEMORY);
+    return;
+  }
   t->width = width;
   t->height = height;
   GLint rIn=-1,gIn=-1,bIn=-1,aIn=-1;
@@ -4646,15 +4659,16 @@ GLvoid *glVesaPointer(const GLvoid *d) {
   return (GLvoid*)(((GLuint)segment<<4)+offset);
 }
 
-GLvoid glDPMI_allocRealSeg(GLint size, GLint *sel, GLint *r_seg) {
+GLboolean glDPMI_allocRealSeg(GLint size, GLint *sel, GLint *r_seg) {
   union REGS r;
   r.w.ax = 0x100;
   r.w.bx = (uint16_t)((size+0x0f)>>4);
   int386(0x31,&r,&r);
   if (r.w.cflag)
-    exit(0);
+    return GL_FALSE;
   *sel = r.w.dx;
   *r_seg = r.w.ax;
+  return GL_TRUE;
 }
 
 GLvoid glDPMI_freeRealSeg(uint16_t sel) {
@@ -4718,16 +4732,16 @@ uint16_t glDPMI_int386x(uint32_t intno, glRMREGS *in, glRMREGS *out, glRMSREGS *
   return out->ax;
 }
 
-GLvoid glVBE_initRMBuf() {
-  if (!glVESABUF_sel) {
-    glDPMI_allocRealSeg(glVESABUF_len,&glVESABUF_sel,&glVESABUF_rseg);
-    atexit(glExitVBEBuf);
-  }
-}
-
 GLvoid glVBE_callESDI(glRMREGS *regs, GLvoid *buffer, GLint size) {
   glRMSREGS sregs;
-  glVBE_initRMBuf();
+  if (!glVESABUF_sel) {
+    if (!glDPMI_allocRealSeg(glVESABUF_len,&glVESABUF_sel,&glVESABUF_rseg)) {
+      glSetError(GL_OUT_OF_MEMORY);
+      regs->ax = 0x0000;
+      return;
+    }
+    atexit(glExitVBEBuf);
+  }
   sregs.es = (uint16_t)glVESABUF_rseg;
   regs->di = 0;
   _fmemcpy(MK_FP(glVESABUF_sel,0),buffer,size);
@@ -4771,6 +4785,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
   while(*v != 0xffff) {v++;}
   v++; // 0xffff
   uint16_t *w=(uint16_t*)__MALLOC((v-u)*sizeof(uint16_t));
+  if (w == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
   memcpy(w,u,((GLuint)v)-((GLuint)u));
   v = w;
   while(*v != 0xffff) {
@@ -4782,6 +4797,12 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP && linearFrameBufferAvailable) {
 
       __FREE(w);
+
+      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+      if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+      if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+
       glBits = bPP;
       if (glBits == 15 || glBits == 16) 
         glBuildHiColorTables(&modeInfo);
@@ -4793,8 +4814,6 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       regs.bx = (uint16_t)(mode|0x4000);
       glDPMI_int386(0x10,&regs,&regs); // needed here for later mouse setup
 
-      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
-      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
       glCleanSetup(xRes, yRes, frameBuffer, depthBuffer);
       glSetupMouse();
 
@@ -4842,9 +4861,13 @@ GLvoid glExitVBEBuf() {
 
 GLvoid glVBE_callESDI(__dpmi_regs *regs, GLvoid *buffer, GLint size) {
   if (!glVESABUF_sel_init) {
-    glVESABUF_sel_init = GL_TRUE;
     glVESABUF_sel.size = (glVESABUF_len+15)/16;
-    _go32_dpmi_allocate_dos_memory(&glVESABUF_sel);
+    if (_go32_dpmi_allocate_dos_memory(&glVESABUF_sel) == -1) {
+      glSetError(GL_OUT_OF_MEMORY);
+      regs->x.ax = 0x0000;
+      return;
+    } 
+    glVESABUF_sel_init = GL_TRUE;
     atexit(glExitVBEBuf);
   }
   regs->x.es = glVESABUF_sel.rm_segment;
@@ -4879,6 +4902,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     if (k == 0xffff) break;
   } while(GL_TRUE);
   uint16_t *w=(uint16_t*)__MALLOC((ofs-videoModes)/2*sizeof(uint16_t));
+  if (w == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
   uint16_t *v=w;
   dosmemget(videoModes,ofs-videoModes,w);
 
@@ -4892,6 +4916,12 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP && linearFrameBufferAvailable) {
 
       __FREE(w);
+
+      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+      if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+      if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+
       glBits = bPP;
       if (glBits == 15 || glBits == 16) 
         glBuildHiColorTables(&modeInfo);
@@ -4904,8 +4934,6 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       regs.x.bx = (uint16_t)(mode|0x4000);
       __dpmi_simulate_real_mode_interrupt(0x10, &regs); // needed here for later mouse setup
 
-      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
-      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
       glCleanSetup(xRes, yRes, frameBuffer, depthBuffer);
       glSetupMouse();
 
@@ -5000,6 +5028,11 @@ GLboolean glVGA() {
   GLuint xRes = 320;
   GLuint yRes = 200;
 
+  GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+  if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+  GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+  if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+
   glGraphicsModeToRestore = glGetBiosGraphicsMode();
 
   DJGPPVGAMEMON  
@@ -5012,8 +5045,6 @@ GLboolean glVGA() {
   glSetVGABufferStart(0);
   for (GLint i = 0; i < 256; i++) glHiRedTab[i] = (uint8_t)(128+(((i>>4)&15)<<3));
 
-  GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
-  GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
   glCleanSetup(xRes, yRes, frameBuffer, depthBuffer);
   glSetupMouse();
   glHiColor = GL_TRUE;
