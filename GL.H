@@ -60,15 +60,15 @@ typedef void GLvoid;
 // ------------------------
 
 // in C++ the context is already constructed at program start
-// in C glVesa,glVGA,glDirect firstly construct the context
+// in C glVesa,glVGA,glDirect construct the context
 
-GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP); // e.g. glVesa(320,200,32) enables Vesa Mode 320x200x32BitColors (only 32 bit, yet)
+GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP); // e.g. glVesa(320,200,32) enables Vesa mode 320x200x32BitColors (only 32 bit, yet)
 GLboolean glVGA(); // 320x200 with 6 bit green, 3 bit blue, 4 bit red, actually it's 320x400
-GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height); // to Setup direct rendering to a buffer+depth buffer // look also at glSetRenderTarget() // you need to delete the buffers yourself
+GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height); // setup direct rendering to a framebuffer+depthbuffer // look also at glSetRenderTarget() // you need to delete the buffers yourself
 
-GLvoid glRefresh(); // copies the frameBuffer to the actual screen and updates per frame stuff
+GLvoid glRefresh(); // copies the framebuffer to the actual screen and updates per frame stuff
 
-GLvoid glDone(); // to close the vesa/vga mode and clean up opengl again
+GLvoid glDone(); // close the Vesa/VGA mode and clean up OpenGL again
 
 // ------------------------
 // ------------------------
@@ -84,8 +84,8 @@ extern GLdouble glTexelCenterX;
 extern GLdouble glTexelCenterY;
 extern GLdouble glMonitorAspectRatio; // use glSetMonitorAspectRatio()
 extern GLboolean useNearPointers; // option for DJGPP, default GL_TRUE
-extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong by reflection vector, default GL_FALSE
-extern GLboolean glFastTexturing; // use perspective approximations for speed, default GL_FALSE
+extern GLboolean glUseHalveVector; // seems to be OSMesa is using this, the docs require phong using the reflection vector, default GL_FALSE
+extern GLboolean glFastTexturing; // use perspective approximations for more performance, default GL_FALSE
 extern GLboolean glVGACheckered; // glVGA() with "dithering", default GL_FALSE
 extern GLboolean glWaitVSync; // to achieve better "double buffer" enable this. Use this with care, since this is a VGA function and not Vesa, default GL_FALSE 
 extern GLint glFastTextureSpanWidth;
@@ -99,20 +99,20 @@ GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint
 // ------------------------
 // ------------------------
 
-GLdouble glSeconds(); // seconds ellapsed since the start of OpenGL (it's quite stuttery on WatcomC)
-GLvoid glSetTime(GLdouble seconds); // sets the time in seconds
+GLdouble glSeconds(); // seconds elapsed since the start of OpenGL (it's quite stuttery on WatcomC)
+GLvoid glSetTime(GLdouble seconds); // sets the time (in seconds)
                         
-GLushort glNextKey(); // gets the next pressed key from the keyboard buffer (GL_VK_xxxx or 'a' etc..)
+GLushort glNextKey(); // gets the next pressed key from the keyboard buffer 0 or (GL_VK_xxxx or 'a' etc..)
 GLvoid glNextMouseDelta(GLdouble *deltaX, GLdouble *deltaY); // gets the current mouse delta and prepares for a new mouse delta (mousePos+=delta)
-GLubyte glMouseButtons(); // the current mouseButtons (GL_MOUSE_BUTTON_xxxx)
+GLubyte glMouseButtons(); // the current mouse button state (GL_MOUSE_BUTTON_xxxx)
 GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey);
 
 GLuint glGetTextureWidth(GLuint textureId);
 GLuint glGetTextureHeight(GLuint textureId);
 
-GLvoid glExplicitAlpha(GLboolean useExplicitAlpha, GLfloat alpha); // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer")
-GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat GLzp, GLint x, GLint y, GLuint color); // paint pixel at 3d position (x,y,z) plus offset (x,y) (returns GL_FALSE if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp, without it, it will take the last one)
-GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for quadratic point sprites and lines on e.g. 16:9 screens
+GLvoid glExplicitAlpha(GLboolean useExplicitAlpha, GLfloat alpha); // writes this alpha to the framebuffer when rendering polygons (maybe helps as some sort of "stencil buffer") // alpha between 0 and 1
+GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat GLzp, GLint x, GLint y, GLuint color); // paint pixel at 3d position (x,y,z) plus 2D offset (x,y) (returns GL_FALSE if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp, without it, it will take just the last one)
+GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for better (quadratic) point sprites and lines on e.g. 16:9 screens
 
 // ------------------------
 // ------------------------
@@ -750,7 +750,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 // ------------------------
 
 // better use glTexImage2D()
-GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData);  // bindTexture must be called before
+GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData);  // glBindTexture() must be called before
 GLuint *glGetTexturePointer(GLuint textureId);
 
 // ------------------------

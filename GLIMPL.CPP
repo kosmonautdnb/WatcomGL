@@ -1704,7 +1704,9 @@ GLvoid glGetIntegerv(GLenum pname, GLint *params) {
 }
 
 GLenum glGetError() {
-  return glError;
+  GLenum k = glError;
+  glError = GL_NO_ERROR;
+  return k;
 }
 
 GLvoid glGetLightfv(GLenum light, GLenum pname, GLfloat *params) {
