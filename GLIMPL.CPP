@@ -3614,6 +3614,40 @@ INLINE GLdouble __clamp__(GLdouble v, GLdouble a, GLdouble b) {
   return v < a ? a : (v > b ? b : v);
 }
 
+INLINE GLdouble __max__(GLdouble a, GLdouble b) {
+  return a > b ? a : b;
+}
+
+GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
+  const GLdouble ex = v0->sx - v2->sx;
+  const GLdouble ey = v0->sy - v2->sy;
+  const GLdouble fx = v1->sx - v2->sx;
+  const GLdouble fy = v1->sy - v2->sy;
+  const GLdouble det = ex * fy - ey * fx;
+  GLdouble m = 0.0;
+  if (det != 0) {
+    // factor
+    const GLdouble ez = v0->sz - v2->sz;
+    const GLdouble fz = v1->sz - v2->sz;
+    const GLdouble invDet = 1.0 / det;
+    const GLdouble a = ey*fz - ez*fy;
+    const GLdouble b = ez*fx - ex*fz;
+    const GLdouble dzdx = fabs(a * invDet);
+    const GLdouble dzdy = fabs(b * invDet);
+    m = __max__(dzdx, dzdy);
+  }
+  // units
+  GLfloat zf = __max__(__max__(fabs(v0->sz), fabs(v1->sz)), fabs(v2->sz));
+  GLint *zi = (GLint*)&zf;
+  GLuint *zui = (GLuint*)&zf;
+  *zui &= 0xff << 23;
+  *zi -= 23 << 23;
+  if (*zi < 0) *zi = 0;
+
+  return zf * context->polygonOffsetUnits + m * context->polygonOffsetFactor;
+}
+
+
 #define __CLIP_FAR_PLANE__ if (v0->sz > 1.0 && v1->sz > 1.0 && v2->sz > 1.0) return;
 
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
@@ -3644,15 +3678,16 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
       
   GLdouble zadd = 0;
   if (glIsEnabled2(context,GL_POLYGON_OFFSET_FILL)) {
-    zadd -= context->polygonOffsetUnits*0.001; // todo: albeit driver dependend, maybe do a better implementation
+    //zadd -= context->polygonOffsetUnits*0.001; // todo: albeit driver dependend, maybe do a better implementation
+    zadd += glPolygonOffset_(context,v0,v1,v2);
   }
 
   GLdouble v0w = 1.0/(v0->sw);
   GLdouble v1w = 1.0/(v1->sw);
   GLdouble v2w = 1.0/(v2->sw);
-  GLdouble v0z = (v0->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear+zadd;
-  GLdouble v1z = (v1->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear+zadd;
-  GLdouble v2z = (v2->sz*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear+zadd;
+  GLdouble v0z = ((v0->sz+zadd)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  GLdouble v1z = ((v1->sz+zadd)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  GLdouble v2z = ((v2->sz+zadd)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
 
   glVertex *vk0 = v0;\
   glVertex *vk1 = v1;\
