@@ -3618,7 +3618,7 @@ INLINE GLdouble __max__(GLdouble a, GLdouble b) {
   return a > b ? a : b;
 }
 
-GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
+GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble v0z,GLdouble v1z,GLdouble v2z) {
   const GLdouble ex = v0->sx - v2->sx;
   const GLdouble ey = v0->sy - v2->sy;
   const GLdouble fx = v1->sx - v2->sx;
@@ -3627,8 +3627,8 @@ GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex
   GLdouble m = 0.0;
   if (det != 0) {
     // factor
-    const GLdouble ez = v0->sz - v2->sz;
-    const GLdouble fz = v1->sz - v2->sz;
+    const GLdouble ez = v0z - v2z;
+    const GLdouble fz = v1z - v2z;
     const GLdouble invDet = 1.0 / det;
     const GLdouble a = ey*fz - ez*fy;
     const GLdouble b = ez*fx - ex*fz;
@@ -3637,7 +3637,7 @@ GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex
     m = __max__(dzdx, dzdy);
   }
   // units
-  GLfloat zf = __max__(__max__(fabs(v0->sz), fabs(v1->sz)), fabs(v2->sz));
+  GLfloat zf = __max__(__max__(fabs(v0z), fabs(v1z)), fabs(v2z));
   GLint *zi = (GLint*)&zf;
   GLuint *zui = (GLuint*)&zf;
   *zui &= 0xff << 23;
@@ -3675,19 +3675,20 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   GLboolean maskBlue = context->maskBlue;
   GLboolean maskAlpha = context->maskAlpha;
   GLboolean notMasked = maskRed && maskGreen && maskBlue && maskAlpha;
-      
-  GLdouble zadd = 0;
-  if (glIsEnabled2(context,GL_POLYGON_OFFSET_FILL)) {
-    //zadd -= context->polygonOffsetUnits*0.001; // todo: albeit driver dependend, maybe do a better implementation
-    zadd += glPolygonOffset_(context,v0,v1,v2);
-  }
 
   GLdouble v0w = 1.0/(v0->sw);
   GLdouble v1w = 1.0/(v1->sw);
   GLdouble v2w = 1.0/(v2->sw);
-  GLdouble v0z = ((v0->sz+zadd)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
-  GLdouble v1z = ((v1->sz+zadd)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
-  GLdouble v2z = ((v2->sz+zadd)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  GLdouble v0z = ((v0->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  GLdouble v1z = ((v1->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  GLdouble v2z = ((v2->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+
+  if (glIsEnabled2(context,GL_POLYGON_OFFSET_FILL)) {
+    const GLdouble zadd = glPolygonOffset_(context,v0,v1,v2,v0z,v1z,v2z);
+    v0z += zadd;
+    v1z += zadd;
+    v2z += zadd;
+  }
 
   glVertex *vk0 = v0;\
   glVertex *vk1 = v1;\
