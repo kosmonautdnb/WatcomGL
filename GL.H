@@ -21,11 +21,31 @@ int main(int argc, const char **argv) {
   if (!glVesa(640,480,32))
     glVGA();
 
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_TEXTURE_2D);
+
+  unsigned int texture[32*32]; for (int i = 0; i < 32*32; i++) texture[i] = (((i/4)^(i/32/4))&3)*0x00884422;
+  unsigned int handle; glGenTextures(1,&handle); glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D,handle); 
+  glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, 32, 32, 0, GL_RGBA, GL_BYTE, texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
   while(1) {
     if (glNextKey() == GL_VK_ESCAPE) break;
-    glClearColor(0.2,0.4,0.6,1);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glRefresh();
+    glClearColor(0.2,0.4,0.6,1); glClearDepth(1.0); glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(90.0,16.0/9.0,0.1,100.0);
+    glMatrixMode(GL_MODELVIEW); glLoadIdentity(); gluLookAt(0,0,0,0,0,-1,0,1,0);
+    glTranslatef(0,0,-1); glRotatef(glSeconds()*40.0,0,0.5,1);
+    glBegin(GL_QUADS);
+    glTexCoord2f(1,0); glColor4f(1,0,0,1); glVertex3f(1,1,-1);
+    glTexCoord2f(0,0); glColor4f(0,1,0,1); glVertex3f(-1,1,-1);
+    glTexCoord2f(0,1); glColor4f(0,0,1,1); glVertex3f(-1,-1,-1);
+    glTexCoord2f(1,1); glColor4f(1,0,1,1); glVertex3f(1,-1,-1);
+    glEnd();
+      glRefresh();
   }
 
   glDone();
