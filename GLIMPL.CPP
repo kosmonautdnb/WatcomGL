@@ -3662,7 +3662,7 @@ GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex
 
 GLvoid glDrawTriangleAAPrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2) {
   glMultiSampleBase = 0; glDrawTrianglePrecise(context,v0,v1,v2);
-  if (glFrameBufferMultiSample>0) {
+  if (glFrameBufferMultiSample > 1) {
     const GLdouble AAX = 0.625; const GLdouble AAY = 0.375;
     v0->sx += AAX; v1->sx += AAX; v2->sx += AAX; v0->sy += AAY; v1->sy += AAY; v2->sy += AAY;
     glMultiSampleBase = 1; glDrawTrianglePrecise(context,v0,v1,v2);
@@ -4543,7 +4543,7 @@ GLvoid glCleanSetup(GLuint width, GLuint height, GLuint *frameBuffer, GLfloat *d
   glDepthBuffer = depthBuffer;
   glDepthBuffer0 = depthBuffer;
   memset(glFrameBuffer,0,width*height*glFrameBufferBytesPerPixel*glFrameBufferMultiSample);
-  memset(glDepthBuffer,0,width*height*sizeof(GLfloat)*glFrameBufferMultiSample);
+  memset(glDepthBuffer,0,width*height*glFrameBufferMultiSample*sizeof(GLfloat));
   glViewport(0,0,width,height);
   glSetTime(0);
 }
