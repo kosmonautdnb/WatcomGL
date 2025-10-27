@@ -359,6 +359,8 @@ void NEHE8_Blending() {
 
 int main(int argc, const char *argv[]) {
   
+  glConfigureAntiAlias();
+
   const bool pureVGA = false;
   if (pureVGA) {
     glVGA();

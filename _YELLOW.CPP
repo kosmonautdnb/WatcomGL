@@ -33,6 +33,8 @@ int SDL_GetTicks() {
 
 int main(int argc,char *argv[])
 {    
+  //glConfigureAntiAlias();
+
   const bool pureVGA = false;
   if (pureVGA) {
     glVGA();

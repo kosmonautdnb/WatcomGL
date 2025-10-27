@@ -94,6 +94,7 @@ GLdouble glTexelCenterY = -0.5;
 GLuint *glFrameBufferDedicated = NULL; // linear framebuffer
 GLint glFrameBufferWidth = 0;
 GLint glFrameBufferHeight = 0;
+GLint glFrameBufferMultiSample = 1;
 GLint glFrameBufferBytesPerPixel = 4;
 GLuint *glFrameBuffer = NULL;
 GLfloat *glDepthBuffer = NULL;
@@ -1259,15 +1260,23 @@ GLvoid glClear(GLbitfield mask) {
     if (a > 255) a = 255;
     if (glFrameBufferBytesPerPixel == 4) {
       GLuint rgba = r|(g<<8)|(b<<16)|(a<<24);
-      for (GLint y = minY; y < maxY; y++)
-        for (GLint x = minX; x < maxX; x++)
-          glFrameBuffer[x+y*glFrameBufferWidth] = rgba;
+      for (GLint s = 0; s < glFrameBufferMultiSample; s++) {
+        for (GLint y = minY; y < maxY; y++) {
+          const int k = y*glFrameBufferWidth+s*glFrameBufferWidth*glFrameBufferHeight;
+          for (GLint x = minX; x < maxX; x++)
+            glFrameBuffer[x+k] = rgba;
+        }
+      }
     }
   }    
   if ((mask & GL_DEPTH_BUFFER_BIT) && (glDepthBuffer != NULL)) {
-    for (GLint y = minY; y < maxY; y++)
-      for (GLint x = minX; x < maxX; x++)
-        glDepthBuffer[x+y*glFrameBufferWidth] = glContext.clearDepth; // clamping?
+    for (GLint s = 0; s < glFrameBufferMultiSample; s++) {
+      for (GLint y = minY; y < maxY; y++) {
+        const int k = y*glFrameBufferWidth+s*glFrameBufferWidth*glFrameBufferHeight;
+        for (GLint x = minX; x < maxX; x++)
+          glDepthBuffer[x+k] = glContext.clearDepth; // clamping?
+      }
+    }
   }
 }
 
@@ -3210,6 +3219,7 @@ GLint gluUnProject(GLdouble winX, GLdouble winY, GLdouble winZ, GLdouble *model,
 // -----------
 // -----------
 // -----------
+GLint glMultiSampleBase = 0;
 GLboolean glDontPaint = GL_FALSE;
 typedef GLdouble GLraster; // floats are to imprecise (text rendering failed) and not faster (even slower) here
 INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
@@ -3268,15 +3278,15 @@ INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVert
 #define __PAINTPOLYQUAD_BEGINX__QUADREGION\
   GLint dminx = pminx;\
   GLint dmaxx = pmaxx;\
-  pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
-  zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth];\
+  pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth+glMultiSampleBase*glFrameBufferWidth*glFrameBufferHeight];\
+  zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth+glMultiSampleBase*glFrameBufferWidth*glFrameBufferHeight];\
   for (x = dminx;x < dmaxx;x++) {
 
 #define __PAINTPOLYQUAD_BEGINX__TRI\
   GLint dminx = pminx;\
   GLint dmaxx = pmaxx;\
-  pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth];\
-  zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth];\
+  pDest = &glFrameBuffer[pminx+y*glFrameBufferWidth+glMultiSampleBase*glFrameBufferWidth*glFrameBufferHeight];\
+  zDest = &glDepthBuffer[pminx+y*glFrameBufferWidth+glMultiSampleBase*glFrameBufferWidth*glFrameBufferHeight];\
   GLint xp[3]; GLint xc=0;\
   if ((y >= vk0->sy) && (y < vk1->sy)) xp[xc++]=(GLint)((vk1->sx-vk0->sx)*(y-vk0->sy)/(vk1->sy-vk0->sy)+vk0->sx);\
   if ((y >= vk0->sy) && (y < vk2->sy)) xp[xc++]=(GLint)((vk2->sx-vk0->sx)*(y-vk0->sy)/(vk2->sy-vk0->sy)+vk0->sx);\
@@ -3649,6 +3659,17 @@ GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex
 
 
 #define __CLIP_FAR_PLANE__ if (v0->sz > 1.0 && v1->sz > 1.0 && v2->sz > 1.0) return;
+
+GLvoid glDrawTriangleAAPrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2) {
+  glMultiSampleBase = 0; glDrawTrianglePrecise(context,v0,v1,v2);
+  if (glFrameBufferMultiSample>0) {
+    const GLdouble AAX = 0.625; const GLdouble AAY = 0.375;
+    v0->sx += AAX; v1->sx += AAX; v2->sx += AAX; v0->sy += AAY; v1->sy += AAY; v2->sy += AAY;
+    glMultiSampleBase = 1; glDrawTrianglePrecise(context,v0,v1,v2);
+    v0->sx -= AAX; v1->sx -= AAX; v2->sx -= AAX; v0->sy -= AAY; v1->sy -= AAY; v2->sy -= AAY;
+  }
+  glMultiSampleBase = 0;
+}
 
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   GLboolean forceWrapRepeat = GL_FALSE;
@@ -4468,6 +4489,11 @@ GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData) {
   t->height = height;
 }
 
+GLvoid glConfigureAntiAlias() {
+  glFrameBufferMultiSample = 2;
+  glSetTriangleDrawer(glDrawTriangleAAPrecise);
+}
+
 GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height) {
   if (frameBufferOrNULL == NULL) {
     glFrameBufferWidth = glFrameBufferWidth0;
@@ -4516,8 +4542,8 @@ GLvoid glCleanSetup(GLuint width, GLuint height, GLuint *frameBuffer, GLfloat *d
   glFrameBuffer0 = frameBuffer;
   glDepthBuffer = depthBuffer;
   glDepthBuffer0 = depthBuffer;
-  memset(glFrameBuffer,0,width*height*glFrameBufferBytesPerPixel);
-  memset(glDepthBuffer,0,width*height*sizeof(GLfloat));
+  memset(glFrameBuffer,0,width*height*glFrameBufferBytesPerPixel*glFrameBufferMultiSample);
+  memset(glDepthBuffer,0,width*height*sizeof(GLfloat)*glFrameBufferMultiSample);
   glViewport(0,0,width,height);
   glSetTime(0);
 }
@@ -4836,9 +4862,9 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
 
       __FREE(w);
 
-      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
       if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
       if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
 
       glBits = bPP;
@@ -4955,9 +4981,9 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
 
       __FREE(w);
 
-      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
       if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
       if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
 
       glBits = bPP;
@@ -5066,9 +5092,9 @@ GLboolean glVGA() {
   GLuint xRes = 320;
   GLuint yRes = 200;
 
-  GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*sizeof(GLuint));
+  GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
   if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-  GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*sizeof(GLfloat));
+  GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
   if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
 
   glGraphicsModeToRestore = glGetBiosGraphicsMode();
@@ -5119,7 +5145,17 @@ GLvoid glWaitVerticalRetrace() {
   while((inp(0x03da)&8)==0) {;} // wait till retrace start
 }
 
+GLvoid glFlattenMultiSample() {
+  if (glFrameBufferMultiSample==2) {
+    for (int i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) {
+      glFrameBuffer[i]=((glFrameBuffer[i] & 0xfefefefe)+(glFrameBuffer[i+glFrameBufferWidth*glFrameBufferHeight] & 0xfefefefe))>>1;
+    }
+  }
+}
+
 GLvoid glRefresh() {
+
+  glFlattenMultiSample();
   
   if (glDirectBlit) 
     return;

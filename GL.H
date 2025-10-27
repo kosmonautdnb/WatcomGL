@@ -84,7 +84,7 @@ typedef void GLvoid;
 
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP); // e.g. glVesa(320,200,32) enables Vesa mode 320x200x32BitColors (only 32 bit, yet)
 GLboolean glVGA(); // 320x200 with 6 bit green, 3 bit blue, 4 bit red, actually it's 320x400
-GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height); // setup direct rendering to a framebuffer+depthbuffer // look also at glSetRenderTarget() // you need to delete the buffers yourself
+GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLuint width, GLuint height); // setup direct rendering to a framebuffer+depthbuffer // look also at glSetRenderTarget() // you need to delete the buffers yourself // antialiasing needs buffers twice as big
 
 GLvoid glRefresh(); // copies the framebuffer to the actual screen and updates per frame stuff
 
@@ -114,6 +114,7 @@ extern GLenum glError;
 // ------------------------
 // ------------------------
 
+GLvoid glConfigureAntiAlias(); // to be called before any other gl call (makes things around twice as slow)
 GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height); // set a render target (NULL sets screen/default render target)
 
 // ------------------------
@@ -959,6 +960,7 @@ extern glTexture glTextures[GLMAXTEXTURES];
 
  // you can implement your own triangle renderer here
 typedef GLvoid (*TriangleDrawer)(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
+GLvoid glDrawTriangleAAPrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 GLvoid glDrawTrianglePrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 GLvoid glDrawTriangleNone(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2);
 GLvoid glSetTriangleDrawer(TriangleDrawer drawer);

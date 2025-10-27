@@ -677,6 +677,8 @@ int main( void )
 
    glfwSetTime( 0.0 );
   */
+
+  //glConfigureAntiAlias();
   const bool pureVGA = false;
   if (pureVGA) {
     glVGA();
