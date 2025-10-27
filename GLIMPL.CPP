@@ -3663,7 +3663,7 @@ GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex
 GLvoid glDrawTriangleAAPrecise(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2) {
   glMultiSampleBase = 0; glDrawTrianglePrecise(context,v0,v1,v2);
   if (glFrameBufferMultiSample > 1) {
-    const GLdouble AAX = 0.625; const GLdouble AAY = 0.375;
+    const GLdouble AAX = 0.49; const GLdouble AAY = 0.49;
     v0->sx += AAX; v1->sx += AAX; v2->sx += AAX; v0->sy += AAY; v1->sy += AAY; v2->sy += AAY;
     glMultiSampleBase = 1; glDrawTrianglePrecise(context,v0,v1,v2);
     v0->sx -= AAX; v1->sx -= AAX; v2->sx -= AAX; v0->sy -= AAY; v1->sy -= AAY; v2->sy -= AAY;
