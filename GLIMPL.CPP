@@ -4537,7 +4537,7 @@ GLvoid glSetTime(GLdouble seconds) {;}
 GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey) {;}
 GLvoid glSetupMouse() {;}
 GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {;}
-GLubyte glMouseButtons() {return 0;}
+GLushort glMouseButtons() {return 0;}
 GLvoid glSetMousePos(GLint x, GLint y) {;}
 GLushort glNextKey() {return 0;}
 GLvoid glDone() {;}
@@ -5281,13 +5281,13 @@ GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {
 }
 
 
-GLubyte glMouseButtons() {
+GLushort glMouseButtons() {
   union REGS regs;
   regs.w.ax = 0x03;
   int386(0x33, &regs, &regs);
   glLastMouseB = glMouseB;
   glMouseB = regs.w.bx & 0xffff;
-  return (GLubyte)(glMouseB & 0xff);
+  return (GLushort)glMouseB;
 }
 
 GLvoid glSetupMouse() {

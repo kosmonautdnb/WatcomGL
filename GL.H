@@ -124,7 +124,7 @@ GLvoid glSetTime(GLdouble seconds); // sets the time (in seconds)
                         
 GLushort glNextKey(); // gets the next pressed key from the keyboard buffer 0 or (GL_VK_xxxx or 'a' etc..)
 GLvoid glNextMouseDelta(GLdouble *deltaX, GLdouble *deltaY); // gets the current mouse delta and prepares for a new mouse delta (mousePos+=delta)
-GLubyte glMouseButtons(); // the current mouse button state (GL_MOUSE_BUTTON_xxxx)
+GLushort glMouseButtons(); // the current mouse button state (GL_MOUSE_BUTTON_xxxx) upper 8 bit maybe signed mouse wheel "ctmouse.exe /O" (call before glNextMouseDelta for wheel data)
 GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey);
 
 GLuint glGetTextureWidth(GLuint textureId);
@@ -341,6 +341,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 //GL_POLYGON_OFFSET_FILL 0x8037 (0x37)
 #define GL_MOUSE_BUTTON_LEFT 1
 #define GL_MOUSE_BUTTON_RIGHT 2
+#define GL_MOUSE_BUTTON_MIDDLE 4
 #define GL_VK_NONE 0
 #define GL_VK_ESCAPE 27
 #define GL_VK_ENTER 13
