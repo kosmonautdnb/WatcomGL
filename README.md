@@ -63,6 +63,7 @@ TinyGL also emulates OpenGL in software.
 - Vesa2.0 Calls For 32Bit Graphics Modes
 - Optional Fallback To VGA Mode With 320x200 And 8192 Simulated Colors
 - Optional Just Render To 32Bit RGBA Buffer
+- Optional AntiAliasing
 - Z-Buffer: 32 Bit Float  
 - FrameBuffer: 32 Bit RGBA (8 Bit Per Channel)  
 - GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS  
