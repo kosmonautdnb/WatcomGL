@@ -114,8 +114,8 @@ extern GLenum glError;
 // ------------------------
 // ------------------------
 
+GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height); // set a render target (NULL sets screen/default render target) // antialiasing needs buffers twice as big
 GLvoid glConfigureAntiAlias(); // to be called before any other gl call (makes things around twice as slow)
-GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height); // set a render target (NULL sets screen/default render target)
 
 // ------------------------
 // ------------------------
@@ -125,7 +125,7 @@ GLvoid glSetTime(GLdouble seconds); // sets the time (in seconds)
                         
 GLushort glNextKey(); // gets the next pressed key from the keyboard buffer 0 or (GL_VK_xxxx or 'a' etc..)
 GLvoid glNextMouseDelta(GLdouble *deltaX, GLdouble *deltaY); // gets the current mouse delta and prepares for a new mouse delta (mousePos+=delta)
-GLushort glMouseButtons(); // the current mouse button state (GL_MOUSE_BUTTON_xxxx) upper 8 bit maybe signed mouse wheel "ctmouse.exe /O" (call before glNextMouseDelta for wheel data)
+GLushort glMouseButtons(); // the current mouse button state (GL_MOUSE_BUTTON_xxxx) upper 8 bit maybe signed mouse wheel "ctmouse.exe /O" (call before glNextMouseDelta() for wheel data)
 GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey);
 
 GLuint glGetTextureWidth(GLuint textureId);
