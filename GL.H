@@ -115,7 +115,7 @@ extern GLenum glError;
 // ------------------------
 
 GLvoid glSetRenderTarget(GLuint *frameBufferOrNULL, GLfloat *depthBuffer, GLuint width, GLuint height); // set a render target (NULL sets screen/default render target) // antialiasing needs buffers twice as big
-GLvoid glConfigureAntiAlias(); // to be called before any other gl call (makes things around twice as slow)
+GLvoid glConfigureAntiAlias(); // to be called before any other gl call (also glVesa,glVga,glDirect..) (makes things around twice as slow)
 
 // ------------------------
 // ------------------------
