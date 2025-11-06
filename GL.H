@@ -326,20 +326,26 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 // ------------------------
 // ------------------------
 // glEnable 0x00-0xFF
-//GL_DEPTH_TEST 0x0B71 (0x71)
-//GL_CULL_FACE 0x0B44 (0x44)
-//GL_TEXTURE_2D 0x0DE1 (0xE1)
-//GL_LIGHTING 0x0B50 (0x50)
 //GL_LIGHT0 0x4000 (0x00)
 //GL_LIGHT1 0x4001 (0x01)
-//GL_ALPHA_TEST 0x0BC0 (0xC0)
-//GL_BLEND 0x0BE2 (0xE2)
+//GL_LIGHT2 0x4002 (0x02)
+//GL_LIGHT3 0x4003 (0x03)
+//GL_LIGHT4 0x4004 (0x04)
+//GL_LIGHT5 0x4005 (0x05)
+//GL_LIGHT6 0x4006 (0x06)
+//GL_LIGHT7 0x4007 (0x07)
 //GL_SCISSOR_TEST 0x0C11 (0x11)
+//GL_POLYGON_OFFSET_FILL 0x8037 (0x37)
+//GL_CULL_FACE 0x0B44 (0x44)
+//GL_LIGHTING 0x0B50 (0x50)
 //GL_COLOR_MATERIAL 0x0B57 (0x57)
-//GL_FOG 0x0B64 (0x64)
 //GL_TEXTURE_GEN_S 0x0c60 (0x60)
 //GL_TEXTURE_GEN_T 0x0c61 (0x61)
-//GL_POLYGON_OFFSET_FILL 0x8037 (0x37)
+//GL_FOG 0x0B64 (0x64)
+//GL_DEPTH_TEST 0x0B71 (0x71)
+//GL_ALPHA_TEST 0x0BC0 (0xC0)
+//GL_TEXTURE_2D 0x0DE1 (0xE1)
+//GL_BLEND 0x0BE2 (0xE2)
 #define GL_MOUSE_BUTTON_LEFT 1
 #define GL_MOUSE_BUTTON_RIGHT 2
 #define GL_MOUSE_BUTTON_MIDDLE 4
@@ -549,6 +555,11 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_DEPTH_TEST 0x0B71
 #define GL_LIGHT0 0x4000
 #define GL_LIGHT1 0x4001
+#define GL_LIGHT2 0x4002
+#define GL_LIGHT3 0x4003
+#define GL_LIGHT4 0x4004
+#define GL_LIGHT5 0x4006
+#define GL_LIGHT7 0x4007
 #define GL_POINT_SMOOTH 0x0B10
 #define GL_LINE_STIPPLE 0x0B24
 #define GL_LINE_SMOOTH 0x0B20
@@ -793,7 +804,7 @@ GLfloat glGetZoomY(); // also non standard, hopefully you don't need it
 
 #define GLMAXTEXTURES 1024
 #define GLMAXTEXTUREUNITS 8
-#define GLMAXLIGHTS 2
+#define GLMAXLIGHTS 8
 
 // ------------------------
 // ------------------------

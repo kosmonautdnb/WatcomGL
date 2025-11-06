@@ -163,6 +163,7 @@ GLvoid initTexture(glTexture *t) {
 
 GLvoid _GLContext_init() {
   GLint i;
+  memset(glContext.enabledCaps,0,sizeof(glContext.enabledCaps));
   glContext.viewportX0 = 0;
   glContext.viewportY0 = 0;
   glContext.viewportX1 = 0;
