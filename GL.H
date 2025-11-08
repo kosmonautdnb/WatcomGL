@@ -141,9 +141,12 @@ GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for better (qua
 GLvoid glActiveTexture(GLenum texture); // supported
 GLvoid glAlphaFunc(GLenum func, GLclampf ref); // supported
 GLvoid glBegin(GLenum mode); // supported (GL_POINTS, GL_LINES, GL_TRIANGLES, GL_QUADS, GL_LINE_STRIP)
+GLvoid glBindBuffer(GLenum target, GLuint buffer); // :mad: supported
 GLvoid glBindTexture(GLenum target, GLuint texture); // supported
 GLvoid glBitmap(GLsizei width, GLsizei height, GLfloat xorig, GLfloat yorig, GLfloat xmove, GLfloat ymove, const GLubyte *bitmap);
 GLvoid glBlendFunc(GLenum sfactor, GLenum dfactor); // supported
+GLvoid glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage);
+GLvoid glBufferSubData(GLenum target, GLint offset, GLsizei size, const GLvoid *data);
 GLvoid glCallLists(GLsizei n, GLenum type, const GLvoid *lists);
 GLvoid glClear(GLbitfield mask); // supported
 GLvoid glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // supported
@@ -155,7 +158,7 @@ GLvoid glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha); // su
 GLvoid glColor4fv(const GLfloat *v); // supported
 GLvoid glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha); // supported
 GLvoid glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha); // supported
-GLvoid glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+GLvoid glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer); // supported
 GLvoid glColorSubTableEXT(GLenum target, GLsizei start, GLsizei count, GLenum format, GLenum type, const GLvoid *table);
 GLvoid glColorTableEXT(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *table);
 GLvoid glCopyPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum type);
@@ -165,8 +168,8 @@ GLvoid glDepthMask(GLboolean flag); // supported
 GLvoid glDepthRangef(GLclampf zNear, GLclampf zFar); // supported (no clipping of values, gluProject/gluUnProject not right here)
 GLvoid glDisable(GLenum cap); // supported
 GLvoid glDisableClientState(GLenum array);
-GLvoid glDrawArrays(GLenum mode, GLint first, GLsizei count);
-GLvoid glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
+GLvoid glDrawArrays(GLenum mode, GLint first, GLsizei count); // supported
+GLvoid glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices); // supported
 GLvoid glDrawPixels(GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 GLvoid glEnable(GLenum cap); // supported
 GLvoid glEnableClientState(GLenum array);
@@ -179,6 +182,7 @@ GLvoid glFogf(GLenum pname, GLfloat param); // :mad: supported
 GLvoid glFogi(GLenum pname, GLint param); // :mad: supported
 GLvoid glFrontFace(GLenum mode); // supported
 GLvoid glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar); // supported
+GLvoid glGenBuffers(GLsizei n, GLuint *buffers); // :mad: supported
 GLuint glGenLists(GLsizei range);
 GLvoid glGenTextures(GLsizei n, GLuint *textures); // supported
 GLenum glGetError();
@@ -219,7 +223,7 @@ GLvoid glMultiTexCoord2fv(GLenum target, const GLfloat *v);
 GLvoid glNewList(GLuint list, GLenum mode);
 GLvoid glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz); // supported
 GLvoid glNormal3fv(const GLfloat *v); // supported
-GLvoid glNormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer);
+GLvoid glNormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer); // supported
 GLvoid glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar); // supported
 GLvoid glPixelStorei(GLenum pname, GLint param);
 GLvoid glPointSize(GLfloat size); // supported
@@ -240,7 +244,7 @@ GLvoid glShadeModel(GLenum mode);
 GLvoid glStencilFunc(GLenum func, GLint ref, GLuint mask);
 GLvoid glStencilMask(GLuint mask);
 GLvoid glStencilOp(GLenum fail, GLenum zfail, GLenum zpass);
-GLvoid glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+GLvoid glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer); // supported
 GLvoid glTexEnvfv(GLenum target, GLenum pname, const GLfloat *params);
 GLvoid glTexEnvi(GLenum target, GLenum pname, GLint param);
 GLvoid glTexGeni(GLenum coord, GLenum pname, GLint param); // supported partially and only per vertex (GL_S,GL_T:...:GL_SPHERE_MAP,GL_SPHERE_MAP_2)
@@ -251,28 +255,45 @@ GLvoid glTranslatef(GLfloat x, GLfloat y, GLfloat z); // supported
 GLvoid glTranslatefv(const GLfloat *v); // supported
 GLvoid glTranslated(GLdouble x, GLdouble y, GLdouble z); // supported
 GLvoid glTranslatedv(const GLdouble *v); // supported
+GLvoid glVertex1f(GLfloat x); // supported
+GLvoid glVertex1fv(const GLfloat *v); // supported
 GLvoid glVertex2f(GLfloat x, GLfloat y); // supported
 GLvoid glVertex2fv(const GLfloat *v); // supported
 GLvoid glVertex3f(GLfloat x, GLfloat y, GLfloat z); // supported
 GLvoid glVertex3fv(const GLfloat *v); // supported
 GLvoid glVertex4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w); // supported
 GLvoid glVertex4fv(const GLfloat *v); // supported
-GLvoid glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+GLvoid glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer); // supported
 GLvoid glViewport(GLint x, GLint y, GLsizei width, GLsizei height); // supported
+GLvoid glColor1d(GLdouble red); // :mad: // supported
+GLvoid glColor1dv(const GLdouble *v); // :mad: // supported
+GLvoid glColor2d(GLdouble red, GLdouble green); // :mad: // supported
+GLvoid glColor2dv(const GLdouble *v); // :mad: // supported
 GLvoid glColor3d(GLdouble red, GLdouble green, GLdouble blue); // :mad: // supported
 GLvoid glColor3dv(const GLdouble *v); // :mad: // supported
 GLvoid glColor4d(GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha); // :mad: // supported
 GLvoid glColor4dv(const GLdouble *v); // :mad: // supported
+GLvoid glColor1f(GLfloat red); // :mad: // supported
+GLvoid glColor1fv(const GLfloat *v); // :mad: // supported
+GLvoid glColor2f(GLfloat red, GLfloat green); // :mad: // supported
+GLvoid glColor2fv(const GLfloat *v); // :mad: // supported
 GLvoid glColor3f(GLfloat red, GLfloat green, GLfloat blue); // :mad: // supported
 GLvoid glColor3fv(const GLfloat *v); // :mad: // supported
+GLvoid glColor1ub(GLubyte red); // :mad: // supported
+GLvoid glColor2ub(GLubyte red, GLubyte green); // :mad: // supported
 GLvoid glColor3ub(GLubyte red, GLubyte green, GLubyte blue); // :mad: // supported
-GLvoid glColor4ubv(const GLubyte *color); // :mad: // supported
+GLvoid glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha); // :mad: // supported
+GLvoid glColor1ubv(const GLubyte *color); // :mad: // supported
+GLvoid glColor2ubv(const GLubyte *color); // :mad: // supported
 GLvoid glColor3ubv(const GLubyte *color); // :mad: // supported
+GLvoid glColor4ubv(const GLubyte *color); // :mad: // supported
 GLvoid glColorMaterial(GLenum face, GLenum pname); // :mad: // supported
 GLvoid glMateriali(GLenum face, GLenum pname, GLint param); // :mad: // supported
 GLvoid glFrustum(float left, float right, float bottom, float top, float znear, float zfar); // :mad: // supported
 GLvoid glNormal3d(GLdouble nx, GLdouble ny, GLdouble nz); // supported
 GLvoid glNormal3dv(const GLdouble *v); // supported
+GLvoid glVertex1d(GLdouble x); // :mad: // supported
+GLvoid glVertex1dv(const GLdouble *v); // supported
 GLvoid glVertex2d(GLdouble x, GLdouble y); // :mad: // supported
 GLvoid glVertex2dv(const GLdouble *v); // supported
 GLvoid glVertex3d(GLdouble x, GLdouble y, GLdouble z); // :mad: // supported
@@ -298,6 +319,7 @@ GLvoid glTexCoord4fv(const GLfloat *v); // :mad: // supported
 GLvoid glPushAttrib(GLbitfield mask); // :mad: // supported (mask not supported)
 GLvoid glPopAttrib(); // :mad: // supported
 GLvoid glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar); // :mad: // supported
+GLvoid glDeleteBuffers (GLsizei n, GLuint *buffers); // :mad: supported
 GLvoid glDeleteTextures(GLsizei n, GLuint *textures); // :mad: // supported
 GLvoid glTexParameterfv(GLenum target, GLenum pname, GLfloat *param); // :mad: // supported
 GLvoid glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad: // supported
@@ -435,6 +457,25 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_VK_U_CTRL 21
 #define GL_VK_X_CTRL 24
 #define GL_VK_PLUS_CTRL 29
+#define GL_VERTEX_ARRAY 0x8074
+#define GL_NORMAL_ARRAY 0x8075
+#define GL_COLOR_ARRAY 0x8076
+#define GL_INDEX_ARRAY 0x8077
+#define GL_TEXTURE_COORD_ARRAY 0x8078
+#define GL_ARRAY_BUFFER 0x8892
+#define GL_ELEMENT_ARRAY_BUFFER 0x8893
+#define GL_TEXTURE 0x1702
+#define GL_BYTE 0x1400
+#define GL_UNSIGNED_BYTE 0x1401
+#define GL_SHORT 0x1402
+#define GL_UNSIGNED_SHORT 0x1403
+#define GL_INT 0x1404
+#define GL_UNSIGNED_INT 0x1405
+#define GL_FLOAT 0x1406
+#define GL_2_BYTES 0x1407
+#define GL_3_BYTES 0x1408
+#define GL_4_BYTES 0x1409
+#define GL_DOUBLE 0x140A
 #define GL_FOG 0x0B64 //glEnable (not overriding)
 #define GL_FOG_DENSITY 0x0B62
 #define GL_FOG_START  0x0B63
@@ -804,6 +845,7 @@ GLfloat glGetZoomY(); // also non standard, hopefully you don't need it
 
 #define GLMAXTEXTURES 1024
 #define GLMAXTEXTUREUNITS 8
+#define GLMAXBUFFERS 256
 #define GLMAXLIGHTS 8
 
 // ------------------------
@@ -917,6 +959,27 @@ typedef struct _GLContext {
   GLenum fogMode;
   GLboolean twoSidedLighting;
   GLboolean wireframe[2];
+  GLboolean  vertexEnabledBuffer;
+  GLint vertexSizeBuffer;
+  GLenum vertexTypeBuffer;
+  GLsizei vertexStrideBuffer;
+  const GLvoid *vertexPointerBuffer;
+  GLboolean  normalEnabledBuffer;
+  GLint normalSizeBuffer;
+  GLenum normalTypeBuffer;
+  GLsizei normalStrideBuffer;
+  const GLvoid *normalPointerBuffer;
+  GLboolean texEnabledBuffer;
+  GLint texSizeBuffer;
+  GLenum texTypeBuffer;
+  GLsizei texStrideBuffer;
+  const GLvoid *texPointerBuffer;
+  GLboolean colorEnabledBuffer;
+  GLint colorSizeBuffer;
+  GLenum colorTypeBuffer;
+  GLsizei colorStrideBuffer;
+  const GLvoid *colorPointerBuffer;
+  GLboolean indexEnabledBuffer;
 } _GLContext;
 
 typedef struct glVertex {
