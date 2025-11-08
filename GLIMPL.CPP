@@ -1674,7 +1674,7 @@ GLvoid glDisableClientState(GLenum array) {
   }
 }
 
-GLvoid glGetDoubles(GLdouble *dest,GLsizei size, GLenum type,GLsizei stride,const GLvoid *pointer,GLint index) {
+GLvoid glGetDoubles(GLdouble *dest,GLsizei size, GLenum type,GLsizei stride,const GLvoid *pointer,GLint index, GLboolean normalized) {
   GLint siz=0;
   switch(type) {
   case GL_UNSIGNED_BYTE: siz = 1; break;
@@ -1697,12 +1697,12 @@ GLvoid glGetDoubles(GLdouble *dest,GLsizei size, GLenum type,GLsizei stride,cons
   for (GLint i = 0; i < size; i++) {
     GLdouble a = 0;
     switch(type) {
-      case GL_UNSIGNED_BYTE: a = (GLdouble)(*((GLubyte*)pointer)); break;
-      case GL_BYTE: a = (GLdouble)(*((GLbyte*)pointer)); break;
-      case GL_SHORT: a = (GLdouble)(*((GLshort*)pointer)); break;
-      case GL_UNSIGNED_SHORT: a = (GLdouble)(*((GLushort*)pointer)); break;
-      case GL_INT:  a = (GLdouble)(*((GLint*)pointer)); break;
-      case GL_UNSIGNED_INT: a = (GLdouble)(*((GLuint*)pointer)); break;
+      case GL_UNSIGNED_BYTE: a = (GLdouble)(*((GLubyte*)pointer)); if (normalized) a /= 255.0; break;
+      case GL_BYTE: a = (GLdouble)(*((GLbyte*)pointer));  if (normalized) a /= 127.0; break;
+      case GL_SHORT: a = (GLdouble)(*((GLshort*)pointer));  if (normalized) a /= 65535.0/2.0; break;
+      case GL_UNSIGNED_SHORT: a = (GLdouble)(*((GLushort*)pointer)); if (normalized) a /= 65535.0; break;
+      case GL_INT:  a = (GLdouble)(*((GLint*)pointer));  if (normalized) a /= (GLdouble)(1<<31-1); break;
+      case GL_UNSIGNED_INT: a = (GLdouble)(*((GLuint*)pointer)); a /= (GLdouble)(1<<32-1); break;
       case GL_FLOAT: a = (GLdouble)(*((GLfloat*)pointer)); break;
       case GL_2_BYTES: break;
       case GL_3_BYTES: break;
@@ -1718,7 +1718,7 @@ GLvoid glBufferedVertex(GLint i) {
   GLdouble a[4];
 
   if (glContext.colorEnabledBuffer) {
-    glGetDoubles(a,glContext.colorSizeBuffer,glContext.colorTypeBuffer,glContext.colorStrideBuffer,glContext.colorPointerBuffer,i);
+    glGetDoubles(a,glContext.colorSizeBuffer,glContext.colorTypeBuffer,glContext.colorStrideBuffer,glContext.colorPointerBuffer,i, GL_TRUE);
     switch(glContext.colorSizeBuffer) {
     case 1: {glColor1d(a[0]);} break;
     case 2: {glColor2dv(a);} break;
@@ -1728,7 +1728,7 @@ GLvoid glBufferedVertex(GLint i) {
   }
 
   if (glContext.texEnabledBuffer) {
-    glGetDoubles(a,glContext.texSizeBuffer,glContext.texTypeBuffer,glContext.texStrideBuffer,glContext.texPointerBuffer,i);
+    glGetDoubles(a,glContext.texSizeBuffer,glContext.texTypeBuffer,glContext.texStrideBuffer,glContext.texPointerBuffer,i, GL_FALSE);
     switch(glContext.texSizeBuffer) {
     case 1: {glTexCoord1d(a[0]);} break;
     case 2: {glTexCoord2dv(a);} break;
@@ -1738,12 +1738,12 @@ GLvoid glBufferedVertex(GLint i) {
   }
 
   if (glContext.normalEnabledBuffer) {
-    glGetDoubles(a,glContext.normalSizeBuffer,glContext.normalTypeBuffer,glContext.normalStrideBuffer,glContext.normalPointerBuffer,i);
+    glGetDoubles(a,glContext.normalSizeBuffer,glContext.normalTypeBuffer,glContext.normalStrideBuffer,glContext.normalPointerBuffer,i, GL_FALSE);
     glNormal3dv(a);
   }
 
   if (glContext.vertexEnabledBuffer) {
-    glGetDoubles(a,glContext.vertexSizeBuffer,glContext.vertexTypeBuffer,glContext.vertexStrideBuffer,glContext.vertexPointerBuffer,i);
+    glGetDoubles(a,glContext.vertexSizeBuffer,glContext.vertexTypeBuffer,glContext.vertexStrideBuffer,glContext.vertexPointerBuffer,i, GL_FALSE);
     switch(glContext.vertexSizeBuffer) {
     case 1: {glVertex1d(a[0]);} break;
     case 2: {glVertex2dv(a);} break;
