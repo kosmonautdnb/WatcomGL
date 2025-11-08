@@ -147,8 +147,8 @@ GLvoid glBindBuffer(GLenum target, GLuint buffer); // :mad: supported
 GLvoid glBindTexture(GLenum target, GLuint texture); // supported
 GLvoid glBitmap(GLsizei width, GLsizei height, GLfloat xorig, GLfloat yorig, GLfloat xmove, GLfloat ymove, const GLubyte *bitmap);
 GLvoid glBlendFunc(GLenum sfactor, GLenum dfactor); // supported
-GLvoid glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
-GLvoid glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data);
+GLvoid glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage); // supported
+GLvoid glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data); // supported
 GLvoid glCallLists(GLsizei n, GLenum type, const GLvoid *lists);
 GLvoid glClear(GLbitfield mask); // supported
 GLvoid glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // supported

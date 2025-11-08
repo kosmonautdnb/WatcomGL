@@ -1761,7 +1761,6 @@ GLvoid glDrawArrays(GLenum mode, GLint first, GLsizei count) {
   glEnd();
 }
 
-#include <stdio.h>
 GLvoid glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) {
   GLint siz=0;
   switch(type) {
