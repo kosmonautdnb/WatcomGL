@@ -66,7 +66,7 @@ TinyGL also emulates OpenGL in software.
 - Optional AntiAliasing
 - Z-Buffer: 32 Bit Float  
 - FrameBuffer: 32 Bit RGBA (8 Bit Per Channel)  
-- GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS  
+- GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS, GL_QUAD_STRIP, GL_TRIANGLE_STRIP. GL_TRIANGLE_FAN  
 - GL_POINTS With Texture Coordinates
 - glVertex3f And Alikes (Also glVertex3d And Alikes)  
 - Bilinear Texture Filtering And Nearest Point Texture Filtering  
@@ -87,12 +87,13 @@ TinyGL also emulates OpenGL in software.
 - glPolygonMode For Wireframe Rendering Of Polygons
 - Possible Two Sided Lighting
 - Complete Fixed Function OpenGL Pipeline
+- glDrawArrays and glDrawElements (glBufferData etc..)
 
 # WatcomGL Drawbacks
 - No MultiThreading
 - No MultiTexturing
 - No Assembly/MMX/SSE etc..
-- No DisplayLists/VertexBuffers/IndexBuffers
+- No DisplayLists
 - No Shaders
 - No StencilBuffer
 - Currently Just RGBA 32Bit Framebuffer
