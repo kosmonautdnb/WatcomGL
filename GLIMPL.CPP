@@ -1701,8 +1701,8 @@ GLvoid glGetDoubles(GLdouble *dest,GLsizei size, GLenum type,GLsizei stride,cons
       case GL_BYTE: a = (GLdouble)(*((GLbyte*)pointer));  if (normalized) a /= 127.0; break;
       case GL_SHORT: a = (GLdouble)(*((GLshort*)pointer));  if (normalized) a /= 65535.0/2.0; break;
       case GL_UNSIGNED_SHORT: a = (GLdouble)(*((GLushort*)pointer)); if (normalized) a /= 65535.0; break;
-      case GL_INT:  a = (GLdouble)(*((GLint*)pointer));  if (normalized) a /= (GLdouble)(1<<31-1); break;
-      case GL_UNSIGNED_INT: a = (GLdouble)(*((GLuint*)pointer)); a /= (GLdouble)(1<<32-1); break;
+      case GL_INT:  a = (GLdouble)(*((GLint*)pointer));  if (normalized) a /= (GLdouble)(0x7fffffff); break;
+      case GL_UNSIGNED_INT: a = (GLdouble)(*((GLuint*)pointer)); a /= (GLdouble)(0xffffffff); break;
       case GL_FLOAT: a = (GLdouble)(*((GLfloat*)pointer)); break;
       case GL_2_BYTES: break;
       case GL_3_BYTES: break;
