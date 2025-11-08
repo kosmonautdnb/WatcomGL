@@ -66,7 +66,9 @@ typedef unsigned char GLboolean;
 typedef unsigned int GLbitfield;
 typedef signed char GLbyte;
 typedef int GLint;
+typedef long GLintptr;
 typedef int GLsizei;
+typedef long GLsizeiptr;
 typedef unsigned char GLubyte;
 typedef short GLshort;
 typedef unsigned short GLushort;
@@ -140,13 +142,13 @@ GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for better (qua
 
 GLvoid glActiveTexture(GLenum texture); // supported
 GLvoid glAlphaFunc(GLenum func, GLclampf ref); // supported
-GLvoid glBegin(GLenum mode); // supported (GL_POINTS, GL_LINES, GL_TRIANGLES, GL_QUADS, GL_LINE_STRIP)
+GLvoid glBegin(GLenum mode); // supported (GL_POINTS, GL_LINES, GL_TRIANGLES, GL_QUADS, GL_LINE_STRIP, GL_TRIANGLE_STRIP, GL_QUAD_STRIP, GL_TRIANGLE_FAN)
 GLvoid glBindBuffer(GLenum target, GLuint buffer); // :mad: supported
 GLvoid glBindTexture(GLenum target, GLuint texture); // supported
 GLvoid glBitmap(GLsizei width, GLsizei height, GLfloat xorig, GLfloat yorig, GLfloat xmove, GLfloat ymove, const GLubyte *bitmap);
 GLvoid glBlendFunc(GLenum sfactor, GLenum dfactor); // supported
-GLvoid glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage);
-GLvoid glBufferSubData(GLenum target, GLint offset, GLsizei size, const GLvoid *data);
+GLvoid glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+GLvoid glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data);
 GLvoid glCallLists(GLsizei n, GLenum type, const GLvoid *lists);
 GLvoid glClear(GLbitfield mask); // supported
 GLvoid glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // supported
@@ -201,6 +203,7 @@ GLvoid glGetTexEnviv(GLenum target, GLenum pname, GLint *params);
 GLvoid glGetTexParameteriv(GLenum target, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);
 GLvoid glHint(GLenum target, GLenum mode);
+GLboolean glIsBuffer(GLuint buffer); // supported
 GLboolean glIsEnabled(GLenum cap); // supported
 GLvoid glLightf(GLenum light, GLenum pname, GLfloat param); // supported
 GLvoid glLightfv(GLenum light, GLenum pname, const GLfloat *params); // supported
@@ -579,6 +582,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_TRIANGLES 0x0004
 #define GL_TRIANGLE_STRIP 0x0005
 #define GL_TRIANGLE_FAN 0x0006
+#define GL_QUAD_STRIP 0x0008
 #define GL_ZERO 0
 #define GL_ONE 1
 #define GL_ONE_MINUS_SRC_ALPHA 0x0303
@@ -980,6 +984,8 @@ typedef struct _GLContext {
   GLsizei colorStrideBuffer;
   const GLvoid *colorPointerBuffer;
   GLboolean indexEnabledBuffer;
+  GLint beginPrimitiveIndex;
+
 } _GLContext;
 
 typedef struct glVertex {
