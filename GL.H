@@ -144,12 +144,14 @@ GLvoid glActiveTexture(GLenum texture); // supported
 GLvoid glAlphaFunc(GLenum func, GLclampf ref); // supported
 GLvoid glBegin(GLenum mode); // supported (GL_POINTS, GL_LINES, GL_TRIANGLES, GL_QUADS, GL_LINE_STRIP, GL_TRIANGLE_STRIP, GL_QUAD_STRIP, GL_TRIANGLE_FAN)
 GLvoid glBindBuffer(GLenum target, GLuint buffer); // :mad: supported
+GLvoid glBindFramebuffer(GLenum target, GLuint buffer); // :mad: supported
 GLvoid glBindTexture(GLenum target, GLuint texture); // supported
 GLvoid glBitmap(GLsizei width, GLsizei height, GLfloat xorig, GLfloat yorig, GLfloat xmove, GLfloat ymove, const GLubyte *bitmap);
 GLvoid glBlendFunc(GLenum sfactor, GLenum dfactor); // supported
 GLvoid glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage); // supported
 GLvoid glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data); // supported
 GLvoid glCallLists(GLsizei n, GLenum type, const GLvoid *lists);
+GLenum glCheckFramebufferStatus(GLuint buffer); // :mad: supported
 GLvoid glClear(GLbitfield mask); // supported
 GLvoid glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // supported
 GLvoid glClearDepthf(GLclampf depth); // supported
@@ -182,9 +184,11 @@ GLvoid glFlush(); // supported
 GLvoid glFogfv(GLenum pname, GLfloat *params); // :mad: supported
 GLvoid glFogf(GLenum pname, GLfloat param); // :mad: supported
 GLvoid glFogi(GLenum pname, GLint param); // :mad: supported
+GLvoid glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level); // :mad: supported
 GLvoid glFrontFace(GLenum mode); // supported
 GLvoid glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar); // supported
 GLvoid glGenBuffers(GLsizei n, GLuint *buffers); // :mad: supported
+GLvoid glGenFramebuffers(GLsizei n, GLuint *buffers); // :mad: supported
 GLuint glGenLists(GLsizei range);
 GLvoid glGenTextures(GLsizei n, GLuint *textures); // supported
 GLenum glGetError();
@@ -323,6 +327,7 @@ GLvoid glPushAttrib(GLbitfield mask); // :mad: // supported (mask not supported)
 GLvoid glPopAttrib(); // :mad: // supported
 GLvoid glOrtho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar); // :mad: // supported
 GLvoid glDeleteBuffers (GLsizei n, GLuint *buffers); // :mad: supported
+GLvoid glDeleteFramebuffers (GLsizei n, GLuint *buffers); // :mad: supported
 GLvoid glDeleteTextures(GLsizei n, GLuint *textures); // :mad: // supported
 GLvoid glTexParameterfv(GLenum target, GLenum pname, GLfloat *param); // :mad: // supported
 GLvoid glBlendColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha); // :mad: // supported
@@ -460,6 +465,8 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_VK_U_CTRL 21
 #define GL_VK_X_CTRL 24
 #define GL_VK_PLUS_CTRL 29
+#define GL_COLOR_ATTACHMENT0 0x8ce0
+#define GL_DEPTH_ATTACHMENT 0x8d00
 #define GL_VERTEX_ARRAY 0x8074
 #define GL_NORMAL_ARRAY 0x8075
 #define GL_COLOR_ARRAY 0x8076
@@ -619,6 +626,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_COLOR_ARRAY 0x8076
 #define GL_TEXTURE_COORD_ARRAY 0x8078
 #define GL_NO_ERROR 0
+#define GL_ERROR 1
 #define GL_INVALID_ENUM 0x0500
 #define GL_INVALID_VALUE 0x0501
 #define GL_INVALID_OPERATION 0x0502
@@ -985,7 +993,7 @@ typedef struct _GLContext {
   const GLvoid *colorPointerBuffer;
   GLboolean indexEnabledBuffer;
   GLint beginPrimitiveIndex;
-
+  GLenum clientActiveTexture;
 } _GLContext;
 
 typedef struct glVertex {

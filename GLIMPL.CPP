@@ -165,15 +165,25 @@ GLvoid initTexture(glTexture *t) {
   t->texEnvMode=GL_MODULATE;
 }
 
+#pragma pack(push)
+#pragma pack(1)
 typedef struct GLBuffer {
   GLuint name;
   GLvoid *data;
   GLsizei dataSize;
+  GLuint *colorPointer;
+  GLuint colorWidth;
+  GLuint colorHeight;
+  GLfloat *depthPointer;
+  GLuint depthWidth;
+  GLuint depthHeight;
 } GLBuffer;
+#pragma pack(pop)
 
 GLBuffer glBuffers[GLMAXBUFFERS];
 GLBuffer *glBoundBuffer=NULL;
 GLBuffer *glBoundElementBuffer=NULL;
+GLBuffer *glBoundFrameBuffer=NULL;
 GLBuffer glStandardBuffer;
 GLBuffer glStandardElementBuffer;
 
@@ -217,6 +227,7 @@ GLvoid _GLContext_init() {
   memset(glBuffers,0,sizeof(glBuffers));
   glBoundBuffer=NULL;
   glBoundElementBuffer=NULL;
+  glBoundFrameBuffer=NULL;
   glContext.viewportX0 = 0;
   glContext.viewportY0 = 0;
   glContext.viewportX1 = 0;
@@ -398,6 +409,7 @@ GLvoid _GLContext_init() {
   glContext.colorPointerBuffer = NULL;
   glContext.indexEnabledBuffer = GL_TRUE; // seems to be default on?
   glContext.beginPrimitiveIndex = 0;
+  glContext.clientActiveTexture = GL_TEXTURE0;
 
   for (i = 0; i < GLMAXTEXTURES; i++) {
     glTexture *t=&glTextures[i];
@@ -1367,6 +1379,26 @@ GLvoid glBindBuffer(GLenum target, GLuint buffer) {
   }
 }
 
+GLvoid glBindFramebuffer(GLenum target, GLuint buffer) {
+  __UNUSED(target);
+  if (buffer >= GLMAXBUFFERS) {
+    glSetError(GL_INVALID_VALUE);
+    return;
+  }
+  glBoundFrameBuffer=buffer==0?NULL:&glBuffers[buffer];
+  if (glBoundFrameBuffer==NULL||glBoundFrameBuffer->colorPointer==NULL) {
+    glFrameBufferWidth = glFrameBufferWidth0;
+    glFrameBufferHeight = glFrameBufferHeight0;
+    glFrameBuffer = glFrameBuffer0;
+    glDepthBuffer = glDepthBuffer0;
+    return;
+  }
+  glFrameBuffer = glBoundFrameBuffer->colorPointer;
+  glFrameBufferWidth = glBoundFrameBuffer->colorWidth;
+  glFrameBufferHeight = glBoundFrameBuffer->colorHeight;
+  glDepthBuffer = glBoundFrameBuffer->depthPointer; // must be same width/height like color (or NULL)
+}
+
 GLvoid glBindTexture(GLenum target, GLuint texture) {
   __UNUSED(target);
   if (texture >= GLMAXTEXTURES) {
@@ -1413,6 +1445,19 @@ GLvoid glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GL
     memcpy((GLvoid*)((GLuint)c->data+offset),data,size);
   else
     memset((GLvoid*)((GLuint)c->data+offset),0,size);
+}
+
+GLenum glCheckFramebufferStatus(GLuint buffer) {
+  if (buffer >= GLMAXBUFFERS) {
+    glSetError(GL_INVALID_VALUE);
+    return GL_ERROR;
+  }
+  GLBuffer *c = &glBuffers[buffer];
+  if (c->name != buffer) return GL_ERROR;
+  if (c->colorPointer == NULL) return GL_ERROR;
+  if (c->depthPointer == NULL) return GL_NO_ERROR;
+  if ((c->colorWidth != c->depthWidth)||(c->colorHeight != c->depthHeight)) return GL_ERROR;
+  return GL_NO_ERROR;
 }
 
 GLvoid glClear(GLbitfield mask) {
@@ -1475,6 +1520,10 @@ GLvoid glClearDepth(GLclampf depth) {
 
 GLvoid glClearStencil(GLint s) {
   glContext.clearStencil = s;
+}
+
+GLvoid glClientActiveTexture(GLenum texture) {
+  glContext.clientActiveTexture = texture;
 }
 
 GLvoid glColor1d(GLdouble red) {
@@ -1638,6 +1687,11 @@ GLvoid glCullFace(GLenum mode) {
 }
 
 GLvoid glDeleteBuffers (GLsizei n, GLuint *buffers) {
+  for (GLint i = 0; i < n; i++)
+    glDeleteBuffer(buffers[i]);
+}
+
+GLvoid glDeleteFramebuffers (GLsizei n, GLuint *buffers) {
   for (GLint i = 0; i < n; i++)
     glDeleteBuffer(buffers[i]);
 }
@@ -1838,6 +1892,19 @@ GLvoid glFogi(GLenum pname, GLint param) {
   case GL_FOG_DENSITY: {glContext.fogDensity = (GLfloat)param;} break;
   case GL_FOG_MODE: {glContext.fogMode = param;} break;
   }
+}              
+
+GLvoid glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) {
+  __UNUSED(target);
+  __UNUSED(textarget);
+  __UNUSED(level);
+  if (glBoundFrameBuffer==NULL) return;
+  GLBuffer *c = glBoundFrameBuffer;
+  glTexture *t = &glTextures[texture];
+  switch(attachment) {
+  case GL_COLOR_ATTACHMENT0: {c->colorWidth=t->width;c->colorHeight=t->height;c->colorPointer=(GLuint*)t->data;} break;
+  case GL_DEPTH_ATTACHMENT: {c->depthWidth=t->width;c->depthHeight=t->height;c->depthPointer=(GLfloat*)t->data;} break;
+  }
 }
 
 GLvoid glFrontFace(GLenum mode) {
@@ -1845,6 +1912,12 @@ GLvoid glFrontFace(GLenum mode) {
 }
 
 GLvoid glGenBuffers(GLsizei n, GLuint *buffers) {
+  for(GLint i = 0; i < n; i++) {
+    buffers[i] = glNewBuffer();
+  }
+}
+
+GLvoid glGenFramebuffers(GLsizei n, GLuint *buffers) {
   for(GLint i = 0; i < n; i++) {
     buffers[i] = glNewBuffer();
   }
@@ -2916,6 +2989,7 @@ GLvoid glTexCoord4fv(const GLfloat *v) {
 }
 
 GLvoid glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
+  if (glContext.clientActiveTexture!=GL_TEXTURE0) return;
   glContext.texSizeBuffer = size;
   glContext.texTypeBuffer = type;
   glContext.texStrideBuffer = stride;
