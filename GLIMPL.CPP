@@ -418,6 +418,12 @@ GLvoid _GLContext_init() {
   glContext.ambientColorBlue = 0.2f;
   glContext.ambientColorAlpha = 1.f;
 
+  glContext.pointSizeMin = 0.f;
+  glContext.pointSizeMax = 10000.f; // spec says 1.f is needed
+  glContext.pointAttenuation[0] = 1.f;
+  glContext.pointAttenuation[1] = 0.f;
+  glContext.pointAttenuation[2] = 0.f;
+
   for (i = 0; i < GLMAXTEXTURES; i++) {
     glTexture *t=&glTextures[i];
     initTexture(t);
@@ -1320,8 +1326,27 @@ GLvoid glEmitVertex() {
           glVertices[1] = glVertices[0];
           glVertices[2] = glVertices[0];
           glVertices[3] = glVertices[0];
-          const GLdouble pointSizeX = glContext.pointSize*0.5*glContext.zoomX*additionalPointSpriteXStretch;
-          const GLdouble pointSizeY = glContext.pointSize*0.5*glContext.zoomY;
+          GLdouble pointSize=glContext.pointSize;
+          if (glContext.pointAttenuation[0]!=1.f||glContext.pointAttenuation[1]!=0.f||glContext.pointAttenuation[2]!=0.f) {
+            const GLdouble *cm = glContext.matrixForMode[GL_MODELVIEW & 1];
+            const glVertex *v = &glVertices[0];
+            const GLdouble vx = v->vertexX;
+            const GLdouble vy = v->vertexY;
+            const GLdouble vz = v->vertexZ;
+            const GLdouble vw = v->vertexW;
+            GLdouble z = vx * cm[0*4+2] + vy * cm[1*4+2] + vz * cm[2*4+2] + vw * cm[3*4+2];
+            const GLdouble w = vx * cm[0*4+3] + vy * cm[1*4+3] + vz * cm[2*4+3] + vw * cm[3*4+3];
+            if (w != 0) 
+              z/=w;
+            const GLdouble d = fabs(z);
+            GLdouble s = glContext.pointAttenuation[0]+glContext.pointAttenuation[1]*d+glContext.pointAttenuation[2]*d*d;
+            if (s != 0) s = 1.0 / s;
+            pointSize *= sqrt(fabs(s));
+          }
+          if (pointSize<glContext.pointSizeMin) pointSize=glContext.pointSizeMin;
+          if (pointSize>glContext.pointSizeMax) pointSize=glContext.pointSizeMax;
+          const GLdouble pointSizeX = pointSize*0.5*glContext.zoomX*additionalPointSpriteXStretch;
+          const GLdouble pointSizeY = pointSize*0.5*glContext.zoomY;
           glVertices[3].textureX = 0;
           glVertices[3].textureY = 1;
           glVertices[3].sx -= pointSizeX;
@@ -2428,6 +2453,30 @@ GLvoid glPolygonMode(GLenum face, GLenum mode) {
 GLvoid glPixelStorei(GLenum pname, GLint param) {
   __UNUSED(pname);
   __UNUSED(param);
+}
+
+GLvoid glPointParameteri(GLenum pname, GLint param) {
+  glPointParameteriv(pname, &param);
+}
+
+GLvoid glPointParameteriv(GLenum pname, const GLint *param) {
+  switch(pname) {
+  case GL_POINT_SIZE_MIN: {glContext.pointSizeMin = (GLfloat)param[0];} break;
+  case GL_POINT_SIZE_MAX: {glContext.pointSizeMax = (GLfloat)param[0];} break;
+  case GL_POINT_DISTANCE_ATTENUATION: {glContext.pointAttenuation[0] = (GLfloat)param[0];glContext.pointAttenuation[1] = (GLfloat)param[1];glContext.pointAttenuation[2] = (GLfloat)param[2];} break;
+  }
+}
+
+GLvoid glPointParameterf(GLenum pname, GLfloat param) {
+  glPointParameterfv(pname, &param);
+}
+
+GLvoid glPointParameterfv(GLenum pname, const GLfloat *param) {
+  switch(pname) {
+  case GL_POINT_SIZE_MIN: {glContext.pointSizeMin = param[0];} break;
+  case GL_POINT_SIZE_MAX: {glContext.pointSizeMax = param[0];} break;
+  case GL_POINT_DISTANCE_ATTENUATION: {glContext.pointAttenuation[0] = param[0];glContext.pointAttenuation[1] = param[1];glContext.pointAttenuation[2] = param[2];} break;
+  }
 }
 
 GLvoid glPolygonOffset(GLfloat factor, GLfloat units) {
