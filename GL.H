@@ -233,6 +233,10 @@ GLvoid glNormal3fv(const GLfloat *v); // supported
 GLvoid glNormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer); // supported
 GLvoid glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar); // supported
 GLvoid glPixelStorei(GLenum pname, GLint param);
+GLvoid glPointParameteri(GLenum pname, GLint param);
+GLvoid glPointParameteriv(GLenum pname, const GLint *param);
+GLvoid glPointParameterf(GLenum pname, GLfloat param);
+GLvoid glPointParameterfv(GLenum pname, const GLfloat *param);
 GLvoid glPointSize(GLfloat size); // supported
 GLvoid glPolygonMode(GLenum face, GLenum mode); // supported
 GLvoid glPolygonOffset(GLfloat factor, GLfloat units); // supported
@@ -465,6 +469,9 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_VK_U_CTRL 21
 #define GL_VK_X_CTRL 24
 #define GL_VK_PLUS_CTRL 29
+#define GL_POINT_SIZE_MIN 0x8126
+#define GL_POINT_SIZE_MAX 0x8127
+#define GL_POINT_DISTANCE_ATTENUATION 0x8129
 #define GL_COLOR_ATTACHMENT0 0x8ce0
 #define GL_DEPTH_ATTACHMENT 0x8d00
 #define GL_VERTEX_ARRAY 0x8074
@@ -998,6 +1005,10 @@ typedef struct _GLContext {
   GLfloat ambientColorGreen;
   GLfloat ambientColorBlue;
   GLfloat ambientColorAlpha;
+  GLfloat pointSizeMin;
+  GLfloat pointSizeMax;
+  GLfloat pointAttenuation[3];
+
 } _GLContext;
 
 typedef struct glVertex {
