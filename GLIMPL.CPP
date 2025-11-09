@@ -293,14 +293,14 @@ GLvoid _GLContext_init() {
   for (i = 0; i < 2; i++) {
     glContext.colorMaterial[i] = GL_AMBIENT_AND_DIFFUSE;
     // ambient
-    glContext.materialRed[i][0] = 0;
-    glContext.materialGreen[i][0] = 0;
-    glContext.materialBlue[i][0] = 0;
+    glContext.materialRed[i][0] = 0.2;
+    glContext.materialGreen[i][0] = 0.2;
+    glContext.materialBlue[i][0] = 0.2;
     glContext.materialAlpha[i][0] = 1;
     // diffuse
-    glContext.materialRed[i][1] = 1;
-    glContext.materialGreen[i][1] = 1;
-    glContext.materialBlue[i][1] = 1;
+    glContext.materialRed[i][1] = 0.8;
+    glContext.materialGreen[i][1] = 0.8;
+    glContext.materialBlue[i][1] = 0.8;
     glContext.materialAlpha[i][1] = 1;
     // specular
     glContext.materialRed[i][2] = 0;
@@ -398,10 +398,12 @@ GLvoid _GLContext_init() {
   glContext.normalStrideBuffer = 0;
   glContext.normalPointerBuffer = NULL;
   glContext.texEnabledBuffer = GL_FALSE;
-  glContext.texSizeBuffer = 0;
-  glContext.texTypeBuffer = 0;
-  glContext.texStrideBuffer = 0;
-  glContext.texPointerBuffer = NULL;
+  for (i = 0; i < GLMAXTEXTUREUNITS; i++) {
+    glContext.texSizeBuffer[i] = 0;
+    glContext.texTypeBuffer[i] = 0;
+    glContext.texStrideBuffer[i] = 0;
+    glContext.texPointerBuffer[i] = NULL;
+  }
   glContext.colorEnabledBuffer = GL_FALSE;
   glContext.colorSizeBuffer = 0;
   glContext.colorTypeBuffer = 0;
@@ -410,6 +412,11 @@ GLvoid _GLContext_init() {
   glContext.indexEnabledBuffer = GL_TRUE; // seems to be default on?
   glContext.beginPrimitiveIndex = 0;
   glContext.clientActiveTexture = GL_TEXTURE0;
+
+  glContext.ambientColorRed = 0.2f;
+  glContext.ambientColorGreen = 0.2f;
+  glContext.ambientColorBlue = 0.2f;
+  glContext.ambientColorAlpha = 1.f;
 
   for (i = 0; i < GLMAXTEXTURES; i++) {
     glTexture *t=&glTextures[i];
@@ -786,7 +793,6 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
             specular = 0;
           }
         }
-
         ambientRed += materialAmbientRed*lightAmbientRed;
         ambientGreen += materialAmbientGreen*lightAmbientGreen;
         ambientBlue += materialAmbientBlue*lightAmbientBlue;
@@ -810,6 +816,10 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
       specularGreen = 0;
       specularBlue = 0;
     }
+    ambientRed += materialAmbientRed*context->ambientColorRed;
+    ambientGreen += materialAmbientGreen*context->ambientColorGreen;
+    ambientBlue += materialAmbientBlue*context->ambientColorBlue;
+
     v->colorRed = materialEmissionRed + ambientRed + diffuseRed + specularRed;
     v->colorGreen = materialEmissionGreen + ambientGreen + diffuseGreen + specularGreen;
     v->colorBlue = materialEmissionBlue + ambientBlue + diffuseBlue + specularBlue;
@@ -1782,8 +1792,9 @@ GLvoid glBufferedVertex(GLint i) {
   }
 
   if (glContext.texEnabledBuffer) {
-    glGetDoubles(a,glContext.texSizeBuffer,glContext.texTypeBuffer,glContext.texStrideBuffer,glContext.texPointerBuffer,i, GL_FALSE);
-    switch(glContext.texSizeBuffer) {
+    const GLint b = glContext.activeTexture;
+    glGetDoubles(a,glContext.texSizeBuffer[b],glContext.texTypeBuffer[b],glContext.texStrideBuffer[b],glContext.texPointerBuffer[b],i, GL_FALSE);
+    switch(glContext.texSizeBuffer[b]) {
     case 1: {glTexCoord1d(a[0]);} break;
     case 2: {glTexCoord2dv(a);} break;
     case 3: {glTexCoord3dv(a);} break;
@@ -2271,6 +2282,9 @@ GLvoid glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 }
 
 GLvoid glLightModelfv(GLenum pname, const GLfloat *params) {
+  switch(pname) {
+  case GL_LIGHT_MODEL_AMBIENT: glContext.ambientColorRed = params[0]; glContext.ambientColorGreen = params[1]; glContext.ambientColorBlue = params[2]; glContext.ambientColorAlpha = params[3]; return;
+  }
   glLightModelf(pname, params[0]); // temporary
 }
 
@@ -2634,6 +2648,8 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
   GLint formatStride = 4;
   switch(format) {
   case GL_ALPHA:{aIn=0;formatStride = 1;} break;
+  case GL_LUMINANCE:{rIn=0;gIn=0;bIn=0;formatStride = 1;} break;
+  case GL_LUMINANCE_ALPHA:{rIn=0;gIn=0;bIn=0;aIn=1;formatStride = 2;} break;
   case GL_RED:{rIn=0;formatStride = 1;} break;
   case GL_RG:{rIn=0;gIn=1;formatStride = 2;} break;
   case GL_RGB:{rIn=0;gIn=1;bIn=2;formatStride = 3;} break;
@@ -2708,6 +2724,8 @@ GLvoid glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset,
   GLint formatStride = 4;
   switch(format) {
   case GL_ALPHA:{aIn=0;formatStride = 1;} break;
+  case GL_LUMINANCE:{rIn=0;gIn=0;bIn=0;formatStride = 1;} break;
+  case GL_LUMINANCE_ALPHA:{rIn=0;gIn=0;bIn=0;aIn=1;formatStride = 2;} break;
   case GL_RED:{rIn=0;formatStride = 1;} break;
   case GL_RG:{rIn=0;gIn=1;formatStride = 2;} break;
   case GL_RGB:{rIn=0;gIn=1;bIn=2;formatStride = 3;} break;
@@ -2989,11 +3007,11 @@ GLvoid glTexCoord4fv(const GLfloat *v) {
 }
 
 GLvoid glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
-  if (glContext.clientActiveTexture!=GL_TEXTURE0) return;
-  glContext.texSizeBuffer = size;
-  glContext.texTypeBuffer = type;
-  glContext.texStrideBuffer = stride;
-  glContext.texPointerBuffer = pointer;
+  GLint b = glContext.clientActiveTexture - GL_TEXTURE0;
+  glContext.texSizeBuffer[b] = size;
+  glContext.texTypeBuffer[b] = type;
+  glContext.texStrideBuffer[b] = stride;
+  glContext.texPointerBuffer[b] = pointer;
 }
 
 GLvoid glPushAttrib(GLbitfield mask) { // mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet

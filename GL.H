@@ -982,10 +982,10 @@ typedef struct _GLContext {
   GLsizei normalStrideBuffer;
   const GLvoid *normalPointerBuffer;
   GLboolean texEnabledBuffer;
-  GLint texSizeBuffer;
-  GLenum texTypeBuffer;
-  GLsizei texStrideBuffer;
-  const GLvoid *texPointerBuffer;
+  GLint texSizeBuffer[GLMAXTEXTUREUNITS];
+  GLenum texTypeBuffer[GLMAXTEXTUREUNITS];
+  GLsizei texStrideBuffer[GLMAXTEXTUREUNITS];
+  const GLvoid *texPointerBuffer[GLMAXTEXTUREUNITS];
   GLboolean colorEnabledBuffer;
   GLint colorSizeBuffer;
   GLenum colorTypeBuffer;
@@ -994,6 +994,10 @@ typedef struct _GLContext {
   GLboolean indexEnabledBuffer;
   GLint beginPrimitiveIndex;
   GLenum clientActiveTexture;
+  GLfloat ambientColorRed;
+  GLfloat ambientColorGreen;
+  GLfloat ambientColorBlue;
+  GLfloat ambientColorAlpha;
 } _GLContext;
 
 typedef struct glVertex {
