@@ -251,10 +251,15 @@ GLvoid _GLContext_init() {
   glContext.pointSize = 0;
   glContext.polygonOffsetFactor = 0;
   glContext.polygonOffsetUnits = 0;
-  memcpy(glContext.matrixForMode[0],identityMatrix,4*4*sizeof(GLdouble));
-  memcpy(glContext.matrixForMode[1],identityMatrix,4*4*sizeof(GLdouble));
+  memcpy(glContext.modelViewMatrix,identityMatrix,4*4*sizeof(GLdouble));
+  memcpy(glContext.projectionMatrix,identityMatrix,4*4*sizeof(GLdouble));
+  for (i = 0; i < GLMAXTEXTUREUNITS; i++) memcpy(glContext.textureMatrix[i],identityMatrix,4*4*sizeof(GLdouble));
+  glContext.matrixForMode[GL_MODELVIEW & 1] = glContext.modelViewMatrix;
+  glContext.matrixForMode[GL_PROJECTION & 1] = glContext.projectionMatrix;
+  glContext.matrixForMode[2] = glContext.textureMatrix[0];
   memcpy(glContext.inverseMatrixForMode[0],identityMatrix,4*4*sizeof(GLdouble));
   memcpy(glContext.inverseMatrixForMode[1],identityMatrix,4*4*sizeof(GLdouble));
+  memcpy(glContext.inverseMatrixForMode[2],identityMatrix,4*4*sizeof(GLdouble)); // not used
   memcpy(glContext.matrix,identityMatrix,4*4*sizeof(GLdouble));
   glContext.matrixModeNr = 0;
   glContext.lineStippleFactor = 0;
@@ -1389,7 +1394,8 @@ GLvoid glEmitVertex() {
 
 GLvoid glActiveTexture(GLenum texture) {
   glContext.activeTexture = texture - GL_TEXTURE0;
-}
+  glContext.matrixForMode[2] = glContext.textureMatrix[glContext.activeTexture];
+}              
 
 GLvoid glAlphaFunc(GLenum func, GLclampf ref) {
   glContext.alphaFunc = func;
@@ -2423,7 +2429,11 @@ GLvoid glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 }
 
 GLvoid glMatrixMode(GLenum mode) {
-  glContext.matrixModeNr = mode & 0x01;
+  switch(mode) {
+  case GL_PROJECTION: {glContext.matrixModeNr = GL_PROJECTION & 1;} break;
+  case GL_MODELVIEW: {glContext.matrixModeNr = GL_MODELVIEW & 1;} break;
+  case GL_TEXTURE: {glContext.matrixModeNr = 2;} break;
+  }
 }
 
 GLvoid glMultMatrixf(const GLfloat *m) {

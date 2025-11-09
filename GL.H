@@ -864,7 +864,7 @@ GLfloat glGetZoomY(); // also non standard, hopefully you don't need it
 
 #define GLMAXTEXTURES 1024
 #define GLMAXTEXTUREUNITS 8
-#define GLMAXBUFFERS 256
+#define GLMAXBUFFERS 1024
 #define GLMAXLIGHTS 8
 
 // ------------------------
@@ -900,8 +900,8 @@ typedef struct _GLContext {
   GLfloat pointSize;
   GLfloat polygonOffsetFactor;
   GLfloat polygonOffsetUnits;
-  GLdouble matrixForMode[2][4*4];
-  GLdouble inverseMatrixForMode[2][4*4]; // use glGetInverseModelView
+  GLdouble *matrixForMode[3];
+  GLdouble inverseMatrixForMode[3][4*4]; // use glGetInverseModelView
   GLdouble matrix[4*4];
   GLint matrixModeNr;
   GLfloat lineStippleFactor;
@@ -1008,7 +1008,9 @@ typedef struct _GLContext {
   GLfloat pointSizeMin;
   GLfloat pointSizeMax;
   GLfloat pointAttenuation[3];
-
+  GLdouble modelViewMatrix[4*4];
+  GLdouble projectionMatrix[4*4];
+  GLdouble textureMatrix[GLMAXTEXTUREUNITS][4*4];
 } _GLContext;
 
 typedef struct glVertex {
