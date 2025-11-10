@@ -89,6 +89,7 @@ TinyGL also emulates OpenGL in software.
 - Complete Fixed Function OpenGL Pipeline
 - glDrawArrays and glDrawElements (glBufferData etc..)
 - glFramebufferTexture2D (Render Targets)
+- Texture Matrices
 
 # WatcomGL Drawbacks
 - No MultiThreading
