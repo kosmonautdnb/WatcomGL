@@ -92,6 +92,7 @@ TinyGL also emulates OpenGL in software.
 - glFramebufferTexture2D (Render Targets)
 - Texture Matrices
 - User Definable Clip Planes (glClipPlane)
+- Stencil Buffer
 
 # WatcomGL Drawbacks
 - No MultiThreading
@@ -99,7 +100,6 @@ TinyGL also emulates OpenGL in software.
 - No Assembly/MMX/SSE etc..
 - No DisplayLists
 - No Shaders
-- No StencilBuffer
 - Currently Just RGBA 32Bit Framebuffer
 - Uses Doubles And Floats
 - Just the very oldschool OpenGL
