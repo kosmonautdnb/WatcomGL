@@ -91,6 +91,7 @@ TinyGL also emulates OpenGL in software.
 - glDrawArrays and glDrawElements (glBufferData etc..)
 - glFramebufferTexture2D (Render Targets)
 - Texture Matrices
+- User Definable Clip Planes (glClipPlane)
 
 # WatcomGL Drawbacks
 - No MultiThreading
