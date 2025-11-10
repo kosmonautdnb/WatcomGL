@@ -5443,8 +5443,8 @@ GLvoid glCleanSetup(GLuint width, GLuint height, GLuint *frameBuffer, GLfloat *d
   glStencilBuffer = stencilBuffer;
   glStencilBuffer0 = stencilBuffer;
   memset(glFrameBuffer,0,width*height*glFrameBufferBytesPerPixel*glFrameBufferMultiSample);
-  memset(glDepthBuffer,0,width*height*glFrameBufferMultiSample*sizeof(GLfloat));
-  memset(glStencilBuffer,0,width*height*glFrameBufferMultiSample*sizeof(GLubyte));
+  if (glDepthBuffer != NULL) memset(glDepthBuffer,0,width*height*glFrameBufferMultiSample*sizeof(GLfloat));
+  if (glStencilBuffer != NULL) memset(glStencilBuffer,0,width*height*glFrameBufferMultiSample*sizeof(GLubyte));
   glViewport(0,0,width,height);
   glSetTime(0);
 }
