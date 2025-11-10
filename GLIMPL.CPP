@@ -291,7 +291,7 @@ GLvoid _GLContext_init() {
   glContext.textureX = 0.0;
   glContext.textureY = 0.0;
   glContext.textureZ = 0.0;
-  glContext.textureW = 0.0;
+  glContext.textureW = 1.0;
   glContext.beginMode = 0;
 
   glContext.colorMaterialFace = GL_FRONT;
