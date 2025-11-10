@@ -66,6 +66,7 @@ TinyGL also emulates OpenGL in software.
 - Optional AntiAliasing
 - Z-Buffer: 32 Bit Float  
 - FrameBuffer: 32 Bit RGBA (8 Bit Per Channel)  
+- Almost all OpenGL ES 1.1 stuff
 - GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_TRIANGLES, GL_QUADS, GL_QUAD_STRIP, GL_TRIANGLE_STRIP. GL_TRIANGLE_FAN  
 - GL_POINTS With Texture Coordinates
 - glVertex3f And Alikes (Also glVertex3d And Alikes)  
