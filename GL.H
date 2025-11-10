@@ -158,6 +158,8 @@ GLvoid glClearDepthf(GLclampf depth); // supported
 GLvoid glClearDepth(GLclampf depth); // supported
 GLvoid glClearStencil(GLint s);
 GLvoid glClientActiveTexture(GLenum texture);
+GLvoid glClipPlane(GLenum plane, const GLdouble *equation);
+GLvoid glClipPlanef(GLenum plane, const GLfloat *equation);
 GLvoid glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha); // supported
 GLvoid glColor4fv(const GLfloat *v); // supported
 GLvoid glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha); // supported
@@ -211,9 +213,9 @@ GLboolean glIsBuffer(GLuint buffer); // supported
 GLboolean glIsEnabled(GLenum cap); // supported
 GLvoid glLightf(GLenum light, GLenum pname, GLfloat param); // supported
 GLvoid glLightfv(GLenum light, GLenum pname, const GLfloat *params); // supported
-GLvoid glLightModelfv(GLenum pname, const GLfloat *params);
-GLvoid glLightModeli(GLenum pname, const GLenum param); // supported partially (GL_SEPARATE_SPECULAR_COLOR,GL_SINGLE_COLOR,GL_LIGHT_MODEL_TWO_SIDE)
-GLvoid glLightModelf(GLenum pname, const GLfloat param); // supported partially (GL_LIGHT_MODEL_TWO_SIDE)
+GLvoid glLightModelfv(GLenum pname, const GLfloat *params); // supported
+GLvoid glLightModeli(GLenum pname, const GLenum param); // supported
+GLvoid glLightModelf(GLenum pname, const GLfloat param); // supported
 GLvoid glLineStipple(GLint factor, GLushort pattern);
 GLvoid glLineWidth(GLfloat width); // supported
 GLvoid glListBase(GLuint base);
@@ -369,6 +371,12 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 //GL_LIGHT6 0x4006 (0x06)
 //GL_LIGHT7 0x4007 (0x07)
 //GL_SCISSOR_TEST 0x0C11 (0x11)
+//GL_CLIP_PLANE0 (0x3000+0x20) (0x20)
+//GL_CLIP_PLANE1 (0x3001+0x20) (0x21)
+//GL_CLIP_PLANE2 (0x3002+0x20) (0x22)
+//GL_CLIP_PLANE3 (0x3003+0x20) (0x23)
+//GL_CLIP_PLANE4 (0x3004+0x20) (0x24)
+//GL_CLIP_PLANE5 (0x3005+0x20) (0x25)
 //GL_POLYGON_OFFSET_FILL 0x8037 (0x37)
 //GL_CULL_FACE 0x0B44 (0x44)
 //GL_LIGHTING 0x0B50 (0x50)
@@ -469,6 +477,12 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_VK_U_CTRL 21
 #define GL_VK_X_CTRL 24
 #define GL_VK_PLUS_CTRL 29
+#define GL_CLIP_PLANE0 (0x3000+0x20) // :modified:
+#define GL_CLIP_PLANE1 (0x3001+0x20) // :modified:
+#define GL_CLIP_PLANE2 (0x3002+0x20) // :modified:
+#define GL_CLIP_PLANE3 (0x3003+0x20) // :modified:
+#define GL_CLIP_PLANE4 (0x3004+0x20) // :modified:
+#define GL_CLIP_PLANE5 (0x3005+0x20) // :modified:
 #define GL_POINT_SIZE_MIN 0x8126
 #define GL_POINT_SIZE_MAX 0x8127
 #define GL_POINT_DISTANCE_ATTENUATION 0x8129
@@ -575,6 +589,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_TEXTURE_GEN_R 0x0c62
 #define GL_TEXTURE_GEN_Q 0x0c63
 #define GL_LIGHT_MODEL_TWO_SIDE 0x0b52
+#define GL_LIGHT_MODEL_LOCAL_VIEWER 0x0B51
 #define GL_POINT 0x1b00
 #define GL_LINE 0x1b01
 #define GL_FILL 0x1b02
@@ -866,6 +881,7 @@ GLfloat glGetZoomY(); // also non standard, hopefully you don't need it
 #define GLMAXTEXTUREUNITS 8
 #define GLMAXBUFFERS 1024
 #define GLMAXLIGHTS 8
+#define GLMAXCLIPPLANES 6
 
 // ------------------------
 // ------------------------
@@ -1011,6 +1027,7 @@ typedef struct _GLContext {
   GLdouble modelViewMatrix[4*4];
   GLdouble projectionMatrix[4*4];
   GLdouble textureMatrix[GLMAXTEXTUREUNITS][4*4];
+  GLdouble clipPlanes[GLMAXCLIPPLANES][4];
 } _GLContext;
 
 typedef struct glVertex {

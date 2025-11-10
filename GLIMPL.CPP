@@ -121,8 +121,6 @@ GLdouble additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
 GLenum glError = GL_NO_ERROR;
 
-GLvoid glDrawQuad(_GLContext *context, glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3);
-
 INLINE GLfloat glClampf(GLfloat a, GLfloat n, GLfloat x) {
   return a < n ? n : (a > x ? x : a);
 }
@@ -428,6 +426,7 @@ GLvoid _GLContext_init() {
   glContext.pointAttenuation[0] = 1.f;
   glContext.pointAttenuation[1] = 0.f;
   glContext.pointAttenuation[2] = 0.f;
+  memset(glContext.clipPlanes,0,sizeof(glContext.clipPlanes));
 
   for (i = 0; i < GLMAXTEXTURES; i++) {
     glTexture *t=&glTextures[i];
@@ -877,6 +876,126 @@ GLvoid interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, GLdouble f)
   dest->textureW = v0->textureW + f * (v1->textureW-v0->textureW);
 }
 
+#define GLMAXVERTEXCLIPSTACK (1<<GLMAXCLIPPLANES)
+glVertex glClipStack[GLMAXVERTEXCLIPSTACK*3];
+GLint glClipStackPos = 0;
+
+GLvoid glPutOnClipStack(glVertex *v0,glVertex *v1,glVertex *v2) {
+  if (glClipStackPos == -1) glClipStackPos=0;
+  if (glClipStackPos >= GLMAXVERTEXCLIPSTACK*3) return;
+  glClipStack[glClipStackPos+0] = *v0;
+  glClipStack[glClipStackPos+1] = *v1;
+  glClipStack[glClipStackPos+2] = *v2;
+  glClipStackPos += 3;
+}
+
+GLint glProceedClip(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble *plane) {
+  const GLdouble *matrix = context->matrixForMode[GL_MODELVIEW & 1];
+  glVertex *v[3];
+  v[0] = v0; v[1] = v1; v[2] = v2;
+  GLdouble x[3],y[3],z[3],w[3],clip[3];
+  GLint clipFlags = 0;
+  for (GLint j = 0; j < 3; j++) {
+    x[j] = v[j]->vertexX * matrix[0*4+0] + v[j]->vertexY * matrix[1*4+0] + v[j]->vertexZ * matrix[2*4+0] + v[j]->vertexW * matrix[3*4+0];
+    y[j] = v[j]->vertexX * matrix[0*4+1] + v[j]->vertexY * matrix[1*4+1] + v[j]->vertexZ * matrix[2*4+1] + v[j]->vertexW * matrix[3*4+1];
+    z[j] = v[j]->vertexX * matrix[0*4+2] + v[j]->vertexY * matrix[1*4+2] + v[j]->vertexZ * matrix[2*4+2] + v[j]->vertexW * matrix[3*4+2];
+    w[j] = v[j]->vertexX * matrix[0*4+3] + v[j]->vertexY * matrix[1*4+3] + v[j]->vertexZ * matrix[2*4+3] + v[j]->vertexW * matrix[3*4+3];
+    if (w[j]!=0) {
+      x[j]/=w[j];
+      y[j]/=w[j];
+      z[j]/=w[j];
+      w[j]/=w[j];
+    }
+    clip[j] = x[j]*plane[0]+y[j]*plane[1]+z[j]*plane[2]+plane[3];
+    clipFlags |= (clip[j]>=0.0)?(1<<j):0;
+  }
+  if (clipFlags == 0) return 0; // not visible
+  if (clipFlags == (1|2|4)) return 1; // all visible
+
+  glVertex poly[8];
+  GLint count = 0;
+  const GLint vertexCount = 3;
+  for(GLint i = 0; i < vertexCount; i++) {
+    glVertex *v0 = v[i];
+    glVertex *v1 = v[(i+1) % vertexCount];
+    GLdouble ci0 = clip[i];
+    GLdouble ci1 = clip[(i+1) % vertexCount];
+    GLboolean currentInside = (ci0>=0.0) ? GL_TRUE : GL_FALSE;
+    GLboolean nextInside = (ci1>=0.0) ? GL_TRUE : GL_FALSE;
+    if (currentInside && nextInside) {
+      poly[count]=*v0;
+      glTransformVertex(context,&poly[count],GL_FALSE);
+      glLightVertex(context,&poly[count]);
+      count++;
+    } else
+    if(currentInside && (!nextInside)) {
+      poly[count]=*v0;
+      glTransformVertex(context,&poly[count],GL_FALSE);
+      glLightVertex(context,&poly[count]);
+      count++;
+      GLdouble f = (ci0) / (ci0-ci1);
+      interpolateVertex(&poly[count],v0,v1,f);
+      glTransformVertex(context,&poly[count],GL_FALSE);
+      glLightVertex(context,&poly[count]);
+      clipFlags &= glClipVertex(&glContext,&poly[count]);
+      count++;
+    } else 
+    if((!currentInside) && nextInside) {
+      GLdouble f = (ci0) / (ci0-ci1);
+      interpolateVertex(&poly[count],v0,v1,f);
+      glTransformVertex(context,&poly[count],GL_FALSE);
+      glLightVertex(context,&poly[count]);
+      count++;
+    }
+  }
+  for(GLint k = 1; k < count-1; k++) glPutOnClipStack(&poly[0],&poly[k],&poly[k+1]);
+
+  return 2; // partially visible
+}
+
+GLvoid glClipOnPlane(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble *plane) {
+  if(glClipStackPos == -1) glPutOnClipStack(v0,v1,v2);
+  for (GLint i = glClipStackPos-3; i >= 0 ; i -= 3) {
+    GLint clipped = glProceedClip(context,&glClipStack[i+0],&glClipStack[i+1],&glClipStack[i+2],plane);
+    switch(clipped) {
+    case 2: // partially visible the current one needs also to be deleted
+    case 0: {for (GLint j=i+3;j<glClipStackPos;j+=3) glClipStack[j-3]=glClipStack[j];glClipStackPos -= 3;} break; // not visible
+    case 1: break; // fully visible
+    }
+  } 
+}
+
+GLvoid glClipPlaneTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
+  glClipStackPos=-1;
+  for (GLint i = 0; i < GLMAXCLIPPLANES; i++) {
+    if (glIsEnabled2(context, GL_CLIP_PLANE0+i)) glClipOnPlane(context,v0,v1,v2,context->clipPlanes[i]);
+  }
+  if (glClipStackPos==-1)
+    glDrawTriangle(context,v0,v1,v2);
+  else {
+    glVertex *v = glClipStack;
+    for (int i = 0; i < glClipStackPos/3; i++) {
+      glDrawTriangle(context,&v[0],&v[1],&v[2]);
+      v+=3;
+    }
+  }
+}
+
+GLvoid glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3) {
+  //glVertices[3].sx -= pointSizeX;
+  //glVertices[3].sy -= pointSizeY;
+  //glVertices[2].sx += pointSizeX;
+  //glVertices[2].sy -= pointSizeY;
+  //glVertices[1].sx += pointSizeX;
+  //glVertices[1].sy += pointSizeY;
+  //glVertices[0].sx -= pointSizeX;
+  //glVertices[0].sy += pointSizeY;
+  //01
+  //32
+  glClipPlaneTriangle(context,v0,v1,v2);
+  glClipPlaneTriangle(context,v2,v3,v0);
+}
+
 GLvoid drawClippedNgon(_GLContext *context, glVertex *vertices[], GLint vertexCount) {
   GLdouble *matrix = context->matrix;
   glVertex poly[8];
@@ -920,7 +1039,7 @@ GLvoid drawClippedNgon(_GLContext *context, glVertex *vertices[], GLint vertexCo
       count++;
     }
   }
-  if (clipFlags == 0) for(GLint j = 1; j < count-1; j++) glDrawTriangle(context, &poly[0],&poly[j],&poly[j+1]);
+  if (clipFlags == 0) for(GLint j = 1; j < count-1; j++) glClipPlaneTriangle(context, &poly[0],&poly[j],&poly[j+1]);
 }
 
 GLvoid drawClippedQuad(_GLContext *context, glVertex *v0, glVertex *v1, glVertex *v2, glVertex *v3) {
@@ -1242,7 +1361,7 @@ GLvoid glEmitVertex() {
               glLightVertex(&glContext,&glVertices[0]);
               glLightVertex(&glContext,&glVertices[1]);
               glLightVertex(&glContext,&glVertices[2]);
-              glDrawTriangle(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2]);
+              glClipPlaneTriangle(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2]);
             }
           }
         } else {
@@ -1564,6 +1683,46 @@ GLvoid glClearDepth(GLclampf depth) {
 
 GLvoid glClearStencil(GLint s) {
   glContext.clearStencil = s;
+}
+
+GLvoid glTransposeMatrix(GLdouble *m) {
+  GLdouble t[4*4];
+  memcpy(t,m,sizeof(t));
+  for (int x = 0; x < 4; x++)
+    for (int y = 0; y < 4; y++)
+      m[x+y*4]=t[x*4+y];
+}
+
+GLvoid glClipPlane(GLenum plane, const GLdouble *equation) {
+    const GLint p = plane - GL_CLIP_PLANE0;
+
+    const GLdouble *inverse = glGetInverseModelView(&glContext);
+    GLdouble inverseTranspose[4*4];
+    memcpy(inverseTranspose,inverse,sizeof(inverseTranspose));
+    glTransposeMatrix(inverseTranspose);
+
+    const GLdouble *matrix = inverseTranspose;
+    const GLdouble vx = equation[0];
+    const GLdouble vy = equation[1];
+    const GLdouble vz = equation[2];
+    const GLdouble vw = equation[3];
+    GLdouble x2 = vx * matrix[0*4+0] + vy * matrix[1*4+0] + vz * matrix[2*4+0] + vw * matrix[3*4+0];
+    GLdouble y2 = vx * matrix[0*4+1] + vy * matrix[1*4+1] + vz * matrix[2*4+1] + vw * matrix[3*4+1];
+    GLdouble z2 = vx * matrix[0*4+2] + vy * matrix[1*4+2] + vz * matrix[2*4+2] + vw * matrix[3*4+2];
+    GLdouble w2 = vx * matrix[0*4+3] + vy * matrix[1*4+3] + vz * matrix[2*4+3] + vw * matrix[3*4+3];
+    glContext.clipPlanes[p][0] = x2;
+    glContext.clipPlanes[p][1] = y2;
+    glContext.clipPlanes[p][2] = z2;
+    glContext.clipPlanes[p][3] = w2;
+}
+
+GLvoid glClipPlanef(GLenum plane, const GLfloat *equation) {
+  GLdouble t[4];
+  t[0] = (GLdouble)equation[0];
+  t[1] = (GLdouble)equation[1];
+  t[2] = (GLdouble)equation[2];
+  t[3] = (GLdouble)equation[3];
+  glClipPlane(plane,t);
 }
 
 GLvoid glClientActiveTexture(GLenum texture) {
@@ -5004,21 +5163,6 @@ GLvoid glDrawTriangleNone(_GLContext *context, glVertex *v0, glVertex *v1, glVer
   __UNUSED(v0);
   __UNUSED(v1);
   __UNUSED(v2);
-}
-
-GLvoid glDrawQuad(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,glVertex *v3) {
-  //glVertices[3].sx -= pointSizeX;
-  //glVertices[3].sy -= pointSizeY;
-  //glVertices[2].sx += pointSizeX;
-  //glVertices[2].sy -= pointSizeY;
-  //glVertices[1].sx += pointSizeX;
-  //glVertices[1].sy += pointSizeY;
-  //glVertices[0].sx -= pointSizeX;
-  //glVertices[0].sy += pointSizeY;
-  //01
-  //32
-  glDrawTriangle(context,v0,v1,v2);
-  glDrawTriangle(context,v2,v3,v0);
 }
 
 // ------------------------------------------------------------------------
