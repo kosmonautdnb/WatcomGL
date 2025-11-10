@@ -1402,8 +1402,11 @@ GLvoid glAlphaFunc(GLenum func, GLclampf ref) {
   glContext.alphaFuncRef = ref;
 }
 
+GLboolean glTextureMatrixIsSet[GLMAXTEXTUREUNITS];
+
 GLvoid glBegin(GLenum mode) {
   //if (glContext.beginMode != 0) {glDone();exit(0);}
+  for (int i = 0; i < GLMAXTEXTUREUNITS; i++) glTextureMatrixIsSet[i] = memcmp(glContext.textureMatrix[i],identityMatrix,4*4*sizeof(GLdouble))==0?GL_FALSE:GL_TRUE;
   glContext.beginMode = mode;
   glCurrentVertexElement = 0;
   glContext.beginPrimitiveIndex = 0;
@@ -4255,6 +4258,28 @@ GLvoid glDrawTriangleAAPrecise(_GLContext *context, glVertex *v0, glVertex *v1, 
   glMultiSampleBase = 0;
 }
 
+void glApplyTextureMatrix(GLfloat *tx,GLfloat *ty,GLfloat *tz,GLfloat *tw,GLdouble *m) {
+  const GLdouble *cm = m;
+  const GLdouble vx = (GLdouble)*tx;
+  const GLdouble vy = (GLdouble)*ty;
+  const GLdouble vz = (GLdouble)*tz;
+  const GLdouble vw = (GLdouble)*tw;
+  GLdouble x = vx * cm[0*4+0] + vy * cm[1*4+0] + vz * cm[2*4+0] + vw * cm[3*4+0];
+  GLdouble y = vx * cm[0*4+1] + vy * cm[1*4+1] + vz * cm[2*4+1] + vw * cm[3*4+1];
+  GLdouble z = vx * cm[0*4+2] + vy * cm[1*4+2] + vz * cm[2*4+2] + vw * cm[3*4+2];
+  GLdouble w = vx * cm[0*4+3] + vy * cm[1*4+3] + vz * cm[2*4+3] + vw * cm[3*4+3];
+  if (w != 0) {
+    x /= w;
+    y /= w;
+    z /= w;
+    w /= w;
+  }
+  *tx = (GLfloat)x;
+  *ty = (GLfloat)y;
+  *tz = (GLfloat)z;
+  *tw = (GLfloat)w;
+}
+
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   GLboolean forceWrapRepeat = GL_FALSE;
 
@@ -4295,19 +4320,19 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     v2z += zadd;
   }
 
-  glVertex *vk0 = v0;\
-  glVertex *vk1 = v1;\
-  glVertex *vk2 = v2;\
-  if (vk0->sy>vk1->sy) {glVertex *t; t = vk0; vk0 = vk1; vk1 = t;}\
-  if (vk0->sy>vk2->sy) {glVertex *t; t = vk0; vk0 = vk2; vk2 = t;}\
-  if (vk1->sy>vk2->sy) {glVertex *t; t = vk1; vk1 = vk2; vk2 = t;}\
+  glVertex *vk0 = v0;
+  glVertex *vk1 = v1;
+  glVertex *vk2 = v2;
+  if (vk0->sy>vk1->sy) {glVertex *t; t = vk0; vk0 = vk1; vk1 = t;}
+  if (vk0->sy>vk2->sy) {glVertex *t; t = vk0; vk0 = vk2; vk2 = t;}
+  if (vk1->sy>vk2->sy) {glVertex *t; t = vk1; vk1 = vk2; vk2 = t;}
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   GLboolean textured = (glIsEnabled2(context,GL_TEXTURE_2D) && t->data != NULL && t->name != 0) ? GL_TRUE : GL_FALSE;
   GLboolean filtering = ((t->magFilter != GL_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_LINEAR)) ? GL_TRUE : GL_FALSE;
-  GLfloat tx0,ty0;
-  GLfloat tx1,ty1;
-  GLfloat tx2,ty2;
+  GLfloat tx0,ty0,tz0,tw0;
+  GLfloat tx1,ty1,tz1,tw1;
+  GLfloat tx2,ty2,tz2,tw2;
   GLuint *tdata0 = NULL;
   GLuint borderColor = 0xff000000;
   GLint twidth0;
@@ -4327,13 +4352,25 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 
     tx0 = (GLfloat)v0->textureX;
     ty0 = (GLfloat)v0->textureY;
+    tz0 = (GLfloat)v0->textureZ;
+    tw0 = (GLfloat)v0->textureW;
   
 
     tx1 = (GLfloat)v1->textureX;
     ty1 = (GLfloat)v1->textureY;
+    tz1 = (GLfloat)v1->textureZ;
+    tw1 = (GLfloat)v1->textureW;
 
     tx2 = (GLfloat)v2->textureX;
     ty2 = (GLfloat)v2->textureY;
+    tz2 = (GLfloat)v2->textureZ;
+    tw2 = (GLfloat)v2->textureW;
+
+    if (glTextureMatrixIsSet[glContext.activeTexture]) {
+      glApplyTextureMatrix(&tx0,&ty0,&tz0,&tw0,context->textureMatrix[glContext.activeTexture]);
+      glApplyTextureMatrix(&tx1,&ty1,&tz1,&tw1,context->textureMatrix[glContext.activeTexture]);
+      glApplyTextureMatrix(&tx2,&ty2,&tz2,&tw2,context->textureMatrix[glContext.activeTexture]);
+    }
 
     if (glIsEnabled2(context,GL_TEXTURE_GEN_S) || glIsEnabled2(context,GL_TEXTURE_GEN_T)) {
       fixSphereMapUV(context, &tx0,&ty0,&tx1,&ty1);

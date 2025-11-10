@@ -1059,6 +1059,7 @@ typedef struct glTexture {
 
 extern _GLContext glContext;
 extern glTexture glTextures[GLMAXTEXTURES];
+extern GLboolean glTextureMatrixIsSet[GLMAXTEXTUREUNITS];
 
 // ------------------------
 // ------------------------
