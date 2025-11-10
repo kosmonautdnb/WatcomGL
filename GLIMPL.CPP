@@ -880,6 +880,39 @@ GLvoid interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, GLdouble f)
 glVertex glClipStack[GLMAXVERTEXCLIPSTACK*3];
 GLint glClipStackPos = 0;
 
+GLvoid glTransposeMatrix(GLdouble *m) {
+  GLdouble t[4*4];
+  memcpy(t,m,sizeof(t));
+  for (int x = 0; x < 4; x++)
+    for (int y = 0; y < 4; y++)
+      m[x+y*4]=t[x*4+y];
+}
+
+GLdouble glWorldClipPlanes[GLMAXCLIPPLANES][4];
+GLvoid glWorldSpaceClipPlanes() {
+  const GLdouble *inverse = glContext.matrixForMode[GL_MODELVIEW & 1]; // we need the transpose here glGetInverseModelView(&glContext);
+  GLdouble inverseTranspose[4*4];
+  memcpy(inverseTranspose,inverse,sizeof(inverseTranspose));
+  glTransposeMatrix(inverseTranspose);
+  const GLdouble *matrix = inverseTranspose;
+  for (GLint i = 0; i < GLMAXCLIPPLANES; i++) {
+    if (glIsEnabled(GL_CLIP_PLANE0+i)) {
+      const GLdouble vx = glContext.clipPlanes[i][0];
+      const GLdouble vy = glContext.clipPlanes[i][1];
+      const GLdouble vz = glContext.clipPlanes[i][2];
+      const GLdouble vw = glContext.clipPlanes[i][3];
+      GLdouble x2 = vx * matrix[0*4+0] + vy * matrix[1*4+0] + vz * matrix[2*4+0] + vw * matrix[3*4+0];
+      GLdouble y2 = vx * matrix[0*4+1] + vy * matrix[1*4+1] + vz * matrix[2*4+1] + vw * matrix[3*4+1];
+      GLdouble z2 = vx * matrix[0*4+2] + vy * matrix[1*4+2] + vz * matrix[2*4+2] + vw * matrix[3*4+2];
+      GLdouble w2 = vx * matrix[0*4+3] + vy * matrix[1*4+3] + vz * matrix[2*4+3] + vw * matrix[3*4+3];
+      glWorldClipPlanes[i][0] = x2;
+      glWorldClipPlanes[i][1] = y2;
+      glWorldClipPlanes[i][2] = z2;
+      glWorldClipPlanes[i][3] = w2;
+    }
+  }
+}
+
 GLvoid glPutOnClipStack(glVertex *v0,glVertex *v1,glVertex *v2) {
   if (glClipStackPos == -1) glClipStackPos=0;
   if (glClipStackPos >= GLMAXVERTEXCLIPSTACK*3) return;
@@ -890,16 +923,20 @@ GLvoid glPutOnClipStack(glVertex *v0,glVertex *v1,glVertex *v2) {
 }
 
 GLint glProceedClip(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble *plane) {
-  const GLdouble *matrix = context->matrixForMode[GL_MODELVIEW & 1];
+//  const GLdouble *matrix = context->matrixForMode[GL_MODELVIEW & 1];
   glVertex *v[3];
   v[0] = v0; v[1] = v1; v[2] = v2;
   GLdouble x[3],y[3],z[3],w[3],clip[3];
   GLint clipFlags = 0;
   for (GLint j = 0; j < 3; j++) {
-    x[j] = v[j]->vertexX * matrix[0*4+0] + v[j]->vertexY * matrix[1*4+0] + v[j]->vertexZ * matrix[2*4+0] + v[j]->vertexW * matrix[3*4+0];
-    y[j] = v[j]->vertexX * matrix[0*4+1] + v[j]->vertexY * matrix[1*4+1] + v[j]->vertexZ * matrix[2*4+1] + v[j]->vertexW * matrix[3*4+1];
-    z[j] = v[j]->vertexX * matrix[0*4+2] + v[j]->vertexY * matrix[1*4+2] + v[j]->vertexZ * matrix[2*4+2] + v[j]->vertexW * matrix[3*4+2];
-    w[j] = v[j]->vertexX * matrix[0*4+3] + v[j]->vertexY * matrix[1*4+3] + v[j]->vertexZ * matrix[2*4+3] + v[j]->vertexW * matrix[3*4+3];
+//    x[j] = v[j]->vertexX * matrix[0*4+0] + v[j]->vertexY * matrix[1*4+0] + v[j]->vertexZ * matrix[2*4+0] + v[j]->vertexW * matrix[3*4+0];
+//    y[j] = v[j]->vertexX * matrix[0*4+1] + v[j]->vertexY * matrix[1*4+1] + v[j]->vertexZ * matrix[2*4+1] + v[j]->vertexW * matrix[3*4+1];
+//    z[j] = v[j]->vertexX * matrix[0*4+2] + v[j]->vertexY * matrix[1*4+2] + v[j]->vertexZ * matrix[2*4+2] + v[j]->vertexW * matrix[3*4+2];
+//    w[j] = v[j]->vertexX * matrix[0*4+3] + v[j]->vertexY * matrix[1*4+3] + v[j]->vertexZ * matrix[2*4+3] + v[j]->vertexW * matrix[3*4+3];
+    x[j] =  v[j]->vertexX;
+    y[j] =  v[j]->vertexY;
+    z[j] =  v[j]->vertexZ;
+    w[j] =  v[j]->vertexW;
     if (w[j]!=0) {
       x[j]/=w[j];
       y[j]/=w[j];
@@ -968,7 +1005,7 @@ GLvoid glClipOnPlane(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,
 GLvoid glClipPlaneTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   glClipStackPos=-1;
   for (GLint i = 0; i < GLMAXCLIPPLANES; i++) {
-    if (glIsEnabled2(context, GL_CLIP_PLANE0+i)) glClipOnPlane(context,v0,v1,v2,context->clipPlanes[i]);
+    if (glIsEnabled2(context, GL_CLIP_PLANE0+i)) glClipOnPlane(context,v0,v1,v2,glWorldClipPlanes[i]);//context->clipPlanes[i]);
   }
   if (glClipStackPos==-1)
     glDrawTriangle(context,v0,v1,v2);
@@ -1526,6 +1563,7 @@ GLboolean glTextureMatrixIsSet[GLMAXTEXTUREUNITS];
 GLvoid glBegin(GLenum mode) {
   //if (glContext.beginMode != 0) {glDone();exit(0);}
   for (int i = 0; i < GLMAXTEXTUREUNITS; i++) glTextureMatrixIsSet[i] = memcmp(glContext.textureMatrix[i],identityMatrix,4*4*sizeof(GLdouble))==0?GL_FALSE:GL_TRUE;
+  glWorldSpaceClipPlanes();
   glContext.beginMode = mode;
   glCurrentVertexElement = 0;
   glContext.beginPrimitiveIndex = 0;
@@ -1683,14 +1721,6 @@ GLvoid glClearDepth(GLclampf depth) {
 
 GLvoid glClearStencil(GLint s) {
   glContext.clearStencil = s;
-}
-
-GLvoid glTransposeMatrix(GLdouble *m) {
-  GLdouble t[4*4];
-  memcpy(t,m,sizeof(t));
-  for (int x = 0; x < 4; x++)
-    for (int y = 0; y < 4; y++)
-      m[x+y*4]=t[x*4+y];
 }
 
 GLvoid glClipPlane(GLenum plane, const GLdouble *equation) {
