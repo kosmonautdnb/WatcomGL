@@ -928,6 +928,8 @@ GLvoid glPutOnClipStack(glVertex *v0,glVertex *v1,glVertex *v2) {
   glClipStackPos += 3;
 }
 
+#define CLIPNULL(__v0__,__v1__,__d__) ((__v1__)==0?((__v0__)==0?0:(__d__)):(__v0__)/(__v1__))
+
 GLint glProceedClip(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble *plane) {
 //  const GLdouble *matrix = context->matrixForMode[GL_MODELVIEW & 1];
   glVertex *v[3];
@@ -976,15 +978,14 @@ GLint glProceedClip(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,G
       glTransformVertex(context,&poly[count],GL_FALSE);
       glLightVertex(context,&poly[count]);
       count++;
-      GLdouble f = (ci0) / (ci0-ci1);
+      GLdouble f = CLIPNULL((ci0) , (ci0-ci1), 1.0);
       interpolateVertex(&poly[count],v0,v1,f);
       glTransformVertex(context,&poly[count],GL_FALSE);
       glLightVertex(context,&poly[count]);
-      clipFlags &= glClipVertex(&glContext,&poly[count]);
       count++;
     } else 
     if((!currentInside) && nextInside) {
-      GLdouble f = (ci0) / (ci0-ci1);
+      GLdouble f = CLIPNULL((ci0) , (ci0-ci1), 1.0);
       interpolateVertex(&poly[count],v0,v1,f);
       glTransformVertex(context,&poly[count],GL_FALSE);
       glLightVertex(context,&poly[count]);
@@ -1002,7 +1003,7 @@ GLvoid glClipOnPlane(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,
     GLint clipped = glProceedClip(context,&glClipStack[i+0],&glClipStack[i+1],&glClipStack[i+2],plane);
     switch(clipped) {
     case 2: // partially visible the current one needs also to be deleted
-    case 0: {for (GLint j=i+3;j<glClipStackPos;j+=3) glClipStack[j-3]=glClipStack[j];glClipStackPos -= 3;} break; // not visible
+    case 0: {for (GLint j=i+3;j<glClipStackPos;j++) glClipStack[j-3]=glClipStack[j];glClipStackPos -= 3;} break; // not visible
     case 1: break; // fully visible
     }
   } 
@@ -1066,7 +1067,7 @@ GLvoid drawClippedNgon(_GLContext *context, glVertex *vertices[], GLint vertexCo
       glLightVertex(context,&poly[count]);
       clipFlags &= glClipVertex(&glContext,&poly[count]);
       count++;
-      GLdouble f = (w0+z0) / ((z0-z1)+(w0-w1));
+      GLdouble f = CLIPNULL((w0+z0) , ((z0-z1)+(w0-w1)), 1.0);
       interpolateVertex(&poly[count],v0,v1,f);
       glTransformVertex(context,&poly[count],GL_FALSE);
       glLightVertex(context,&poly[count]);
@@ -1074,7 +1075,7 @@ GLvoid drawClippedNgon(_GLContext *context, glVertex *vertices[], GLint vertexCo
       count++;
     } else 
     if((!currentInside) && nextInside) {
-      GLdouble f = (w0+z0) / ((z0-z1)+(w0-w1));
+      GLdouble f = CLIPNULL((w0+z0) , ((z0-z1)+(w0-w1)), 1.0);
       interpolateVertex(&poly[count],v0,v1,f);
       glTransformVertex(context,&poly[count],GL_FALSE);
       glLightVertex(context,&poly[count]);
