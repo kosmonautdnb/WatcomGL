@@ -2903,7 +2903,6 @@ GLvoid glTexGeni(GLenum coord, GLenum pname, GLint param) {
 }
 
 GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
-  glFrameBufferDedicated[0]=0x00ff00ff*1;
   __UNUSED(target);
   __UNUSED(level);
   __UNUSED(internalformat);
@@ -2975,7 +2974,6 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
       i2++;
     }
   }
-  glFrameBufferDedicated[0]=0x00ff00ff*0;
 }
 
 GLvoid glTexParameteri(GLenum target, GLenum pname, GLint param) {
@@ -2998,7 +2996,6 @@ GLvoid glTexParameteri(GLenum target, GLenum pname, GLint param) {
 }
 
 GLvoid glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
-  glFrameBufferDedicated[0]=0x00ff00ff*1;
   __UNUSED(target);
   __UNUSED(level);
   __UNUSED(type);
@@ -3060,7 +3057,6 @@ GLvoid glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset,
       i2++;
     }
   }
-  glFrameBufferDedicated[0]=0x00ff00ff*0;
 }
 
 
