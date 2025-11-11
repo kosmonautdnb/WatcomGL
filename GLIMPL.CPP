@@ -2000,7 +2000,9 @@ GLvoid glGetDoubles(GLdouble *dest,GLsizei size, GLenum type,GLsizei stride,cons
     stride = siz*size;
   }
   GLBuffer *c = glGetCurrentBuffer();
-  pointer = (const GLvoid*)((GLuint)pointer + (GLuint)c->data + index*stride); // c->data may be NULL
+  GLuint ptr = (GLuint)pointer + (GLuint)c->data;
+  if (ptr < 256) {*dest = 0; return;} // pointer sanity check (this can not happen in sane environments)
+  pointer = (const GLvoid*)(ptr + index*stride); // c->data may be NULL
   for (GLint i = 0; i < size; i++) {
     GLdouble a = 0;
     switch(type) {
@@ -2621,6 +2623,7 @@ GLvoid glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
         glContext.materialRed[f][1] = params[0];
         glContext.materialGreen[f][1] = params[1];
         glContext.materialBlue[f][1] = params[2];
+        glContext.materialAlpha[f][1] = params[3];
       } break;
       case GL_SPECULAR: {
         glContext.materialRed[f][2] = params[0];
