@@ -77,7 +77,7 @@ TinyGL also emulates OpenGL in software.
 - Alpha Test  
 - Color Channel Masking  
 - OpenGL Material And Light / Coloring Pipeline  
-- 2 Lights For Additional Lighting  
+- 8 Lights For Additional Lighting  
 - Option For Separate Specular Addition  
 - Z Clipping On Nearplane  
 - All OpenGL Texture Repeat Modes  
