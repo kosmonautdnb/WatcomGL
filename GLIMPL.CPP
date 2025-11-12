@@ -4554,6 +4554,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   GLboolean maskBlue = context->maskBlue;
   GLboolean maskAlpha = context->maskAlpha;
   GLboolean notMasked = maskRed && maskGreen && maskBlue && maskAlpha;
+  GLboolean fullyMasked = (!maskRed) && (!maskGreen) && (!maskBlue) && (!maskAlpha);
 
   GLdouble v0w = 1.0/(v0->sw);
   GLdouble v1w = 1.0/(v1->sw);
@@ -4941,6 +4942,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   const GLint stencilOpZFail = (GLint)context->stencilOpZFail;
   const GLint stencilOpZPass = (GLint)context->stencilOpZPass;
   const GLboolean stencilFullReplace = (stencilWriteMask==255)&&(context->stencilFunc == GL_ALWAYS)&&(context->stencilOpFail == GL_REPLACE)&&(context->stencilOpZFail == GL_REPLACE)&&(context->stencilOpZPass == GL_REPLACE);
+  const GLboolean dontWriteAnything = (!writeDepth) && fullyMasked;
 
   glDontPaint = GL_FALSE;
   __PAINTPOLYQUAD_BEGINY__
@@ -4961,6 +4963,14 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
           GLubyte *stencilHere = &sDest[x];
           if (stencilFullReplace) {
             *stencilHere = stencilRef;
+            if (dontWriteAnything) {
+              pDest++;
+              zDest++;
+              bary0+=baryAdd0;
+              bary1+=baryAdd1;
+              bary2+=baryAdd2;
+              continue; // !ATTENTION!
+            }
           } else { // stencilFullReplace
             switch(stencilFunc) {
             case GL_NEVER: {stencilPassed = GL_FALSE;} break;
@@ -4979,6 +4989,14 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   glApplyStencileOp(stencilOpZPass,stencilHere,stencilWriteMask,stencilRef);
                 else
                   glApplyStencileOp(stencilOpZFail,stencilHere,stencilWriteMask,stencilRef);
+              }
+              if (dontWriteAnything) {
+                pDest++;
+                zDest++;
+                bary0+=baryAdd0;
+                bary1+=baryAdd1;
+                bary2+=baryAdd2;
+                continue; // !ATTENTION!
               }
             } else { // stencilPassed
               glApplyStencileOp(stencilOpFail,stencilHere,stencilWriteMask,stencilRef);
