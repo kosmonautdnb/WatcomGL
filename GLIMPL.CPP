@@ -761,6 +761,7 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
         GLdouble l = sqrt(lVecX*lVecX+lVecY*lVecY+lVecZ*lVecZ);
         if (l>0.0) {lVecX/=l;  lVecY/=l; lVecZ/=l;}
         GLdouble diffuse = lVecX * normalX + lVecY * normalY + lVecZ * normalZ;
+        GLboolean back = diffuse < 0;
         if (context->twoSidedLighting) {
           diffuse = fabs(diffuse);
         }
@@ -789,6 +790,7 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
           specular = -viewX * reflectionX + -viewY * reflectionY + -viewZ * reflectionZ;
         }
         if (specular < 0.0) specular = 0.0;
+        if ((!context->twoSidedLighting)&&back) specular = 0.0;
 
         // spot calculations
         const GLdouble spotCutOff = context->spotCutOff[i];
