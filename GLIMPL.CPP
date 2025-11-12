@@ -5452,6 +5452,29 @@ GLuint *glGetTexturePointer(GLuint textureId) {
   return t->data;
 }
 
+GLuint glDebugColors[8]={
+  0x00000000,
+  0x00fffffff,
+  0x000000ff,
+  0x0000ff00,
+  0x00ff0000,
+  0x00ff00ff,
+  0x0000ffff,
+  0x00ffff00
+};
+
+GLvoid glDebug(GLuint color) {
+#ifdef __WATCOMC__
+  if (glFrameBufferDedicated != NULL) {
+    for (int y = 0; y < 8; y++) {
+      for (int x = 0; x < 8; x++) {
+        glFrameBufferDedicated[x+y*glFrameBufferWidth]=glDebugColors[color & 7];
+      }
+    }
+  }
+#endif
+}
+
 GLvoid glCleanSetup(GLuint width, GLuint height, GLuint *frameBuffer, GLfloat *depthBuffer, GLubyte *stencilBuffer) {
   constructGL();
   glDirectBlit = GL_FALSE;

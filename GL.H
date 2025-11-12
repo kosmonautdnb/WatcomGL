@@ -877,6 +877,7 @@ GLvoid glZoomX(GLfloat zoom); // also non standard, hopefully you don't need it
 GLvoid glZoomY(GLfloat zoom); // also non standard, hopefully you don't need it
 GLfloat glGetZoomX(); // also non standard, hopefully you don't need it
 GLfloat glGetZoomY(); // also non standard, hopefully you don't need it
+GLvoid glDebug(GLuint color); // paint a colored rect on the screen top left (only in watcomc and glVesa) will be deleted by glRefresh()
 
 // ------------------------
 // ------------------------
