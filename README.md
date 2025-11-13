@@ -10,7 +10,7 @@ By far the biggest performance limiting factor seems to be memory bandwidth with
 
 If you have a fast machine like a newer Intel/AMD you got branchprediction, fast fpu (doubles/floats) and first level cache speeding up the main renderloop.
 
-You can use this library as a general-purpose C software rasterizer; it's not limited to DOS.
+You can use this library as a general-purpose C software rasterizer; it's not limited to DOS or WatcomC.
 
 # Quirks
 
