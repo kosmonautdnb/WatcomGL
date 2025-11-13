@@ -60,6 +60,7 @@ TinyGL also emulates OpenGL in software.
 # WatcomGL Features
 - Header Compatible With OpenGL
 - Just One Header And One C File
+- You may use it even with C99 instead of C++
 - More Performant Than The Early OSMesa (The Original DOS OpenGL)
 - MIT License For Ease Of Use (Even Commercially)
 - Vesa2.0 Calls For 32Bit Graphics Modes
