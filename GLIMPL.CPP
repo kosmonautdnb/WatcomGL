@@ -1639,6 +1639,10 @@ GLvoid glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum u
   if (c->data == NULL || size != c->dataSize) {
     if (c->data != NULL) {__FREE(c->data); c->data = NULL;}
     c->data = __MALLOC(size);
+    if (c->data == NULL) {
+      glSetError(GL_OUT_OF_MEMORY);
+      return;
+    }
   }
   memset(c->data,0,size);
   c->dataSize = size;
