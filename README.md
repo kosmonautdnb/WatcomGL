@@ -8,6 +8,8 @@
 
 By far the biggest performance limiting factor seems to be memory bandwidth with cache. You'll need a fast machine to run this.
 
+If you have a fast machine like a newer Intel/AMD you got branchprediction, fast fpu (doubles/floats) and first level cache which all speeds up the main renderloop.
+
 You can use this library as a general-purpose C software rasterizer; it's not limited to DOS.
 
 # Quirks
