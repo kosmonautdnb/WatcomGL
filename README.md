@@ -59,7 +59,7 @@ TinyGL also emulates OpenGL in software.
 - Header Compatible With OpenGL
 - Just One Header And One C File
 - More Performant Than The Early OSMesa (The Original DOS OpenGL)
-- MIT License For Ease Of Use
+- MIT License For Ease Of Use (Even Commercially)
 - Vesa2.0 Calls For 32Bit Graphics Modes
 - Optional Fallback To VGA Mode With 320x200 And 8192 Simulated Colors
 - Optional Just Render To 32Bit RGBA Buffer
