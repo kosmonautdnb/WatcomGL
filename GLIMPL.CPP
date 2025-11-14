@@ -1673,11 +1673,11 @@ GLenum glCheckFramebufferStatus(GLuint buffer) {
   GLBuffer *c = &glBuffers[buffer];
   if (c->name != buffer) return GL_ERROR;
   if (c->colorPointer == NULL) return GL_ERROR;
-  if (c->depthPointer == NULL) return GL_NO_ERROR;
+  if (c->depthPointer == NULL) return GL_FRAMEBUFFER_COMPLETE;
   if ((c->colorWidth != c->depthWidth)||(c->colorHeight != c->depthHeight)) return GL_ERROR;
-  if (c->stencilPointer == NULL) return GL_NO_ERROR;
+  if (c->stencilPointer == NULL) return GL_FRAMEBUFFER_COMPLETE;
   if ((c->colorWidth != c->stencilWidth)||(c->colorHeight != c->stencilHeight)) return GL_ERROR;
-  return GL_NO_ERROR;
+  return GL_FRAMEBUFFER_COMPLETE;
 }
 
 GLvoid glClear(GLbitfield mask) {
@@ -2950,6 +2950,7 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
   case GL_RGBA_INTEGER:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
   case GL_BGRA_INTEGER:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
   case GL_STENCIL_INDEX8:{rIn=0;gIn=0;bIn=0;aIn=0;formatStride = 1;formatStride2 = 1;} break;
+  case GL_DEPTH_COMPONENT:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
   }
   GLint input[4];
   input[0]=0xff;
@@ -3029,6 +3030,7 @@ GLvoid glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset,
   case GL_RGBA_INTEGER:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
   case GL_BGRA_INTEGER:{rIn=2;gIn=1;bIn=0;aIn=3;} break;
   case GL_STENCIL_INDEX8:{rIn=0;gIn=0;bIn=0;aIn=0;formatStride = 1;formatStride2 = 1;} break;
+  case GL_DEPTH_COMPONENT:{rIn=0;gIn=1;bIn=2;aIn=3;} break;
   }
   GLint input[4];
   input[0]=0xff;
