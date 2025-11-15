@@ -2753,7 +2753,7 @@ GLvoid glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum form
   }
 }
 
-GLvoid glRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, GLfloat z) {
+GLvoid glRotate(GLdouble *matrix, GLdouble angleInRadians, GLdouble x, GLdouble y, GLdouble z) {
   GLdouble m[16], rotate[16];
   GLdouble OneMinusCosAngle, CosAngle, SinAngle;
   GLdouble A_OneMinusCosAngle, C_OneMinusCosAngle;
@@ -2795,16 +2795,20 @@ GLvoid glRotate(GLdouble *matrix, GLfloat angleInRadians, GLfloat x, GLfloat y, 
   matrix[11] = m[3]*rotate[8]+m[7]*rotate[9]+m[11]*rotate[10];
 }
 
-GLvoid glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+GLvoid glRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
   GLdouble *matrix = glContext.matrixForMode[glContext.matrixModeNr];
-  GLfloat l = (GLfloat)sqrt((GLdouble)(x*x+y*y+z*z));
+  GLdouble l = (GLdouble)sqrt((GLdouble)(x*x+y*y+z*z));
   if (l > 0) {
     x/=l;
     y/=l;
     z/=l;
   }
-  glRotate(matrix,(GLfloat)(angle*2.0*PI/360.0),x,y,z);
+  glRotate(matrix,(GLdouble)(angle*2.0*PI/360.0),x,y,z);
   glUpdateMatrix();
+}
+
+GLvoid glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+  glRotated((GLdouble)angle,(GLdouble)x,(GLdouble)y,(GLdouble)z);
 }
 
 GLvoid glScalef(GLfloat x, GLfloat y, GLfloat z) {

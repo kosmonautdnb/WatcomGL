@@ -249,6 +249,7 @@ GLvoid glPushMatrix(); // supported
 GLvoid glRasterPos3f(GLfloat x, GLfloat y, GLfloat z);
 GLvoid glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels); // supported
 GLvoid glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z); // supported
+GLvoid glRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z); // supported
 GLvoid glScalef(GLfloat x, GLfloat y, GLfloat z); // supported
 GLvoid glScalefv(const GLfloat *v); // supported
 GLvoid glScaled(GLdouble x, GLdouble y, GLdouble z); // supported
