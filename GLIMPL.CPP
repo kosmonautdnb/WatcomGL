@@ -1214,11 +1214,32 @@ INLINE GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v
   return ((dx0*dy1 - dy0*dx1) >= 0.f) ? GL_TRUE : GL_FALSE;
 }
 
+INLINE GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2, const glVertex *v3) {
+  const GLfloat dx0 = (GLfloat)(v2->sx - v0->sx);
+  const GLfloat dy0 = (GLfloat)(v2->sy - v0->sy);
+  const GLfloat dx1 = (GLfloat)(v3->sx - v1->sx);
+  const GLfloat dy1 = (GLfloat)(v3->sy - v1->sy);
+  return ((dx0*dy1 - dy0*dx1) >= 0.f) ? GL_TRUE : GL_FALSE;
+}
+
 
 INLINE GLboolean isBackFaceCulled(_GLContext *context, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   if (glIsEnabled2(context,GL_CULL_FACE)) {
     if (context->forceNoCull == 0) {
       GLboolean backFacing = glCCW(v0,v1,v2);
+      if (context->frontFace == GL_CCW) backFacing = (!backFacing) ? GL_TRUE : GL_FALSE;
+      if (context->cullFaceMode == GL_FRONT && backFacing) return GL_TRUE;
+      if (context->cullFaceMode == GL_BACK && (!backFacing)) return GL_TRUE;
+      if (context->cullFaceMode == GL_FRONT_AND_BACK) return GL_TRUE;
+    }
+  }   
+  return GL_FALSE;
+}
+
+INLINE GLboolean isBackFaceCulled(_GLContext *context, const glVertex *v0, const glVertex *v1, const glVertex *v2, const glVertex *v3) {
+  if (glIsEnabled2(context,GL_CULL_FACE)) {
+    if (context->forceNoCull == 0) {
+      GLboolean backFacing = glCCW(v0,v1,v2,v3);
       if (context->frontFace == GL_CCW) backFacing = (!backFacing) ? GL_TRUE : GL_FALSE;
       if (context->cullFaceMode == GL_FRONT && backFacing) return GL_TRUE;
       if (context->cullFaceMode == GL_BACK && (!backFacing)) return GL_TRUE;
@@ -1466,7 +1487,7 @@ GLvoid glEmitVertex() {
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[3],GL_TRUE);
         if (a == 0) {
-          if (!isBackFaceCulled(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2])) {
+          if (!isBackFaceCulled(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2],&glVertices[c3])) {
             GLint clipFlags = glClipVertex(&glContext,&glVertices[0]);
             clipFlags &= glClipVertex(&glContext,&glVertices[1]);
             clipFlags &= glClipVertex(&glContext,&glVertices[2]);
