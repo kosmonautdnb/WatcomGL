@@ -2921,7 +2921,7 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
   if (glContext.boundTextures[glContext.activeTexture] == 0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
-  if (t->data == NULL || t->width != width || t->height != height) {
+  if (t->data == NULL || t->width != (GLuint)width || t->height != (GLuint)height) {
     if (t->data != NULL)  {
       __FREE(t->data);
       t->data = NULL;
@@ -5475,18 +5475,6 @@ GLuint glDebugColors[8]={
   0x00ffff00
 };
 
-GLvoid glDebug(GLuint color) {
-#ifdef __WATCOMC__
-  if (glFrameBufferDedicated != NULL) {
-    for (int y = 0; y < 8; y++) {
-      for (int x = 0; x < 8; x++) {
-        glFrameBufferDedicated[x+y*glFrameBufferWidth]=glDebugColors[color & 7];
-      }
-    }
-  }
-#endif
-}
-
 GLvoid glCleanSetup(GLuint width, GLuint height, GLuint *frameBuffer, GLfloat *depthBuffer, GLubyte *stencilBuffer) {
   constructGL();
   glDirectBlit = GL_FALSE;
@@ -5558,6 +5546,24 @@ GLint glMouseB = 0;
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 GLboolean glVesaBGRA = GL_TRUE;
+
+GLvoid glDebug(GLuint color) {
+#ifdef __WATCOMC__
+  if (glFrameBufferDedicated != NULL) {
+  GLuint rgba = glDebugColors[color & 7];
+  if (glVesaBGRA) rgba = (rgba & 0xff00ff00)|((rgba & 0x00ff00ff)<<16)|((rgba & 0x00ff00ff)>>16);
+    for (int y = 0; y < 8; y++) {
+      for (int x = 0; x < 8; x++) {
+        glFrameBufferDedicated[x+y*glFrameBufferWidth]=rgba;
+      }
+    }
+  }
+#endif
+#ifdef __DJGPP__
+  __UNUSED(color);
+#endif
+}
+
 GLint glBits = 32;
 GLushort glHiColorTableR[256];
 GLushort glHiColorTableG[256];
