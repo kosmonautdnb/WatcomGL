@@ -120,6 +120,7 @@ GLint glCurrentVertexElement = 0;
 GLdouble additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
 GLenum glError = GL_NO_ERROR;
+GLint glDrawnTrianglesFrame = 0;
 
 GLubyte *glStencilBuffer = NULL; // strange, by placing these pointers not above it gets a lot faster (maybe be pack alignment?)
 GLubyte *glStencilBuffer0 = NULL;
@@ -4580,7 +4581,6 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   __POLYCLIP__
   if (fullyClipped) 
     return;
-
   GLboolean blending = glIsEnabled2(context,GL_BLEND);
   GLboolean maskRed = context->maskRed;
   GLboolean maskGreen = context->maskGreen;
@@ -4977,6 +4977,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   const GLboolean stencilFullReplace = (stencilWriteMask==255)&&(context->stencilFunc == GL_ALWAYS)&&(context->stencilOpFail == GL_REPLACE)&&(context->stencilOpZFail == GL_REPLACE)&&(context->stencilOpZPass == GL_REPLACE);
   const GLboolean dontWriteAnything = (!writeDepth) && fullyMasked;
 
+  glDrawnTrianglesFrame++;
   glDontPaint = GL_FALSE;
   __PAINTPOLYQUAD_BEGINY__
   __PAINTPOLYQUAD_INITBARYFORX__
@@ -6164,8 +6165,12 @@ GLvoid glFlattenMultiSample() {
 }
 
 GLvoid glRefresh() {
+  glDrawnTrianglesFrame = 0;
 
   glFlattenMultiSample();
+
+  if (glFrameBuffer0 != glFrameBuffer)
+    return;
   
   if (glDirectBlit) 
     return;

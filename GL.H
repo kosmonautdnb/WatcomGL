@@ -113,6 +113,7 @@ extern GLboolean glVGACheckered; // glVGA() with "dithering", default GL_FALSE
 extern GLboolean glWaitVSync; // to achieve better "double buffer" enable this. Use this with care, since this is a VGA function and not Vesa, default GL_FALSE 
 extern GLint glFastTextureSpanWidth;
 extern GLenum glError;
+extern GLint glDrawnTrianglesFrame;
 
 // ------------------------
 // ------------------------
