@@ -70,8 +70,9 @@
 extern "C" {
 #endif // __cplusplus
 
-#define __MALLOC malloc
-#define __FREE free
+#define __MALLOCALIGNED glMalloc
+#define __FREEALIGNED glFree
+
 #define __UNUSED(__x__) (void)(__x__)
 
 #define __MATRIX_STACK_SIZE__ 16
@@ -124,6 +125,28 @@ GLint glDrawnTrianglesFrame = 0;
 
 GLubyte *glStencilBuffer = NULL; // strange, by placing these pointers not above it gets a lot faster (maybe be pack alignment?)
 GLubyte *glStencilBuffer0 = NULL;
+
+void *glMalloc(GLsizei size) {
+#if defined(__DJGPP__)||defined(__WATCOMC__)
+  if ((sizeof(void*)!=4)||(size==0)) exit(0);
+  void *m = malloc(size+8);
+  void *m2 = (void*)(((unsigned int)m+7)&(~3));
+  *((unsigned int*)((unsigned int)m2-4))=(unsigned int)m;
+  return m2;
+#else // defined(__DJGPP__)||defined(__WATCOMC__)
+  return malloc(size);
+#endif // defined(__DJGPP__)||defined(__WATCOMC__)
+}
+
+void glFree(void *mem) {
+#if defined(__DJGPP__)||defined(__WATCOMC__)
+  if ((sizeof(void*)!=4)||(mem==NULL)) exit(0);
+  void *mem2 = (void*)(*((unsigned int *)((unsigned int)mem-4)));
+  free(mem2);
+#else // defined(__DJGPP__)||defined(__WATCOMC__)
+  free(mem);
+#endif // defined(__DJGPP__)||defined(__WATCOMC__)
+}
 
 INLINE GLfloat glClampf(GLfloat a, GLfloat n, GLfloat x) {
   return a < n ? n : (a > x ? x : a);
@@ -476,7 +499,7 @@ GLvoid glDeleteTexture(GLuint i) {
   if (i > 0 && glTextures[i].name != 0) {
     glTextures[i].name = 0;
     if (glTextures[i].data != NULL) {
-      __FREE(glTextures[i].data);
+      __FREEALIGNED(glTextures[i].data);
       glTextures[i].data = NULL;
     }
   }
@@ -1659,8 +1682,8 @@ GLvoid glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum u
     return;
   }
   if (c->data == NULL || size != c->dataSize) {
-    if (c->data != NULL) {__FREE(c->data); c->data = NULL;}
-    c->data = __MALLOC(size);
+    if (c->data != NULL) {__FREEALIGNED(c->data); c->data = NULL;}
+    c->data = __MALLOCALIGNED(size);
     if (c->data == NULL) {
       glSetError(GL_OUT_OF_MEMORY);
       return;
@@ -2945,10 +2968,10 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
   if (t->data == NULL || t->width != (GLuint)width || t->height != (GLuint)height) {
     if (t->data != NULL)  {
-      __FREE(t->data);
+      __FREEALIGNED(t->data);
       t->data = NULL;
     }
-    t->data = (GLuint*)__MALLOC(sizeof(GLuint)*width*height);
+    t->data = (GLuint*)__MALLOCALIGNED(sizeof(GLuint)*width*height);
     if (t->data == NULL) {
       glSetError(GL_OUT_OF_MEMORY);
       return;
@@ -5434,19 +5457,6 @@ GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat zp, GLint x,
   return GL_FALSE;
 }
 
-GLvoid glTexturePointer(GLint width, GLint height, GLuint *textureData) {
-  if (glContext.boundTextures[glContext.activeTexture] == 0) 
-    return;
-  glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
-  if (t->data != NULL)  {
-    __FREE(t->data);
-    t->data = NULL;
-  }
-  t->data = textureData;
-  t->width = width;
-  t->height = height;
-}
-
 GLvoid glConfigureAntiAlias() {
   glFrameBufferMultiSample = 2;
   glSetTriangleDrawer(glDrawTriangleAAPrecise);
@@ -5851,7 +5861,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
   uint16_t *v = u;
   while(*v != 0xffff) {v++;}
   v++; // 0xffff
-  uint16_t *w=(uint16_t*)__MALLOC((v-u)*sizeof(uint16_t));
+  uint16_t *w=(uint16_t*)__MALLOCALIGNED((v-u)*sizeof(uint16_t));
   if (w == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
   memcpy(w,u,((GLuint)v)-((GLuint)u));
   v = w;
@@ -5864,14 +5874,14 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     const GLboolean linearFrameBufferAvailable = (modeInfo.attributes & 0x90) == 0x90 ? GL_TRUE : GL_FALSE;
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP && linearFrameBufferAvailable) {
 
-      __FREE(w);
+      __FREEALIGNED(w);
 
-      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
+      GLuint *frameBuffer = (GLuint *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
       if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
-      if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-      GLubyte *stencilBuffer = (GLubyte *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLubyte));
-      if (stencilBuffer == NULL) {__FREE(frameBuffer);__FREE(depthBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+      GLfloat *depthBuffer = (GLfloat *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
+      if (depthBuffer == NULL) {__FREEALIGNED(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+      GLubyte *stencilBuffer = (GLubyte *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLubyte));
+      if (stencilBuffer == NULL) {__FREEALIGNED(frameBuffer);__FREEALIGNED(depthBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
 
       glBits = bPP;
       if (glBits == 15 || glBits == 16) 
@@ -5895,7 +5905,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     }
     v++;
   }
-  __FREE(w);
+  __FREEALIGNED(w);
   return GL_FALSE;
 }
 // --------------------------------------
@@ -5972,7 +5982,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     ofs += 2;
     if (k == 0xffff) break;
   } while(GL_TRUE);
-  uint16_t *w=(uint16_t*)__MALLOC((ofs-videoModes)/2*sizeof(uint16_t));
+  uint16_t *w=(uint16_t*)__MALLOCALIGNED((ofs-videoModes)/2*sizeof(uint16_t));
   if (w == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
   uint16_t *v=w;
   dosmemget(videoModes,ofs-videoModes,w);
@@ -5986,14 +5996,14 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     const GLboolean linearFrameBufferAvailable = (modeInfo.attributes & 0x90) == 0x90 ? GL_TRUE : GL_FALSE;
     if (modeInfo.width == xRes && modeInfo.height == yRes && modeInfo.bpp == bPP && linearFrameBufferAvailable) {
 
-      __FREE(w);
+      __FREEALIGNED(w);
 
-      GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
+      GLuint *frameBuffer = (GLuint *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
       if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-      GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
-      if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-      GLubyte *stencilBuffer = (GLubyte *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLubyte));
-      if (stencilBuffer == NULL) {__FREE(frameBuffer);__FREE(depthBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+      GLfloat *depthBuffer = (GLfloat *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
+      if (depthBuffer == NULL) {__FREEALIGNED(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+      GLubyte *stencilBuffer = (GLubyte *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLubyte));
+      if (stencilBuffer == NULL) {__FREEALIGNED(frameBuffer);__FREEALIGNED(depthBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
 
       glBits = bPP;
       if (glBits == 15 || glBits == 16) 
@@ -6024,7 +6034,7 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
     }
     v++;
   }
-  __FREE(w);
+  __FREEALIGNED(w);
   return GL_FALSE;
 }
 // --------------------------------------
@@ -6103,12 +6113,12 @@ GLboolean glVGA() {
   GLuint xRes = 320;
   GLuint yRes = 200;
 
-  GLuint *frameBuffer = (GLuint *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
+  GLuint *frameBuffer = (GLuint *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLuint));
   if (frameBuffer == NULL) {glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-  GLfloat *depthBuffer = (GLfloat *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
-  if (depthBuffer == NULL) {__FREE(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
-      GLubyte *stencilBuffer = (GLubyte *)__MALLOC(xRes*yRes*glFrameBufferMultiSample*sizeof(GLubyte));
-      if (stencilBuffer == NULL) {__FREE(frameBuffer);__FREE(depthBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+  GLfloat *depthBuffer = (GLfloat *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLfloat));
+  if (depthBuffer == NULL) {__FREEALIGNED(frameBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
+      GLubyte *stencilBuffer = (GLubyte *)__MALLOCALIGNED(xRes*yRes*glFrameBufferMultiSample*sizeof(GLubyte));
+      if (stencilBuffer == NULL) {__FREEALIGNED(frameBuffer);__FREEALIGNED(depthBuffer);glSetError(GL_OUT_OF_MEMORY); return GL_FALSE;}
 
   glGraphicsModeToRestore = glGetBiosGraphicsMode();
 
@@ -6272,15 +6282,15 @@ GLvoid glDone() {
   if (!glDirectBlit) { // glDirect?
 
     if (glFrameBuffer0 != NULL) {
-      __FREE(glFrameBuffer0); glFrameBuffer0 = NULL; glFrameBuffer = NULL;
+      __FREEALIGNED(glFrameBuffer0); glFrameBuffer0 = NULL; glFrameBuffer = NULL;
     }
 
     if (glDepthBuffer0 != NULL) {
-      __FREE(glDepthBuffer0); glDepthBuffer0 = NULL; glDepthBuffer = NULL;
+      __FREEALIGNED(glDepthBuffer0); glDepthBuffer0 = NULL; glDepthBuffer = NULL;
     }
 
     if (glStencilBuffer0 != NULL) {
-      __FREE(glStencilBuffer0); glStencilBuffer0 = NULL; glStencilBuffer = NULL;
+      __FREEALIGNED(glStencilBuffer0); glStencilBuffer0 = NULL; glStencilBuffer = NULL;
     }
 
     if (glFrameBufferDedicated != NULL) {
