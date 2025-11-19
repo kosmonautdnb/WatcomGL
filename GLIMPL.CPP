@@ -1207,7 +1207,7 @@ GLboolean backFaceCalc(const glVertex *v0,const glVertex *v1,const glVertex *v2)
   return GL_FALSE;
 }
 
-INLINE GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
+INLINE GLboolean glCCW3(const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   const GLfloat dx0 = (GLfloat)(v1->sx - v0->sx);
   const GLfloat dy0 = (GLfloat)(v1->sy - v0->sy);
   const GLfloat dx1 = (GLfloat)(v2->sx - v0->sx);
@@ -1215,7 +1215,7 @@ INLINE GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v
   return ((dx0*dy1 - dy0*dx1) >= 0.f) ? GL_TRUE : GL_FALSE;
 }
 
-INLINE GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v2, const glVertex *v3) {
+INLINE GLboolean glCCW4(const glVertex *v0, const glVertex *v1, const glVertex *v2, const glVertex *v3) {
   const GLfloat dx0 = (GLfloat)(v2->sx - v0->sx);
   const GLfloat dy0 = (GLfloat)(v2->sy - v0->sy);
   const GLfloat dx1 = (GLfloat)(v3->sx - v1->sx);
@@ -1224,10 +1224,10 @@ INLINE GLboolean glCCW(const glVertex *v0, const glVertex *v1, const glVertex *v
 }
 
 
-INLINE GLboolean isBackFaceCulled(_GLContext *context, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
+INLINE GLboolean isBackFaceCulled3(_GLContext *context, const glVertex *v0, const glVertex *v1, const glVertex *v2) {
   if (glIsEnabled2(context,GL_CULL_FACE)) {
     if (context->forceNoCull == 0) {
-      GLboolean backFacing = glCCW(v0,v1,v2);
+      GLboolean backFacing = glCCW3(v0,v1,v2);
       if (context->frontFace == GL_CCW) backFacing = (!backFacing) ? GL_TRUE : GL_FALSE;
       if (context->cullFaceMode == GL_FRONT && backFacing) return GL_TRUE;
       if (context->cullFaceMode == GL_BACK && (!backFacing)) return GL_TRUE;
@@ -1237,10 +1237,10 @@ INLINE GLboolean isBackFaceCulled(_GLContext *context, const glVertex *v0, const
   return GL_FALSE;
 }
 
-INLINE GLboolean isBackFaceCulled(_GLContext *context, const glVertex *v0, const glVertex *v1, const glVertex *v2, const glVertex *v3) {
+INLINE GLboolean isBackFaceCulled4(_GLContext *context, const glVertex *v0, const glVertex *v1, const glVertex *v2, const glVertex *v3) {
   if (glIsEnabled2(context,GL_CULL_FACE)) {
     if (context->forceNoCull == 0) {
-      GLboolean backFacing = glCCW(v0,v1,v2,v3);
+      GLboolean backFacing = glCCW4(v0,v1,v2,v3);
       if (context->frontFace == GL_CCW) backFacing = (!backFacing) ? GL_TRUE : GL_FALSE;
       if (context->cullFaceMode == GL_FRONT && backFacing) return GL_TRUE;
       if (context->cullFaceMode == GL_BACK && (!backFacing)) return GL_TRUE;
@@ -1421,7 +1421,7 @@ GLvoid glEmitVertex() {
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[2],GL_TRUE);
         if (a == 0) {
-          if (!isBackFaceCulled(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2])) {
+          if (!isBackFaceCulled3(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2])) {
             GLint clipFlags = glClipVertex(&glContext,&glVertices[0]);
             clipFlags &= glClipVertex(&glContext,&glVertices[1]);
             clipFlags &= glClipVertex(&glContext,&glVertices[2]);
@@ -1488,7 +1488,7 @@ GLvoid glEmitVertex() {
         a *= 2;
         a |= glTransformVertex(&glContext,&glVertices[3],GL_TRUE);
         if (a == 0) {
-          if (!isBackFaceCulled(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2],&glVertices[c3])) {
+          if (!isBackFaceCulled4(&glContext,&glVertices[c0],&glVertices[c1],&glVertices[c2],&glVertices[c3])) {
             GLint clipFlags = glClipVertex(&glContext,&glVertices[0]);
             clipFlags &= glClipVertex(&glContext,&glVertices[1]);
             clipFlags &= glClipVertex(&glContext,&glVertices[2]);
@@ -4566,7 +4566,7 @@ INLINE GLvoid glApplyStencileOp(GLint op, GLubyte *buffer, GLubyte stencilWriteM
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   GLboolean forceWrapRepeat = GL_FALSE;
 
-  if (isBackFaceCulled(context,v0,v1,v2)) return;
+  if (isBackFaceCulled3(context,v0,v1,v2)) return;
 
   __CLIP_FAR_PLANE__
   __POLYMINMAX__
@@ -5542,6 +5542,7 @@ GLvoid glDone() {;}
 GLvoid glRefresh() {;}
 GLboolean glVGA() {return GL_FALSE;}
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
+GLvoid glDebug(GLuint color) {;}
 // --------------------------------------
 #else // __GLDISABLEDOSFUNCTIONS__
 // --------------------------------------
@@ -5568,8 +5569,10 @@ GLint glMouseB = 0;
 // ------------------------------------------------------------------------
 // ------------------------------------------------------------------------
 GLboolean glVesaBGRA = GL_TRUE;
+GLint glBits = 32;
 
 GLvoid glDebug(GLuint color) {
+  if (glBits != 32) return;
 #ifdef __WATCOMC__
   if (glFrameBufferDedicated != NULL) {
   GLuint rgba = glDebugColors[color & 7];
@@ -5586,7 +5589,6 @@ GLvoid glDebug(GLuint color) {
 #endif
 }
 
-GLint glBits = 32;
 GLushort glHiColorTableR[256];
 GLushort glHiColorTableG[256];
 GLushort glHiColorTableB[256];
