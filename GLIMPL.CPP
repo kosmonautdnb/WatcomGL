@@ -5115,6 +5115,10 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   __MAKEBARY__B(sb0,sb1,sb2);
   __MAKEBARY__B(f0,f1,f2);
 
+  if (fullyMasked) {
+    textured = GL_FALSE;
+  }
+
   glDrawnTrianglesFrame++;
   glDontPaint = GL_FALSE;
   __PAINTPOLYQUAD_BEGINY__
@@ -5185,7 +5189,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
           if (wValue) iw = (GLraster)(1.0/(__BARY0__B(v0w)+__BARY1__B(v1w)+__BARY2__B(v2w)));
           GLuint rgba;
           GLboolean writePixel = GL_TRUE;
-           GLboolean writePixel2 = GL_TRUE;
+           GLboolean writePixel2 = fullyMasked ? GL_FALSE : GL_TRUE;
           if (textured) {
             if (filtering) {
 #ifdef __FASTTEXTURING__
