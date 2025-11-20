@@ -38,7 +38,7 @@ int main(int argc, const char **argv) {
     glClearColor(0.2,0.4,0.6,1); glClearDepth(1.0); glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_PROJECTION); glLoadIdentity(); gluPerspective(90.0,16.0/9.0,0.1,100.0);
     glMatrixMode(GL_MODELVIEW); glLoadIdentity(); gluLookAt(0,0,0,0,0,-1,0,1,0);
-    glTranslatef(0,0,-1); glRotatef(glSeconds()*40.0,0,0.5,1); // glSeconds() is stuttery on WatcomC++
+    glTranslatef(0,0,-1); glRotatef(glSeconds()*40.0,0,0.5,1); // glSeconds() is stuttery on WatcomC++ (maybe just enable glWatcomPrecisionTimer())
     glBegin(GL_QUADS);
     glTexCoord2f(1,0); glColor4f(1,0,0,1); glVertex3f(1,1,-1);
     glTexCoord2f(0,0); glColor4f(0,1,0,1); glVertex3f(-1,1,-1);

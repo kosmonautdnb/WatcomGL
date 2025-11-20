@@ -4251,6 +4251,25 @@ INLINE GLdouble getBary(GLdouble x, GLdouble y, const glVertex *v0, const glVert
 #define __BARY1PADD__(__v__) ((__v__)*(bary1+xbaryAdd1))
 #define __BARY2PADD__(__v__) ((__v__)*(bary2+xbaryAdd2))
 
+#define BARY_OPTIMIZATION
+#ifdef BARY_OPTIMIZATION
+#define __BARY0__B(__v__) __BARY0__(__v__)
+#define __BARY1__B(__v__) __BARY1__(__v__)
+#define __BARY2__B(__v__) (__v__) // this is due to bary2 being 1-bary1-bary0
+#define __BARY0PADD__B(__v__,__v2__) (((__v__)+(__v2__))*(bary0+xbaryAdd0))
+#define __BARY1PADD__B(__v__,__v2__) (((__v__)+(__v2__))*(bary1+xbaryAdd1))
+#define __BARY2PADD__B(__v__,__v2__) ((__v__)*(bary2+xbaryAdd2))
+#define __MAKEBARY__B(__v0__,__v1__,__v2__) {__v0__ = (__v0__) - (__v2__); __v1__ = (__v1__) - (__v2__);}
+#else // BARY_OPTIMIZATION
+#define __BARY0__B(__v__) __BARY0__(__v__)
+#define __BARY1__B(__v__) __BARY1__(__v__)
+#define __BARY2__B(__v__) __BARY2__(__v__)
+#define __BARY0PADD__B(__v__,__v2__) __BARY0PADD__(__v__)
+#define __BARY1PADD__B(__v__,__v2__) __BARY1PADD__(__v__)
+#define __BARY2PADD__B(__v__,__v2__) __BARY2PADD__(__v__)
+#define __MAKEBARY__B(__v0__,__v1__,__v2__) {}
+#endif // BARY_OPTIMIZATION
+
 INLINE GLboolean glCheckDepthFunction(GLfloat depthBufferValue, GLfloat newValue, GLint depthFunction) {
   switch(depthFunction) {
   case GL_NEVER: {return GL_FALSE;}
@@ -4966,7 +4985,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 
   GLint srf,sgf,sbf;
 
-  const GLboolean separateSpecular = (context->separateSpecular || fogging) ? GL_TRUE : GL_FALSE;
+  GLboolean separateSpecular = (context->separateSpecular || fogging) ? GL_TRUE : GL_FALSE;
   GLboolean interpolateSpecular = GL_TRUE;
   if (separateSpecular) {
     if (sr0 < 0) sr0 = 0;
@@ -5024,6 +5043,12 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     sb2 *= v2w;
   }
 
+  if (separateSpecular && (!interpolateSpecular) && (!fogging)) {
+    if (srf == 0 && sgf == 0 && sbf == 0) {
+      separateSpecular = GL_FALSE;
+    }
+  }
+
   GLraster iw = 0;
   const GLboolean wValue = (textured || interpolateColor) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlending = (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
@@ -5061,6 +5086,19 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   const GLboolean stencilFullReplace = (stencilWriteMask==255)&&(context->stencilFunc == GL_ALWAYS)&&(context->stencilOpFail == GL_REPLACE)&&(context->stencilOpZFail == GL_REPLACE)&&(context->stencilOpZPass == GL_REPLACE);
   const GLboolean dontWriteAnything = (!writeDepth) && fullyMasked;
 
+  __MAKEBARY__B(v0z,v1z,v2z);
+  __MAKEBARY__B(v0w,v1w,v2w);
+  __MAKEBARY__B(tx0,tx1,tx2);
+  __MAKEBARY__B(ty0,ty1,ty2);
+  __MAKEBARY__B(r0,r1,r2);
+  __MAKEBARY__B(g0,g1,g2);
+  __MAKEBARY__B(b0,b1,b2);
+  __MAKEBARY__B(a0,a1,a2);
+  __MAKEBARY__B(sr0,sr1,sr2);
+  __MAKEBARY__B(sg0,sg1,sg2);
+  __MAKEBARY__B(sb0,sb1,sb2);
+  __MAKEBARY__B(f0,f1,f2);
+
   glDrawnTrianglesFrame++;
   glDontPaint = GL_FALSE;
   __PAINTPOLYQUAD_BEGINY__
@@ -5076,7 +5114,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 #endif // __FASTTEXTURING__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0 >= 0 && bary1 >= 0 && bary2 >= 0) {
-        GLraster zp = (GLraster)(__BARY0__(v0z)+__BARY1__(v1z)+__BARY2__(v2z));
+        GLraster zp = (GLraster)(__BARY0__B(v0z)+__BARY1__B(v1z)+__BARY2__B(v2z));
         if (useStencilBuffer) {
           GLubyte *stencilHere = &sDest[x];
           if (stencilFullReplace) {
@@ -5128,7 +5166,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
           }
         }
         if ((!depthTest) || glCheckDepthFunction(*zDest,(GLfloat)zp,depthFunction)) {
-          if (wValue) iw = (GLraster)(1.0/(__BARY0__(v0w)+__BARY1__(v1w)+__BARY2__(v2w)));
+          if (wValue) iw = (GLraster)(1.0/(__BARY0__B(v0w)+__BARY1__B(v1w)+__BARY2__B(v2w)));
           GLuint rgba;
           GLboolean writePixel = GL_TRUE;
            GLboolean writePixel2 = GL_TRUE;
@@ -5139,12 +5177,12 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 if (fastApprox == 0 || fastX != x) {
                   fastApprox=glFastTextureSpanWidth;
                   GLdouble iw2=iw*0x10000;
-                  tpx = (GLint)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
-                  tpy = (GLint)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
-                  if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
+                  tpx = (GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw2);
+                  tpy = (GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw2);
+                  if (wValue) iw2 = (1.0/(__BARY0PADD__B(v0w,v2w)+__BARY1PADD__B(v1w,v2w)+__BARY2PADD__B(v2w,v2w)))*0x10000;
                   GLint k = glFastTextureSpanWidth;
-                  tpxa = ((GLint)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/k;
-                  tpya = ((GLint)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/k;
+                  tpxa = ((GLint)FLOOR((__BARY0PADD__B(tx0,tx2)+__BARY1PADD__B(tx1,tx2)+__BARY2PADD__B(tx2,tx2))*iw2)-tpx)/k;
+                  tpya = ((GLint)FLOOR((__BARY0PADD__B(ty0,ty2)+__BARY1PADD__B(ty1,ty2)+__BARY2PADD__B(ty2,ty2))*iw2)-tpy)/k;
                   if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
                 }
                 fastX=x+1;
@@ -5179,8 +5217,8 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 fastApprox--;
               } else {
 #endif // __FASTTEXTURING__
-                const GLint tx = (GLint)((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*256.0*iw);
-                const GLint ty = (GLint)((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*256.0*iw);
+                const GLint tx = (GLint)((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*256.0*iw);
+                const GLint ty = (GLint)((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*256.0*iw);
                 const GLint kx = tx>>8;
                 const GLint ky = ty>>8;
                 const GLint tix0 = textureWrap(kx, twidth0, wrapS);
@@ -5216,12 +5254,12 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 if (fastApprox == 0 || fastX != x) {
                   fastApprox=glFastTextureSpanWidth;
                   GLdouble iw2=iw*0x10000;
-                  tpx = (GLint)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw2);
-                  tpy = (GLint)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw2);
-                  if (wValue) iw2 = (1.0/(__BARY0PADD__(v0w)+__BARY1PADD__(v1w)+__BARY2PADD__(v2w)))*0x10000;
+                  tpx = (GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw2);
+                  tpy = (GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw2);
+                  if (wValue) iw2 = (1.0/(__BARY0PADD__B(v0w,v2w)+__BARY1PADD__B(v1w,v2w)+__BARY2PADD__B(v2w,v2w)))*0x10000;
                   GLint k = glFastTextureSpanWidth;
-                  tpxa = ((GLint)FLOOR((__BARY0PADD__(tx0)+__BARY1PADD__(tx1)+__BARY2PADD__(tx2))*iw2)-tpx)/k;
-                  tpya = ((GLint)FLOOR((__BARY0PADD__(ty0)+__BARY1PADD__(ty1)+__BARY2PADD__(ty2))*iw2)-tpy)/k;
+                  tpxa = ((GLint)FLOOR((__BARY0PADD__B(tx0,tx2)+__BARY1PADD__B(tx1,tx2)+__BARY2PADD__B(tx2,tx2))*iw2)-tpx)/k;
+                  tpya = ((GLint)FLOOR((__BARY0PADD__B(ty0,ty2)+__BARY1PADD__B(ty1,ty2)+__BARY2PADD__B(ty2,ty2))*iw2)-tpy)/k;
                   if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
                 }
                 fastX=x+1;
@@ -5237,8 +5275,8 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 fastApprox--;
               } else {
 #endif // __FASTTEXTURING__
-                GLint tix0 = textureWrap((GLint)FLOOR((__BARY0__(tx0)+__BARY1__(tx1)+__BARY2__(tx2))*iw), twidth0, wrapS);
-                GLint tiy0 = textureWrap((GLint)FLOOR((__BARY0__(ty0)+__BARY1__(ty1)+__BARY2__(ty2))*iw), theight0, wrapT);
+                GLint tix0 = textureWrap((GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw), twidth0, wrapS);
+                GLint tiy0 = textureWrap((GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw), theight0, wrapT);
                 if ((GLint)(tix0|tiy0) >= 0) {
                   rgba = tdata0[tix0+tiy0*twidth0];
                 } else {
@@ -5254,10 +5292,10 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
           
           if (writePixel2) {
             if (interpolateColor) {
-              r = (GLint)((__BARY0__(r0)+__BARY1__(r1)+__BARY2__(r2))*iw);
-              g = (GLint)((__BARY0__(g0)+__BARY1__(g1)+__BARY2__(g2))*iw);
-              b = (GLint)((__BARY0__(b0)+__BARY1__(b1)+__BARY2__(b2))*iw);
-              a = (GLint)((__BARY0__(a0)+__BARY1__(a1)+__BARY2__(a2))*iw);
+              r = (GLint)((__BARY0__B(r0)+__BARY1__B(r1)+__BARY2__B(r2))*iw);
+              g = (GLint)((__BARY0__B(g0)+__BARY1__B(g1)+__BARY2__B(g2))*iw);
+              b = (GLint)((__BARY0__B(b0)+__BARY1__B(b1)+__BARY2__B(b2))*iw);
+              a = (GLint)((__BARY0__B(a0)+__BARY1__B(a1)+__BARY2__B(a2))*iw);
             } else {
               r = rf;
               g = gf;
@@ -5337,15 +5375,15 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   
             if (separateSpecular) {
               if (fogging) {
-                const GLdouble f = (__BARY0__(f0)+__BARY1__(f1)+__BARY2__(f2))*iw;
+                const GLdouble f = (__BARY0__B(f0)+__BARY1__B(f1)+__BARY2__B(f2))*iw;
                 r = (GLint)(r*f);
                 g = (GLint)(g*f);
                 b = (GLint)(b*f);
               }
               if (interpolateSpecular) {
-                r += (GLint)((__BARY0__(sr0)+__BARY1__(sr1)+__BARY2__(sr2))*iw);
-                g += (GLint)((__BARY0__(sg0)+__BARY1__(sg1)+__BARY2__(sg2))*iw);
-                b += (GLint)((__BARY0__(sb0)+__BARY1__(sb1)+__BARY2__(sb2))*iw);
+                r += (GLint)((__BARY0__B(sr0)+__BARY1__B(sr1)+__BARY2__B(sr2))*iw);
+                g += (GLint)((__BARY0__B(sg0)+__BARY1__B(sg1)+__BARY2__B(sg2))*iw);
+                b += (GLint)((__BARY0__B(sb0)+__BARY1__B(sb1)+__BARY2__B(sb2))*iw);
               } else {
                 r += srf;
                 g += sgf;
