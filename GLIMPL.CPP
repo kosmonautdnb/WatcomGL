@@ -129,7 +129,7 @@ GLubyte *glStencilBuffer0 = NULL;
 // -----
 // WatcomC++ high precision timer. DJGPP already has a high precision timer.
 // -----
-
+#ifndef __GLDISABLEDOSFUNCTIONS__ 
 #ifdef __WATCOMC__
 
 GLubyte glCmosRead(GLubyte reg, GLboolean maskNMI) {
@@ -184,7 +184,7 @@ GLboolean glWatcomPrecisionTimer(GLboolean enable) {
   return GL_FALSE;
 #endif // __WATCOMC__
 }
-
+#endif //__GLDISABLEDOSFUNCTIONS__ 
 // -----
 // WatcomC++ high precision timer.
 // -----
@@ -2827,12 +2827,20 @@ GLvoid glPolygonOffset(GLfloat factor, GLfloat units) {
 
 GLvoid glPopMatrix() {
   glMatrixStackPos--;
-  memcpy(glContext.matrixForMode[glContext.matrixModeNr], glMatrixStack[glMatrixStackPos], 4*4*sizeof(GLdouble));
-  glUpdateMatrix();
+  if ((GLuint)glMatrixStackPos < __MATRIX_STACK_SIZE__) {
+    memcpy(glContext.matrixForMode[glContext.matrixModeNr], glMatrixStack[glMatrixStackPos], 4*4*sizeof(GLdouble));
+    glUpdateMatrix();
+  } else {
+    glSetError(GL_INVALID_VALUE);
+  }
 }
 
 GLvoid glPushMatrix() {
-  memcpy(glMatrixStack[glMatrixStackPos], glContext.matrixForMode[glContext.matrixModeNr], 4*4*sizeof(GLdouble));
+  if ((GLuint)glMatrixStackPos < __MATRIX_STACK_SIZE__) {
+    memcpy(glMatrixStack[glMatrixStackPos], glContext.matrixForMode[glContext.matrixModeNr], 4*4*sizeof(GLdouble));
+  } else {
+    glSetError(GL_INVALID_VALUE);
+  }
   glMatrixStackPos++;
 }
 
@@ -3420,16 +3428,24 @@ GLvoid glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *
 }
 
 GLvoid glPushAttrib(GLbitfield mask) { // mask not supported and behaves different than glPushAttrib + only small Stack Depth, yet
-  glContext.pushAttribBitsHere = mask; // maybe evaluate at glPopAttrib later
-  memcpy(&glAttribStack[glAttribStackPos], &glContext, sizeof(_GLContext));
-  glContext.pushAttribBitsHere = 0;
+  if ((GLuint)glAttribStackPos < __ATTRIB_STACK_SIZE__) {
+    glContext.pushAttribBitsHere = mask; // maybe evaluate at glPopAttrib later
+    memcpy(&glAttribStack[glAttribStackPos], &glContext, sizeof(_GLContext));
+    glContext.pushAttribBitsHere = 0;
+  } else {
+    glSetError(GL_INVALID_VALUE);
+  }
   glAttribStackPos++;
 }
 
 GLvoid glPopAttrib() {
   glAttribStackPos--;
-  memcpy(&glContext,&glAttribStack[glAttribStackPos], sizeof(_GLContext));
-  glUpdateMatrix();
+  if ((GLuint)glAttribStackPos < __ATTRIB_STACK_SIZE__) {
+    memcpy(&glContext,&glAttribStack[glAttribStackPos], sizeof(_GLContext));
+    glUpdateMatrix();
+  } else {
+    glSetError(GL_INVALID_VALUE);
+  }
 }
 
 GLvoid glTexParameterfv(GLenum target, GLenum pname, GLfloat *param) {
