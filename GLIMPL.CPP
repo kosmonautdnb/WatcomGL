@@ -148,12 +148,14 @@ GLint glRtcRead(GLubyte reg) {
 
 GLboolean glHasTSC = GL_FALSE;
 GLdouble glTscFrequency = 1.0;
-GLuint glTscStartValue = 0;
+GLdouble glTscStartValue = 0;
 GLuint glReadTsc();
+GLuint glReadTscHi(); // a tiny tiny tiny bit "unsafe"
 GLuint glHasTsc_();
-
+#pragma aux glReadTscHi="rdtsc""shr edx,16" value[edx] modify[eax edx]
 #pragma aux glReadTsc="rdtsc""shr eax,16""shl edx,16""or eax,edx" value[eax] modify[eax edx]
 #pragma aux glHasTsc_="push ebx""mov eax,0x80000000""cpuid""cmp eax,0x80000001""jb maybe_no_tsc""mov eax,0x80000001""cpuid""test edx,0x00000010""jnz tsc_available""maybe_no_tsc:""mov eax,0x80000000""cpuid""cmp eax,0x80000007""jb no_tsc""mov eax,0x80000007""cpuid""test edx,0x00000100""jnz tsc_available""no_tsc:""xor eax,eax""jmp end_check""tsc_available:""mov eax,1""end_check:""pop ebx"value[eax] modify[eax edx ecx]
+GLdouble glReadTscDouble() {return (GLdouble)(glReadTsc())/glTscFrequency+(GLdouble)(glReadTscHi())*65536.0/glTscFrequency*65536.0;} // maybe unsafe? (WatcomC has broken 64bit int support)
 
 GLvoid glInitTSC() {
   glHasTSC = glHasTsc_() != 0 ? GL_TRUE : GL_FALSE;
@@ -165,7 +167,7 @@ GLvoid glInitTSC() {
     while(glRtcRead(0)==end) {;}
     GLuint tscEnd = glReadTsc();
     glTscFrequency = (GLdouble)((tscEnd-tscStart)&0xffffffff);
-    glTscStartValue = glReadTsc();
+    glTscStartValue = glReadTscDouble();
     while(glCmosUpdateInProgress()) {;}
     glCmosRead(0, GL_FALSE); // enable NMI again (maybe superfluos)
   }
@@ -6527,8 +6529,7 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
   GLdouble glStartClock = 0;
   GLdouble glSeconds() {
     if (glHasTSC) {
-      GLuint a = (glReadTsc() - glTscStartValue) & 0xffffffff;
-      return ((GLdouble)a) / glTscFrequency;
+      return glReadTscDouble()-glTscStartValue;
     }
     // very bad resolution, things seem to stutter by that, better use speaker.hpp and it's reprogrammed timer
     return (GLdouble)(clock() - glStartClock) / CLOCKS_PER_SEC;
@@ -6536,7 +6537,7 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
   GLvoid glSetTime(GLdouble seconds) {
     glStartClock = clock() - seconds * CLOCKS_PER_SEC;
     if (glHasTSC) {
-      glTscStartValue = glReadTsc() - seconds * glTscFrequency;
+      glTscStartValue = glReadTscDouble()-seconds;
     }
   }
 #endif // __WATCOMC__
