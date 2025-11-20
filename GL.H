@@ -124,6 +124,7 @@ GLvoid glConfigureAntiAlias(); // to be called before any other gl call (also gl
 // ------------------------
 // ------------------------
 
+GLboolean glWatcomPrecisionTimer(GLboolean enable); // removes stutteryness of WatcomC timer by using the CPUs Time Stamp Counter instead of the 18.2hz clock (calling this needs 1 or 2 seconds to setup)
 GLdouble glSeconds(); // seconds elapsed since the start of OpenGL (it's quite stuttery on WatcomC)
 GLvoid glSetTime(GLdouble seconds); // sets the time (in seconds)
                         

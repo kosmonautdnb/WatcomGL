@@ -126,9 +126,71 @@ GLint glDrawnTrianglesFrame = 0;
 GLubyte *glStencilBuffer = NULL; // strange, by placing these pointers not above it gets a lot faster (maybe be pack alignment?)
 GLubyte *glStencilBuffer0 = NULL;
 
+// -----
+// WatcomC++ high precision timer. DJGPP already has a high precision timer.
+// -----
+
+#ifdef __WATCOMC__
+
+GLubyte glCmosRead(GLubyte reg, GLboolean maskNMI) {
+  outp(0x70, reg | (maskNMI?0x80:00));
+  return (GLubyte)inp(0x71);
+}
+
+volatile GLubyte glCmosUpdateInProgress() {
+  return (GLubyte)(glCmosRead(0x0a, GL_TRUE) & 0x80);
+}
+
+GLint glRtcRead(GLubyte reg) {
+  while(glCmosUpdateInProgress()) {;}
+  return (GLint)glCmosRead(reg, GL_TRUE); // actually BCD for many registers (0=seconds)
+}
+
+GLboolean glHasTSC = GL_FALSE;
+GLdouble glTscFrequency = 1.0;
+GLuint glTscStartValue = 0;
+GLuint glReadTsc();
+GLuint glHasTsc_();
+
+#pragma aux glReadTsc="rdtsc""shr eax,16""shl edx,16""or eax,edx" value[eax] modify[eax edx]
+#pragma aux glHasTsc_="push ebx""mov eax,0x80000000""cpuid""cmp eax,0x80000001""jb maybe_no_tsc""mov eax,0x80000001""cpuid""test edx,0x00000010""jnz tsc_available""maybe_no_tsc:""mov eax,0x80000000""cpuid""cmp eax,0x80000007""jb no_tsc""mov eax,0x80000007""cpuid""test edx,0x00000100""jnz tsc_available""no_tsc:""xor eax,eax""jmp end_check""tsc_available:""mov eax,1""end_check:""pop ebx"value[eax] modify[eax edx ecx]
+
+GLvoid glInitTSC() {
+  glHasTSC = glHasTsc_() != 0 ? GL_TRUE : GL_FALSE;
+  if (glHasTSC) {
+    GLuint start = glRtcRead(0);
+    while(glRtcRead(0)==start) {;}
+    GLuint tscStart = glReadTsc();
+    GLuint end = glRtcRead(0);
+    while(glRtcRead(0)==end) {;}
+    GLuint tscEnd = glReadTsc();
+    glTscFrequency = (GLdouble)((tscEnd-tscStart)&0xffffffff);
+    glTscStartValue = glReadTsc();
+    while(glCmosUpdateInProgress()) {;}
+    glCmosRead(0, GL_FALSE); // enable NMI again (maybe superfluos)
+  }
+}
+
+#endif // __WATCOMC__
+
+GLboolean glWatcomPrecisionTimer(GLboolean enable) {
+#ifdef __WATCOMC__
+  glHasTSC = GL_FALSE;
+  if (enable)
+    glInitTSC();
+  return glHasTSC;
+#else // __WATCOMC__
+  __UNUSED(enable);
+  return GL_FALSE;
+#endif // __WATCOMC__
+}
+
+// -----
+// WatcomC++ high precision timer.
+// -----
+
 void *glMalloc(GLsizei size) {
 #if defined(__DJGPP__)||defined(__WATCOMC__)
-  if ((sizeof(void*)!=4)||(size==0)) exit(0);
   void *m = malloc(size+8);
   void *m2 = (void*)(((unsigned int)m+7)&(~3));
   *((unsigned int*)((unsigned int)m2-4))=(unsigned int)m;
@@ -140,7 +202,6 @@ void *glMalloc(GLsizei size) {
 
 void glFree(void *mem) {
 #if defined(__DJGPP__)||defined(__WATCOMC__)
-  if ((sizeof(void*)!=4)||(mem==NULL)) exit(0);
   void *mem2 = (void*)(*((unsigned int *)((unsigned int)mem-4)));
   free(mem2);
 #else // defined(__DJGPP__)||defined(__WATCOMC__)
@@ -6406,12 +6467,19 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
 
 #ifdef __WATCOMC__
   GLdouble glStartClock = 0;
-  // very bad resolution, things seem to stutter by that, better use speaker.hpp and it's reprogrammed timer
   GLdouble glSeconds() {
+    if (glHasTSC) {
+      GLuint a = (glReadTsc() - glTscStartValue) & 0xffffffff;
+      return ((GLdouble)a) / glTscFrequency;
+    }
+    // very bad resolution, things seem to stutter by that, better use speaker.hpp and it's reprogrammed timer
     return (GLdouble)(clock() - glStartClock) / CLOCKS_PER_SEC;
   }
   GLvoid glSetTime(GLdouble seconds) {
     glStartClock = clock() - seconds * CLOCKS_PER_SEC;
+    if (glHasTSC) {
+      glTscStartValue = glReadTsc() - seconds * glTscFrequency;
+    }
   }
 #endif // __WATCOMC__
 

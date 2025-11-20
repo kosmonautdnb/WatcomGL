@@ -677,7 +677,7 @@ int main( void )
 
    glfwSetTime( 0.0 );
   */
-
+  //glWatcomPrecisionTimer(GL_TRUE);
   //glConfigureAntiAlias();
   const bool pureVGA = false;
   if (pureVGA) {

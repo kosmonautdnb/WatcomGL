@@ -359,6 +359,7 @@ void NEHE8_Blending() {
 
 int main(int argc, const char *argv[]) {
   
+  //glWatcomPrecisionTimer(GL_TRUE);
   glConfigureAntiAlias();
 
   const bool pureVGA = false;

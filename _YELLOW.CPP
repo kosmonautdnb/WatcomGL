@@ -33,6 +33,7 @@ int SDL_GetTicks() {
 
 int main(int argc,char *argv[])
 {    
+  //glWatcomPrecisionTimer(GL_TRUE);
   //glConfigureAntiAlias();
 
   const bool pureVGA = false;
