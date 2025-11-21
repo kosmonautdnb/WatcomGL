@@ -37,6 +37,7 @@
 #endif // __DJGPP__
 #endif // __GLDISABLEDOSFUNCTIONS__ 
 
+#define __IS32BITADR__ (defined(__WATCOMC__)||defined(__DJGPP__))
 
 #ifdef __cplusplus
   extern "C" {GLvoid _GLContext_init(); GLvoid constructGL() {}}
@@ -129,6 +130,7 @@ GLubyte *glStencilBuffer0 = NULL;
 // -----
 // WatcomC++ high precision timer. DJGPP already has a high precision timer.
 // -----
+// Using the timer interrupt is not a good option here, because it interferes with DOS (badly) if not configured 100% right. And this way you may also use a timer interupt yourself.
 #ifndef __GLDISABLEDOSFUNCTIONS__ 
 #ifdef __WATCOMC__
 
@@ -191,24 +193,24 @@ GLboolean glWatcomPrecisionTimer(GLboolean enable) {
 // WatcomC++ high precision timer.
 // -----
 
-void *glMalloc(GLsizei size) {
-#if defined(__DJGPP__)||defined(__WATCOMC__)
-  void *m = malloc(size+8);
-  void *m2 = (void*)(((unsigned int)m+7)&(~3));
-  *((unsigned int*)((unsigned int)m2-4))=(unsigned int)m;
+GLvoid *glMalloc(GLsizei size) {
+#if __IS32BITADR__
+  GLvoid *m = (GLvoid*)malloc(size+16);
+  GLvoid *m2 = (GLvoid*)(((unsigned int)m+15)&(~7));
+  *((GLvoid**)((GLubyte*)m2-8))=m;
   return m2;
-#else // defined(__DJGPP__)||defined(__WATCOMC__)
-  return malloc(size);
-#endif // defined(__DJGPP__)||defined(__WATCOMC__)
+#else // __IS32BITADR__
+  return (GLvoid*)malloc(size);
+#endif // __IS32BITADR__
 }
 
-void glFree(void *mem) {
-#if defined(__DJGPP__)||defined(__WATCOMC__)
-  void *mem2 = (void*)(*((unsigned int *)((unsigned int)mem-4)));
+GLvoid glFree(GLvoid *mem) {
+#if __IS32BITADR__
+  GLvoid *mem2 = *((GLvoid**)((GLubyte*)mem-8));
   free(mem2);
-#else // defined(__DJGPP__)||defined(__WATCOMC__)
+#else // __IS32BITADR__
   free(mem);
-#endif // defined(__DJGPP__)||defined(__WATCOMC__)
+#endif // __IS32BITADR__
 }
 
 INLINE GLfloat glClampf(GLfloat a, GLfloat n, GLfloat x) {
@@ -6395,15 +6397,17 @@ GLvoid glRefresh() {
     GLuint *read = &glFrameBuffer0[0];
     const GLint k = glFrameBufferWidth0*glFrameBufferHeight0;
 #ifndef __DJGPP__
-    GLushort *dedicated = (GLushort*)glFrameBufferDedicated;
+    GLuint *dedicated = (GLuint*)glFrameBufferDedicated;
 #endif // __DJGPP__
-    for (GLint i = 0; i < k; i++) {
+    for (GLint i = 0; i < k-1; i+=2) {
       const GLuint rgba = *read++;
-      const GLushort in16 = (GLushort)(glHiColorTableR[rgba&0xff]|glHiColorTableG[(rgba>>8)&0xff]|glHiColorTableB[(rgba>>16)&0xff]);
+      const GLuint in16 = (GLuint)(glHiColorTableR[rgba&0xff]|glHiColorTableG[(rgba>>8)&0xff]|glHiColorTableB[(rgba>>16)&0xff]);
+      const GLuint rgba2 = *read++;
+      const GLuint in162 = (GLuint)(glHiColorTableR[rgba2&0xff]|glHiColorTableG[(rgba2>>8)&0xff]|glHiColorTableB[(rgba2>>16)&0xff]);
 #ifdef __DJGPP__
-      _farpokew(glVesasel,i*2,in16);
+      _farpokel(glVesasel,i*4,in16|(in162<<16));
 #else // __DJGPP__
-      *dedicated++ = in16;
+      *dedicated++ = in16|(in162<<16);
 #endif // __DJGPP__
     }
   }

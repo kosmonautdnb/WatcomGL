@@ -140,8 +140,8 @@ GLvoid glExplicitAlpha(GLboolean useExplicitAlpha, GLfloat alpha); // writes thi
 GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat GLzp, GLint x, GLint y, GLuint color); // paint pixel at 3d position (x,y,z) plus 2D offset (x,y) (returns GL_FALSE if clipped) (newXYZ calculates new 3d/2d pos from xp,yp,zp, without it, it will take just the last one)
 GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch); // for better (quadratic) point sprites and lines on e.g. 16:9 screens
 
-void *glMalloc(GLsizei size); // aligns the mallocs to 4 byte boundaries. The size is incremented by 8 byte to store a void * at start of the malloced memory.
-void glFree(void *mem); // the mem must have been allocated with glMalloc().
+GLvoid *glMalloc(GLsizei size); // aligns the mallocs to 8 byte boundaries. The size is incremented by 16 byte to store a void * at start of the malloced memory.
+GLvoid glFree(GLvoid *mem); // the mem must have been allocated with glMalloc().
 
 // ------------------------
 // ------------------------
