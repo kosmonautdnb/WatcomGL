@@ -196,7 +196,7 @@ GLboolean glWatcomPrecisionTimer(GLboolean enable) {
 GLvoid *glMalloc(GLsizei size) {
 #if __IS32BITADR__
   GLvoid *m = (GLvoid*)malloc(size+16);
-  GLvoid *m2 = (GLvoid*)(((unsigned int)m+15)&(~7));
+  GLvoid *m2 = (GLvoid*)(((GLuint)m+15)&(~7));
   *((GLvoid**)((GLubyte*)m2-8))=m;
   return m2;
 #else // __IS32BITADR__
@@ -6238,9 +6238,9 @@ GLvoid glSet400Lines() {
 
 GLvoid glSetVGABufferStart(GLuint adr) {
   outp(0x3d4,0x0c);
-  outp(0x3d5,(adr >> 8) & 255);
+  outp(0x3d5,(adr>>8) & 255);
   outp(0x3d4,0x0d);
-  outp(0x3d5,adr & 255);
+  outp(0x3d5,(adr) & 255);
 }
 
 GLboolean glVGA() {
@@ -6275,25 +6275,26 @@ GLboolean glVGA() {
 
 GLvoid glRefreshHiColor() {
   DJGPPVGAMEMON
-  uint8_t *vga = (uint8_t*)(VGARAMBASE+(glOtherFrame ? 0x8000 : 0x00));
+  uint8_t *vga = ((uint8_t*)VGARAMBASE)+(glOtherFrame ? 0x8000 : 0x0000);
   for (GLint p = 0; p < 4; p++) {
     outp(0x3c4,0x02);
     outp(0x3c5,1<<p);
     uint8_t *s = (uint8_t*)&glFrameBuffer[p];
-    for (GLint y = 0; y < 200; y++) {
+    for (GLint y = 0; y < 400; y+=2) {
       int k0 = glVGACheckered ? (p & 1) : 0;
       int k1 = 1-k0;
-      uint8_t *w1 = &vga[y*(320/4*2)+k0*320/4];
-      uint8_t *w2 = &vga[y*(320/4*2)+k1*320/4];
-      for (GLint x = 320/4; x > 0; x--) {
-        *w2++ = (uint8_t)(s[1]>>2);
-        *w1++ = (uint8_t)((s[2]>>5)|glHiRedTab[s[0]]);
-        s += 16;
+      uint32_t *w1 = (uint32_t*)&vga[y*(320/4)+k0*320/4];
+      uint32_t *w2 = (uint32_t*)&vga[y*(320/4)+k1*320/4];
+      for (GLint x = 320/4/4; x > 0; x--) {
+        *w2++ = (uint32_t)(s[1+16*0]>>2)+((uint32_t)(s[1+16*1]>>2)<<8)+((uint32_t)(s[1+16*2]>>2)<<16)+((uint32_t)(s[1+16*3]>>2)<<24);
+        *w1++ = ((uint32_t)((s[16*0+2]>>5)|glHiRedTab[s[16*0]]))+((uint32_t)((s[16*1+2]>>5)|glHiRedTab[s[16*1]])<<8)+((uint32_t)((s[16*2+2]>>5)|glHiRedTab[s[16*2]])<<16)+((uint32_t)((s[16*3+2]>>5)|glHiRedTab[s[16*3]])<<24);
+        s += 16*4;
       }
     }
   }
   DJGPPVGAMEMOFF
   glSetVGABufferStart(glOtherFrame ? 0x8000 : 0x0000);
+  while((inp(0x03da)&8)==0) {;} // sadly we need this waiting for retrace period here
   glOtherFrame = !glOtherFrame;   
 }
 
@@ -6405,7 +6406,7 @@ GLvoid glRefresh() {
       const GLuint rgba2 = *read++;
       const GLuint in162 = (GLuint)(glHiColorTableR[rgba2&0xff]|glHiColorTableG[(rgba2>>8)&0xff]|glHiColorTableB[(rgba2>>16)&0xff]);
 #ifdef __DJGPP__
-      _farpokel(glVesasel,i*4,in16|(in162<<16));
+      _farpokel(glVesasel,i*2,in16|(in162<<16));
 #else // __DJGPP__
       *dedicated++ = in16|(in162<<16);
 #endif // __DJGPP__
