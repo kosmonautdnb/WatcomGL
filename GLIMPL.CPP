@@ -37,8 +37,6 @@
 #endif // __DJGPP__
 #endif // __GLDISABLEDOSFUNCTIONS__ 
 
-#define __IS32BITADR__ (defined(__WATCOMC__)||defined(__DJGPP__))
-
 #ifdef __cplusplus
   extern "C" {GLvoid _GLContext_init(); GLvoid constructGL() {}}
   class GLConstructor {public: GLConstructor() {_GLContext_init();}};
@@ -194,23 +192,23 @@ GLboolean glWatcomPrecisionTimer(GLboolean enable) {
 // -----
 
 GLvoid *glMalloc(GLsizei size) {
-#if __IS32BITADR__
+#if (defined(__WATCOMC__)||defined(__DJGPP__))
   GLvoid *m = (GLvoid*)malloc(size+16);
   GLvoid *m2 = (GLvoid*)(((GLuint)m+15)&(~7));
   *((GLvoid**)((GLubyte*)m2-8))=m;
   return m2;
-#else // __IS32BITADR__
+#else // (defined(__WATCOMC__)||defined(__DJGPP__))
   return (GLvoid*)malloc(size);
-#endif // __IS32BITADR__
+#endif // (defined(__WATCOMC__)||defined(__DJGPP__))
 }
 
 GLvoid glFree(GLvoid *mem) {
-#if __IS32BITADR__
+#if (defined(__WATCOMC__)||defined(__DJGPP__))
   GLvoid *mem2 = *((GLvoid**)((GLubyte*)mem-8));
   free(mem2);
-#else // __IS32BITADR__
+#else // (defined(__WATCOMC__)||defined(__DJGPP__))
   free(mem);
-#endif // __IS32BITADR__
+#endif // (defined(__WATCOMC__)||defined(__DJGPP__))
 }
 
 INLINE GLfloat glClampf(GLfloat a, GLfloat n, GLfloat x) {
@@ -6276,13 +6274,13 @@ GLboolean glVGA() {
 GLvoid glRefreshHiColor() {
   DJGPPVGAMEMON
   uint8_t *vga = ((uint8_t*)VGARAMBASE)+(glOtherFrame ? 0x8000 : 0x0000);
-  for (GLint p = 0; p < 4; p++) {
-    outp(0x3c4,0x02);
-    outp(0x3c5,1<<p);
-    uint8_t *s = (uint8_t*)&glFrameBuffer[p];
-    for (GLint y = 0; y < 400; y+=2) {
+  for (GLint y = 0; y < 400; y+=2) {
+    for (GLint p = 0; p < 4; p++) {
       int k0 = glVGACheckered ? (p & 1) : 0;
       int k1 = 1-k0;
+      outp(0x3c4,0x02);
+      outp(0x3c5,1<<p);
+      uint8_t *s = (uint8_t*)&glFrameBuffer[p+y/2*320];
       uint32_t *w1 = (uint32_t*)&vga[y*(320/4)+k0*320/4];
       uint32_t *w2 = (uint32_t*)&vga[y*(320/4)+k1*320/4];
       for (GLint x = 320/4/4; x > 0; x--) {
@@ -6294,7 +6292,6 @@ GLvoid glRefreshHiColor() {
   }
   DJGPPVGAMEMOFF
   glSetVGABufferStart(glOtherFrame ? 0x8000 : 0x0000);
-  while((inp(0x03da)&8)==0) {;} // sadly we need this waiting for retrace period here
   glOtherFrame = !glOtherFrame;   
 }
 

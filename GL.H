@@ -85,7 +85,7 @@ typedef void GLvoid;
 // in C glVesa,glVGA,glDirect construct the context
 
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP); // e.g. glVesa(320,200,32) enables Vesa mode 320x200x32BitColors (only 32 bit, yet)
-GLboolean glVGA(); // 320x200 with 6 bit green, 3 bit blue, 4 bit red, actually it's 320x400 (is synched to vga screen refresh by default)
+GLboolean glVGA(); // 320x200 with 6 bit green, 3 bit blue, 4 bit red, actually it's 320x400
 GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLubyte *stencilBuffer, GLuint width, GLuint height); // setup direct rendering to a framebuffer+depthbuffer // look also at glSetRenderTarget() // you need to delete the buffers yourself // antialiasing needs buffers twice as big
 
 GLvoid glRefresh(); // copies the framebuffer to the actual screen and updates per frame stuff
