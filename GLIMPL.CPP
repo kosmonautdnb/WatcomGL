@@ -1703,8 +1703,9 @@ GLvoid glBindFramebuffer(GLenum target, GLuint buffer) {
     glSetError(GL_INVALID_VALUE);
     return;
   }
-  glBoundFrameBuffer=buffer==0?NULL:&glBuffers[buffer];
-  if (glBoundFrameBuffer==NULL||glBoundFrameBuffer->colorPointer==NULL) {
+  glBoundFrameBuffer= (buffer==0) ? NULL : &glBuffers[buffer];
+
+  if (glBoundFrameBuffer==NULL) {
     glFrameBufferWidth = glFrameBufferWidth0;
     glFrameBufferHeight = glFrameBufferHeight0;
     glFrameBuffer = glFrameBuffer0;
@@ -1712,6 +1713,12 @@ GLvoid glBindFramebuffer(GLenum target, GLuint buffer) {
     glStencilBuffer = glStencilBuffer0;
     return;
   }
+
+  if (glBoundFrameBuffer->colorPointer==NULL || glBoundFrameBuffer->colorWidth==0 || glBoundFrameBuffer->colorHeight==0) {
+    glSetError(GL_INVALID_VALUE);
+    return;
+  }
+
   glFrameBuffer = glBoundFrameBuffer->colorPointer;
   glFrameBufferWidth = glBoundFrameBuffer->colorWidth;
   glFrameBufferHeight = glBoundFrameBuffer->colorHeight;
@@ -3034,6 +3041,7 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
   __UNUSED(internalformat);
   __UNUSED(border);
   __UNUSED(type);
+  if (width == 0 || height == 0) {glSetError(GL_INVALID_VALUE); return;}
   if (glContext.boundTextures[glContext.activeTexture] == 0) 
     return;
   glTexture *t = &glTextures[glContext.boundTextures[glContext.activeTexture]];
@@ -3094,7 +3102,7 @@ GLvoid glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei wi
       if (rIn != -1) rgba |= input[rIn];
       if (gIn != -1) rgba |= input[gIn]<<8;
       if (bIn != -1) rgba |= input[bIn]<<16;
-      if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
+      if (aIn != -1) {rgba |= input[aIn]<<24;} else rgba |=0xff000000;
       if (formatStride2==1) ((GLubyte*)t->data)[i] = (GLubyte)(rgba & 255);
       if (formatStride2==4) t->data[i] = rgba;
       i++;
@@ -3173,7 +3181,7 @@ GLvoid glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset,
       if (rIn != -1) rgba |= input[rIn];
       if (gIn != -1) rgba |= input[gIn]<<8;
       if (bIn != -1) rgba |= input[bIn]<<16;
-      if (aIn != -1) rgba |= input[aIn]<<24; else rgba |=0xff000000;
+      if (aIn != -1) {rgba |= input[aIn]<<24;} else rgba |=0xff000000;
       GLint x2 = x;
       GLint y2 = y;
       x2 += xoffset;
@@ -5120,6 +5128,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   if (fullyMasked) {
     textured = GL_FALSE;
   }
+
+  if ((normalAlphaBlending) && (texEnvMode == GL_REPLACE) && (!interpolateColor) && (af == 255))
+    blending = GL_FALSE;
 
   glDrawnTrianglesFrame++;
   glDontPaint = GL_FALSE;
