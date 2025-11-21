@@ -4692,10 +4692,19 @@ INLINE GLvoid glApplyStencileOp(GLint op, GLubyte *buffer, GLubyte stencilWriteM
   }
 }
 
+INLINE GLboolean isAreaZero3(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
+  const GLdouble px = v2->sx - v0->sx;
+  const GLdouble py = v2->sy - v0->sy;
+  const GLdouble dx = v1->sx - v0->sx;
+  const GLdouble dy = v1->sy - v0->sy;
+  return fabs(py*dx-px*dy)<0.0001;
+}
+
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   GLboolean forceWrapRepeat = GL_FALSE;
 
   if (isBackFaceCulled3(context,v0,v1,v2)) return;
+  if (isAreaZero3(context,v0,v1,v2)) return;
 
   __CLIP_FAR_PLANE__
   __POLYMINMAX__
@@ -4939,10 +4948,11 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   GLdouble sb2 = v2->additionalSpecularColorBlue;
 
 
+  const GLboolean lighting = glIsEnabled2(context,GL_LIGHTING);
   const GLboolean fogging = glIsEnabled2(context,GL_FOG);
   GLdouble f0=0,f1=0,f2=0;
   if (fogging) {
-    if (!context->separateSpecular) {
+    if (!(context->separateSpecular && lighting)) {
       sr0 = 0;
       sg0 = 0;
       sb0 = 0;
@@ -5011,7 +5021,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 
   GLint srf,sgf,sbf;
 
-  GLboolean separateSpecular = (context->separateSpecular || fogging) ? GL_TRUE : GL_FALSE;
+  GLboolean separateSpecular = ((context->separateSpecular && lighting) || fogging) ? GL_TRUE : GL_FALSE;
   GLboolean interpolateSpecular = GL_TRUE;
   if (separateSpecular) {
     if (sr0 < 0) sr0 = 0;
@@ -5075,8 +5085,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     }
   }
 
-  GLraster iw = 0;
-  const GLboolean wValue = (textured || interpolateColor) ? GL_TRUE : GL_FALSE;
+  GLraster iw = 1.0/v0w; // for constantW
+  const GLboolean constantW = (v0w == v1w) && (v1w == v2w);
+  const GLboolean wValue = ((textured || interpolateColor) && (!constantW)) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlending = (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
   const GLboolean preMultipliedAlpha = (blendFuncS == GL_ONE && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlendingOrPreMultipliedAlpha = (normalAlphaBlending || preMultipliedAlpha) ? GL_TRUE : GL_FALSE;
@@ -5124,6 +5135,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   __MAKEBARY__B(sg0,sg1,sg2);
   __MAKEBARY__B(sb0,sb1,sb2);
   __MAKEBARY__B(f0,f1,f2);
+
+  if ((normalAlphaBlending || preMultipliedAlpha) && (!interpolateColor) && (af == 0) && (texEnvMode == GL_MODULATE) && (!separateSpecular))
+    fullyMasked = GL_TRUE;
 
   if (fullyMasked) {
     textured = GL_FALSE;
