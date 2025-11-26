@@ -4693,6 +4693,7 @@ INLINE GLvoid glApplyStencileOp(GLint op, GLubyte *buffer, GLubyte stencilWriteM
 }
 
 INLINE GLboolean isAreaZero3(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
+  __UNUSED(context);
   const GLdouble px = v2->sx - v0->sx;
   const GLdouble py = v2->sy - v0->sy;
   const GLdouble dx = v1->sx - v0->sx;
@@ -4700,18 +4701,122 @@ INLINE GLboolean isAreaZero3(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   return fabs(py*dx-px*dy)<0.0001;
 }
 
+// freeing a lot of stack by this, maybe it now runs without stack=65536 (todo: subject to cleanup later)
+static GLboolean forceWrapRepeat;
+static GLint glClipRectX0;
+static GLint glClipRectY0;
+static GLint glClipRectX1;
+static GLint glClipRectY1;
+static GLboolean blending;
+static GLboolean maskRed;
+static GLboolean maskGreen;
+static GLboolean maskBlue;
+static GLboolean maskAlpha;
+static GLboolean notMasked;
+static GLboolean fullyMasked;
+static GLdouble v0w;
+static GLdouble v1w;
+static GLdouble v2w;
+static GLdouble v0z;
+static GLdouble v1z;
+static GLdouble v2z;
+static GLboolean textured;
+static GLboolean filtering;
+static GLfloat tx0,ty0,tz0,tw0;
+static GLfloat tx1,ty1,tz1,tw1;
+static GLfloat tx2,ty2,tz2,tw2;
+static GLuint *tdata0;
+static GLuint borderColor;
+static GLint twidth0;
+static GLint theight0;
+static GLint texEnvMode;
+static GLdouble scx;
+static GLdouble scy;
+static GLint blendFuncS;
+static GLint blendFuncD;
+static GLint blendEquation;
+static GLuint constantColor;
+static GLboolean writeDepth;  
+static GLint depthFunction;
+static GLboolean depthTest;
+static GLint alphaFunction;
+static GLint alphaRef;
+static GLboolean alphaTest;
+static GLdouble r0;
+static GLdouble g0;
+static GLdouble b0;
+static GLdouble a0;
+static GLdouble r1;
+static GLdouble g1;
+static GLdouble b1;
+static GLdouble a1;
+static GLdouble r2;
+static GLdouble g2;
+static GLdouble b2;
+static GLdouble a2;
+static GLint r,g,b,a,rf,gf,bf,af;
+static GLboolean interpolateColor;
+static GLboolean modulate;
+static GLdouble sr0;
+static GLdouble sg0;
+static GLdouble sb0;
+static GLdouble sr1;
+static GLdouble sg1;
+static GLdouble sb1;
+static GLdouble sr2;
+static GLdouble sg2;
+static GLdouble sb2;
+static GLdouble *cm;
+static GLdouble fz0;
+static GLdouble fw0;
+static GLdouble fz1;
+static GLdouble fw1;
+static GLdouble fz2;
+static GLdouble fw2;
+static GLint srf,sgf,sbf;
+static GLboolean separateSpecular;
+static GLboolean interpolateSpecular;
+static GLraster iw;
+static GLint explicitAlphaValue;
+static GLubyte eAlpha;
+static GLint tpx,tpy,tpxa,tpya;
+static GLboolean useStencilBuffer;
+static GLboolean stencilPassed;
+static GLboolean depthTestPassed;
+static GLboolean fastTexturing;
+static GLint fastApprox;
+static GLint fastX;
+static GLraster xbaryAdd0;
+static GLraster xbaryAdd1;
+static GLraster xbaryAdd2;
+static GLraster zp;
+static GLubyte *stencilHere;
+static GLuint rgba;
+static GLboolean writePixel;
+static GLboolean writePixel2;
+static GLdouble iw2;
+static GLint k;
+static GLint tix0;
+static GLint tiy0;
+static GLint tiy1;
+static GLint txf;
+static GLint tyf;
+static GLubyte *pDest2;
+static GLuint a8;
+static GLubyte *c;
+
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
-  GLboolean forceWrapRepeat = GL_FALSE;
+  forceWrapRepeat = GL_FALSE;
 
   if (isBackFaceCulled3(context,v0,v1,v2)) return;
   if (isAreaZero3(context,v0,v1,v2)) return;
 
   __CLIP_FAR_PLANE__
   __POLYMINMAX__
-  GLint glClipRectX0 = 0;
-  GLint glClipRectY0 = 0;
-  GLint glClipRectX1 = glFrameBufferWidth;
-  GLint glClipRectY1 = glFrameBufferHeight;
+  glClipRectX0 = 0;
+  glClipRectY0 = 0;
+  glClipRectX1 = glFrameBufferWidth;
+  glClipRectY1 = glFrameBufferHeight;
   combineIntoWindow(&glClipRectX0,&glClipRectY0,&glClipRectX1,&glClipRectY1,context->viewportX0,context->viewportY0,context->viewportX1,context->viewportY1);
   if (glIsEnabled2(context,GL_SCISSOR_TEST)) {
     combineIntoWindow(&glClipRectX0,&glClipRectY0,&glClipRectX1,&glClipRectY1,context->scissorX0,context->scissorY0,context->scissorX1,context->scissorY1);
@@ -4719,20 +4824,20 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   __POLYCLIP__
   if (fullyClipped) 
     return;
-  GLboolean blending = glIsEnabled2(context,GL_BLEND);
-  GLboolean maskRed = context->maskRed;
-  GLboolean maskGreen = context->maskGreen;
-  GLboolean maskBlue = context->maskBlue;
-  GLboolean maskAlpha = context->maskAlpha;
-  GLboolean notMasked = maskRed && maskGreen && maskBlue && maskAlpha;
-  GLboolean fullyMasked = (!maskRed) && (!maskGreen) && (!maskBlue) && (!maskAlpha);
+  blending = glIsEnabled2(context,GL_BLEND);
+  maskRed = context->maskRed;
+  maskGreen = context->maskGreen;
+  maskBlue = context->maskBlue;
+  maskAlpha = context->maskAlpha;
+  notMasked = maskRed && maskGreen && maskBlue && maskAlpha;
+  fullyMasked = (!maskRed) && (!maskGreen) && (!maskBlue) && (!maskAlpha);
 
-  GLdouble v0w = 1.0/(v0->sw);
-  GLdouble v1w = 1.0/(v1->sw);
-  GLdouble v2w = 1.0/(v2->sw);
-  GLdouble v0z = ((v0->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
-  GLdouble v1z = ((v1->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
-  GLdouble v2z = ((v2->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  v0w = 1.0/(v0->sw);
+  v1w = 1.0/(v1->sw);
+  v2w = 1.0/(v2->sw);
+  v0z = ((v0->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  v1z = ((v1->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
+  v2z = ((v2->sz)*0.5+0.5) * (context->depthRangeZFar-context->depthRangeZNear)+context->depthRangeZNear;
 
   if (glIsEnabled2(context,GL_POLYGON_OFFSET_FILL)) {
     const GLdouble zadd = glPolygonOffset_(context,v0,v1,v2,v0z,v1z,v2z);
@@ -4749,16 +4854,10 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   if (vk1->sy>vk2->sy) {glVertex *t; t = vk1; vk1 = vk2; vk2 = t;}
 
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
-  GLboolean textured = (glIsEnabled2(context,GL_TEXTURE_2D) && t->data != NULL && t->name != 0) ? GL_TRUE : GL_FALSE;
-  GLboolean filtering = ((t->magFilter != GL_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_LINEAR)) ? GL_TRUE : GL_FALSE;
-  GLfloat tx0,ty0,tz0,tw0;
-  GLfloat tx1,ty1,tz1,tw1;
-  GLfloat tx2,ty2,tz2,tw2;
-  GLuint *tdata0 = NULL;
-  GLuint borderColor = 0xff000000;
-  GLint twidth0;
-  GLint theight0;
-  GLint texEnvMode;
+  textured = (glIsEnabled2(context,GL_TEXTURE_2D) && t->data != NULL && t->name != 0) ? GL_TRUE : GL_FALSE;
+  filtering = ((t->magFilter != GL_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_LINEAR)) ? GL_TRUE : GL_FALSE;
+  tdata0 = NULL;
+  borderColor = 0xff000000;
   // texture
   if (textured) {
     twidth0 = t->width;
@@ -4766,8 +4865,8 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     tdata0 = t->data;
     texEnvMode = t->texEnvMode;
 
-    GLdouble scx = glTexelCenterX;
-    GLdouble scy = glTexelCenterY;
+    scx = glTexelCenterX;
+    scy = glTexelCenterY;
     if (!filtering) {scx += 0.5; scy += 0.5;} // rounding
 
 
@@ -4827,40 +4926,40 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
       }
     }
   }
-  GLint blendFuncS = context->blendFuncSFactor;
-  GLint blendFuncD = context->blendFuncDFactor;
-  GLint blendEquation = context->blendEquation;
-  GLuint constantColor = ((GLint)FLOOR(glClampf(context->blendColorRed*255.f,0.f,255.f)));
+  blendFuncS = context->blendFuncSFactor;
+  blendFuncD = context->blendFuncDFactor;
+  blendEquation = context->blendEquation;
+  constantColor = ((GLint)FLOOR(glClampf(context->blendColorRed*255.f,0.f,255.f)));
   constantColor |= ((GLint)FLOOR(glClampf(context->blendColorGreen*255.f,0.f,255.f)))<<8;
   constantColor |= ((GLint)FLOOR(glClampf(context->blendColorBlue*255.f,0.f,255.f)))<<16;
   constantColor |= ((GLint)FLOOR(glClampf(context->blendColorAlpha*255.f,0.f,255.f)))<<24;
-  GLboolean writeDepth = context->depthMask;  
-  GLint depthFunction = context->depthFunc;
-  GLboolean depthTest = glIsEnabled2(context,GL_DEPTH_TEST);
+  writeDepth = context->depthMask;  
+  depthFunction = context->depthFunc;
+  depthTest = glIsEnabled2(context,GL_DEPTH_TEST);
   if (depthTest && (depthFunction == GL_ALWAYS)) depthTest=GL_FALSE;
   if (glDepthBuffer == NULL) {
     depthTest=GL_FALSE;
     writeDepth=GL_FALSE;
   }
-  GLint alphaFunction = context->alphaFunc;
-  GLint alphaRef = (GLint)FLOOR(context->alphaFuncRef*255.f);
-  GLboolean alphaTest = glIsEnabled2(context,GL_ALPHA_TEST);
+  alphaFunction = context->alphaFunc;
+  alphaRef = (GLint)FLOOR(context->alphaFuncRef*255.f);
+  alphaTest = glIsEnabled2(context,GL_ALPHA_TEST);
 
   // rgba
-  GLdouble r0 = v0->colorRed;
-  GLdouble g0 = v0->colorGreen;
-  GLdouble b0 = v0->colorBlue;
-  GLdouble a0 = v0->colorAlpha;
+  r0 = v0->colorRed;
+  g0 = v0->colorGreen;
+  b0 = v0->colorBlue;
+  a0 = v0->colorAlpha;
 
-  GLdouble r1 = v1->colorRed;
-  GLdouble g1 = v1->colorGreen;
-  GLdouble b1 = v1->colorBlue;
-  GLdouble a1 = v1->colorAlpha;
+  r1 = v1->colorRed;
+  g1 = v1->colorGreen;
+  b1 = v1->colorBlue;
+  a1 = v1->colorAlpha;
 
-  GLdouble r2 = v2->colorRed;
-  GLdouble g2 = v2->colorGreen;
-  GLdouble b2 = v2->colorBlue;
-  GLdouble a2 = v2->colorAlpha;
+  r2 = v2->colorRed;
+  g2 = v2->colorGreen;
+  b2 = v2->colorBlue;
+  a2 = v2->colorAlpha;
 
   if (r0 < 0) r0 = 0;
   if (g0 < 0) g0 = 0;
@@ -4904,9 +5003,8 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   b2 *= 255.0;
   a2 *= 255.0;
 
-  GLint r,g,b,a,rf,gf,bf,af;
-  GLboolean interpolateColor = GL_TRUE;
-  GLboolean modulate = GL_TRUE;
+  interpolateColor = GL_TRUE;
+  modulate = GL_TRUE;
   if ( (GLint)FLOOR(r0) == (GLint)FLOOR(r1) && (GLint)FLOOR(r1) == (GLint)FLOOR(r2)
     && (GLint)FLOOR(g0) == (GLint)FLOOR(g1) && (GLint)FLOOR(g1) == (GLint)FLOOR(g2)
     && (GLint)FLOOR(b0) == (GLint)FLOOR(b1) && (GLint)FLOOR(b1) == (GLint)FLOOR(b2)
@@ -4935,17 +5033,17 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   b2 *= v2w;
   a2 *= v2w;
 
-  GLdouble sr0 = v0->additionalSpecularColorRed;
-  GLdouble sg0 = v0->additionalSpecularColorGreen;
-  GLdouble sb0 = v0->additionalSpecularColorBlue;
+  sr0 = v0->additionalSpecularColorRed;
+  sg0 = v0->additionalSpecularColorGreen;
+  sb0 = v0->additionalSpecularColorBlue;
 
-  GLdouble sr1 = v1->additionalSpecularColorRed;
-  GLdouble sg1 = v1->additionalSpecularColorGreen;
-  GLdouble sb1 = v1->additionalSpecularColorBlue;
+  sr1 = v1->additionalSpecularColorRed;
+  sg1 = v1->additionalSpecularColorGreen;
+  sb1 = v1->additionalSpecularColorBlue;
 
-  GLdouble sr2 = v2->additionalSpecularColorRed;
-  GLdouble sg2 = v2->additionalSpecularColorGreen;
-  GLdouble sb2 = v2->additionalSpecularColorBlue;
+  sr2 = v2->additionalSpecularColorRed;
+  sg2 = v2->additionalSpecularColorGreen;
+  sb2 = v2->additionalSpecularColorBlue;
 
 
   const GLboolean lighting = glIsEnabled2(context,GL_LIGHTING);
@@ -4963,13 +5061,13 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
       sg2 = 0;
       sb2 = 0;
     }
-    GLdouble *cm = glContext.matrixForMode[GL_MODELVIEW & 1]; // for eyespace z
-    GLdouble fz0 = v0->vertexX * cm[0*4+2] + v0->vertexY * cm[1*4+2] + v0->vertexZ * cm[2*4+2] + v0->vertexW * cm[3*4+2];
-    GLdouble fw0 = v0->vertexX * cm[0*4+3] + v0->vertexY * cm[1*4+3] + v0->vertexZ * cm[2*4+3] + v0->vertexW * cm[3*4+3];
-    GLdouble fz1 = v1->vertexX * cm[0*4+2] + v1->vertexY * cm[1*4+2] + v1->vertexZ * cm[2*4+2] + v1->vertexW * cm[3*4+2];
-    GLdouble fw1 = v1->vertexX * cm[0*4+3] + v1->vertexY * cm[1*4+3] + v1->vertexZ * cm[2*4+3] + v1->vertexW * cm[3*4+3];
-    GLdouble fz2 = v2->vertexX * cm[0*4+2] + v2->vertexY * cm[1*4+2] + v2->vertexZ * cm[2*4+2] + v2->vertexW * cm[3*4+2];
-    GLdouble fw2 = v2->vertexX * cm[0*4+3] + v2->vertexY * cm[1*4+3] + v2->vertexZ * cm[2*4+3] + v2->vertexW * cm[3*4+3];
+    cm = glContext.matrixForMode[GL_MODELVIEW & 1]; // for eyespace z
+    fz0 = v0->vertexX * cm[0*4+2] + v0->vertexY * cm[1*4+2] + v0->vertexZ * cm[2*4+2] + v0->vertexW * cm[3*4+2];
+    fw0 = v0->vertexX * cm[0*4+3] + v0->vertexY * cm[1*4+3] + v0->vertexZ * cm[2*4+3] + v0->vertexW * cm[3*4+3];
+    fz1 = v1->vertexX * cm[0*4+2] + v1->vertexY * cm[1*4+2] + v1->vertexZ * cm[2*4+2] + v1->vertexW * cm[3*4+2];
+    fw1 = v1->vertexX * cm[0*4+3] + v1->vertexY * cm[1*4+3] + v1->vertexZ * cm[2*4+3] + v1->vertexW * cm[3*4+3];
+    fz2 = v2->vertexX * cm[0*4+2] + v2->vertexY * cm[1*4+2] + v2->vertexZ * cm[2*4+2] + v2->vertexW * cm[3*4+2];
+    fw2 = v2->vertexX * cm[0*4+3] + v2->vertexY * cm[1*4+3] + v2->vertexZ * cm[2*4+3] + v2->vertexW * cm[3*4+3];
     if (fw0 != 0.0) fz0/=fw0;
     if (fw1 != 0.0) fz1/=fw1;
     if (fw2 != 0.0) fz2/=fw2;
@@ -5018,11 +5116,8 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     f2 *= v2w;
   }
 
-
-  GLint srf,sgf,sbf;
-
-  GLboolean separateSpecular = ((context->separateSpecular && lighting) || fogging) ? GL_TRUE : GL_FALSE;
-  GLboolean interpolateSpecular = GL_TRUE;
+  separateSpecular = ((context->separateSpecular && lighting) || fogging) ? GL_TRUE : GL_FALSE;
+  interpolateSpecular = GL_TRUE;
   if (separateSpecular) {
     if (sr0 < 0) sr0 = 0;
     if (sg0 < 0) sg0 = 0;
@@ -5085,7 +5180,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     }
   }
 
-  GLraster iw = 1.0/v0w; // for constantW
+  iw = 1.0/v0w; // for constantW
   const GLboolean constantW = (v0w == v1w) && (v1w == v2w);
   const GLboolean wValue = ((textured || interpolateColor) && (!constantW)) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlending = (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
@@ -5096,27 +5191,26 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   const GLboolean colorSolelyPossible = ((texEnvMode == GL_MODULATE) || (texEnvMode == GL_ADD) || (texEnvMode == GL_REPLACE)) ? GL_TRUE : GL_FALSE;
   const GLboolean colorSolelyOpacity = (colorSolelyPossible && blending && (blendFuncS == GL_ONE && blendFuncD == GL_ONE && blendEquation == GL_FUNC_ADD)) ? GL_TRUE : GL_FALSE;
 
-  GLint explicitAlphaValue = (GLint)FLOOR(context->explicitAlpha * 255.f);
+  explicitAlphaValue = (GLint)FLOOR(context->explicitAlpha * 255.f);
   if (explicitAlphaValue < 0) explicitAlphaValue=0;
   if (explicitAlphaValue > 255) explicitAlphaValue=255;
-  GLubyte eAlpha = (GLubyte)explicitAlphaValue;
+  eAlpha = (GLubyte)explicitAlphaValue;
 
   const GLuint wrapS = forceWrapRepeat ? GL_REPEAT : t->wrapS;
   const GLuint wrapT = forceWrapRepeat ? GL_REPEAT : t->wrapT;
-  GLint tpx,tpy,tpxa,tpya;
 
-  GLboolean useStencilBuffer = glIsEnabled2(context,GL_STENCIL_TEST) && (glStencilBuffer != NULL);
+  useStencilBuffer = glIsEnabled2(context,GL_STENCIL_TEST) && (glStencilBuffer != NULL);
   if (context->stencilFunc == GL_ALWAYS &&
     context->stencilOpFail == GL_KEEP &&
     context->stencilOpZFail == GL_KEEP &&
     context->stencilOpZPass == GL_KEEP) useStencilBuffer = GL_FALSE;
   const GLboolean stencilDepthTest = (context->stencilOpZFail != GL_KEEP)||(context->stencilOpZPass != GL_KEEP);
-  GLboolean stencilPassed = GL_TRUE;
+  stencilPassed = GL_TRUE;
   const GLint stencilFunc = (GLint)context->stencilFunc;
   const GLubyte stencilValueMask = (GLubyte)(context->stencilFuncMask & 255);
   const GLubyte stencilWriteMask = (GLubyte)(context->stencilMask & 255);
   const GLubyte stencilRef = (GLubyte)(context->stencilFuncRef & 255) & stencilValueMask;
-  GLboolean depthTestPassed = GL_TRUE;
+  depthTestPassed = GL_TRUE;
   const GLint stencilOpFail = (GLint)context->stencilOpFail;
   const GLint stencilOpZFail = (GLint)context->stencilOpZFail;
   const GLint stencilOpZPass = (GLint)context->stencilOpZPass;
@@ -5152,18 +5246,18 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   __PAINTPOLYQUAD_INITBARYFORX__
   if (glDontPaint) return;
 #ifdef __FASTTEXTURING__
-  GLboolean fastTexturing = glFastTexturing;
-  GLint fastApprox = 0;
-  GLint fastX = 0;
-  GLraster xbaryAdd0 = (GLraster)(baryAdd0*glFastTextureSpanWidth);
-  GLraster xbaryAdd1 = (GLraster)(baryAdd1*glFastTextureSpanWidth);
-  GLraster xbaryAdd2 = (GLraster)(baryAdd2*glFastTextureSpanWidth);
+  fastTexturing = glFastTexturing;
+  fastApprox = 0;
+  fastX = 0;
+  xbaryAdd0 = (GLraster)(baryAdd0*glFastTextureSpanWidth);
+  xbaryAdd1 = (GLraster)(baryAdd1*glFastTextureSpanWidth);
+  xbaryAdd2 = (GLraster)(baryAdd2*glFastTextureSpanWidth);
 #endif // __FASTTEXTURING__
   __PAINTPOLYQUAD_BEGINX__
       if (bary0 >= 0 && bary1 >= 0 && bary2 >= 0) {
-        GLraster zp = (GLraster)(__BARY0__B(v0z)+__BARY1__B(v1z)+__BARY2__B(v2z));
+        zp = (GLraster)(__BARY0__B(v0z)+__BARY1__B(v1z)+__BARY2__B(v2z));
         if (useStencilBuffer) {
-          GLubyte *stencilHere = &sDest[x];
+          stencilHere = &sDest[x];
           if (stencilFullReplace) {
             *stencilHere = stencilRef;
             if (dontWriteAnything) {
@@ -5214,20 +5308,19 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
         }
         if ((!depthTest) || glCheckDepthFunction(*zDest,(GLfloat)zp,depthFunction)) {
           if (wValue) iw = (GLraster)(1.0/(__BARY0__B(v0w)+__BARY1__B(v1w)+__BARY2__B(v2w)));
-          GLuint rgba;
-          GLboolean writePixel = GL_TRUE;
-           GLboolean writePixel2 = fullyMasked ? GL_FALSE : GL_TRUE;
+          writePixel = GL_TRUE;
+          writePixel2 = fullyMasked ? GL_FALSE : GL_TRUE;
           if (textured) {
             if (filtering) {
 #ifdef __FASTTEXTURING__
               if (fastTexturing) {
                 if (fastApprox == 0 || fastX != x) {
                   fastApprox=glFastTextureSpanWidth;
-                  GLdouble iw2=iw*0x10000;
+                  iw2=iw*0x10000;
                   tpx = (GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw2);
                   tpy = (GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw2);
                   if (wValue) iw2 = (1.0/(__BARY0PADD__B(v0w,v2w)+__BARY1PADD__B(v1w,v2w)+__BARY2PADD__B(v2w,v2w)))*0x10000;
-                  GLint k = glFastTextureSpanWidth;
+                  k = glFastTextureSpanWidth;
                   tpxa = ((GLint)FLOOR((__BARY0PADD__B(tx0,tx2)+__BARY1PADD__B(tx1,tx2)+__BARY2PADD__B(tx2,tx2))*iw2)-tpx)/k;
                   tpya = ((GLint)FLOOR((__BARY0PADD__B(ty0,ty2)+__BARY1PADD__B(ty1,ty2)+__BARY2PADD__B(ty2,ty2))*iw2)-tpy)/k;
                   if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
@@ -5235,10 +5328,10 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 fastX=x+1;
                 const GLint kx = tpx>>16;
                 const GLint ky = tpy>>16;
-                GLint tix0 = textureWrap(kx, twidth0, wrapS);
-                GLint tiy0 = textureWrap(ky, theight0, wrapT);
+                tix0 = textureWrap(kx, twidth0, wrapS);
+                tiy0 = textureWrap(ky, theight0, wrapT);
                 const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
-                GLint tiy1 = textureWrap(ky+1, theight0, wrapT);
+                tiy1 = textureWrap(ky+1, theight0, wrapT);
                 const GLint txf = (tpx>>8)&255;
                 const GLint tyf = (tpy>>8)&255;
                 const GLint p1v = ((256-txf)*(256-tyf))>>8; 
@@ -5271,9 +5364,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 const GLint tix0 = textureWrap(kx, twidth0, wrapS);
                 const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
                 GLint tiy0 = textureWrap(ky, theight0, wrapT);
-                GLint tiy1 = textureWrap(ky+1, theight0, wrapT);
-                GLint txf = tx & 255;
-                GLint tyf = ty & 255;
+                tiy1 = textureWrap(ky+1, theight0, wrapT);
+                txf = tx & 255;
+                tyf = ty & 255;
                 const GLint p1v = ((256-txf)*(256-tyf))>>8; 
                 const GLint p2v = ((txf)*(256-tyf))>>8; 
                 const GLint p3v = ((txf)*(tyf))>>8; 
@@ -5300,18 +5393,18 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
               if (fastTexturing) {
                 if (fastApprox == 0 || fastX != x) {
                   fastApprox=glFastTextureSpanWidth;
-                  GLdouble iw2=iw*0x10000;
+                  iw2=iw*0x10000;
                   tpx = (GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw2);
                   tpy = (GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw2);
                   if (wValue) iw2 = (1.0/(__BARY0PADD__B(v0w,v2w)+__BARY1PADD__B(v1w,v2w)+__BARY2PADD__B(v2w,v2w)))*0x10000;
-                  GLint k = glFastTextureSpanWidth;
+                  k = glFastTextureSpanWidth;
                   tpxa = ((GLint)FLOOR((__BARY0PADD__B(tx0,tx2)+__BARY1PADD__B(tx1,tx2)+__BARY2PADD__B(tx2,tx2))*iw2)-tpx)/k;
                   tpya = ((GLint)FLOOR((__BARY0PADD__B(ty0,ty2)+__BARY1PADD__B(ty1,ty2)+__BARY2PADD__B(ty2,ty2))*iw2)-tpy)/k;
                   if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
                 }
                 fastX=x+1;
-                GLint tix0 = textureWrap(tpx>>16, twidth0, wrapS);
-                GLint tiy0 = textureWrap(tpy>>16, theight0, wrapT);
+                const GLint tix0 = textureWrap(tpx>>16, twidth0, wrapS);
+                const GLint tiy0 = textureWrap(tpy>>16, theight0, wrapT);
                 if ((GLint)(tix0|tiy0) >= 0) {
                   rgba = tdata0[tix0+tiy0*twidth0];
                 } else {
@@ -5322,8 +5415,8 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                 fastApprox--;
               } else {
 #endif // __FASTTEXTURING__
-                GLint tix0 = textureWrap((GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw), twidth0, wrapS);
-                GLint tiy0 = textureWrap((GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw), theight0, wrapT);
+                const GLint tix0 = textureWrap((GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw), twidth0, wrapS);
+                const GLint tiy0 = textureWrap((GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw), theight0, wrapT);
                 if ((GLint)(tix0|tiy0) >= 0) {
                   rgba = tdata0[tix0+tiy0*twidth0];
                 } else {
@@ -5462,7 +5555,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
               if (notMasked) {
                 *pDest=r|(g<<8)|(b<<16)|(a<<24);
               } else {
-                GLubyte *pDest2 = (GLubyte *)pDest;
+                pDest2 = (GLubyte *)pDest;
                 if (maskRed) pDest2[0] = (GLubyte)r;
                 if (maskGreen) pDest2[1] = (GLubyte)g;
                 if (maskBlue) pDest2[2] = (GLubyte)b;
@@ -5472,8 +5565,8 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
               if (writePixel2) {
                 if (notMasked) {
                   if (normalAlphaBlendingOrPreMultipliedAlpha) {
-                    GLuint a8 = (a<<16)/255;
-                    GLubyte *c = (GLubyte*)pDest;
+                    a8 = (a<<16)/255;
+                    c = (GLubyte*)pDest;
                     if (preMultipliedAlpha) {
                       a8 = 0x10000-a8;
                       r += (c[0]*a8)>>16;
@@ -5496,7 +5589,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   }
                 } else {
                   GLuint k = doBlend(*pDest,r|(g<<8)|(b<<16)|(a<<24),blendFuncS,blendFuncD,constantColor,blendEquation);
-                  GLubyte *pDest2 = (GLubyte *)pDest;
+                  pDest2 = (GLubyte *)pDest;
                   GLubyte *k2 = (GLubyte *)&k;
                   if (maskRed) pDest2[0] = k2[0];
                   if (maskGreen) pDest2[1] = k2[1];
