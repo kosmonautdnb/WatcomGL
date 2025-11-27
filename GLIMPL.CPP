@@ -339,7 +339,7 @@ GLvoid _GLContext_init() {
   glContext.depthMask = GL_TRUE;
   glContext.depthRangeZNear = 0;
   glContext.depthRangeZFar = 1;
-  glContext.pointSize = 0;
+  glContext.pointSize = 1;
   glContext.polygonOffsetFactor = 0;
   glContext.polygonOffsetUnits = 0;
   memcpy(glContext.modelViewMatrix,identityMatrix,4*4*sizeof(GLdouble));
