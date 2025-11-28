@@ -98,9 +98,10 @@ TinyGL also emulates OpenGL in software.
 # WatcomGL Drawbacks
 - No MultiThreading
 - No MultiTexturing
-- No Assembly/MMX/SSE etc..
+- No SIMD/MMX/SSE etc..
 - No DisplayLists
 - No Shaders
+- Almost No Inline Assembly
 - Currently Just RGBA 32Bit Framebuffer
 - Uses Doubles And Floats
 - Just the very oldschool OpenGL
