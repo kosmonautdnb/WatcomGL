@@ -4804,6 +4804,7 @@ static GLint tyf;
 static GLubyte *pDest2;
 static GLuint a8;
 static GLubyte *c;
+static GLdouble f0,f1,f2;
 
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   forceWrapRepeat = GL_FALSE;
@@ -5048,7 +5049,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 
   const GLboolean lighting = glIsEnabled2(context,GL_LIGHTING);
   const GLboolean fogging = glIsEnabled2(context,GL_FOG);
-  GLdouble f0=0,f1=0,f2=0;
+  f0=0;
+  f1=0;
+  f2=0;
   if (fogging) {
     if (!(context->separateSpecular && lighting)) {
       sr0 = 0;
@@ -5182,7 +5185,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 
   iw = 1.0/v0w; // for constantW
   const GLboolean constantW = (v0w == v1w) && (v1w == v2w);
-  const GLboolean wValue = ((textured || interpolateColor) && (!constantW)) ? GL_TRUE : GL_FALSE;
+  const GLboolean wValue = ((textured || interpolateColor || interpolateSpecular || fogging) && (!constantW)) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlending = (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
   const GLboolean preMultipliedAlpha = (blendFuncS == GL_ONE && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlendingOrPreMultipliedAlpha = (normalAlphaBlending || preMultipliedAlpha) ? GL_TRUE : GL_FALSE;
