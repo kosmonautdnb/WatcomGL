@@ -4805,6 +4805,7 @@ static GLubyte *pDest2;
 static GLuint a8;
 static GLubyte *c;
 static GLdouble f0,f1,f2;
+static GLboolean fogging;
 
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   forceWrapRepeat = GL_FALSE;
@@ -5048,7 +5049,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
 
 
   const GLboolean lighting = glIsEnabled2(context,GL_LIGHTING);
-  const GLboolean fogging = glIsEnabled2(context,GL_FOG);
+  fogging = glIsEnabled2(context,GL_FOG);
   f0=0;
   f1=0;
   f2=0;
@@ -5114,6 +5115,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     f1 = 1 - f1;
     f2 = 1 - f2;
     if (f0 < 1.0/256.0 && f1 < 1.0/256.0 && f2 < 1.0/256.0) {textured = GL_FALSE; interpolateColor = GL_FALSE;}
+    if (f0 > 255.0/256.0 && f1 > 255.0/256.0 && f2 > 255.0/256.0) {fogging = GL_FALSE;}
     f0 *= v0w; // fadeout colors by this
     f1 *= v1w;
     f2 *= v2w;
