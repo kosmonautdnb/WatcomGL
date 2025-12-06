@@ -971,10 +971,6 @@ GLvoid interpolateVertex(glVertex *dest, glVertex *v0, glVertex *v1, GLdouble f)
   dest->textureW = v0->textureW + f * (v1->textureW-v0->textureW);
 }
 
-#define GLMAXVERTEXCLIPSTACK (1<<GLMAXCLIPPLANES)
-glVertex glClipStack[GLMAXVERTEXCLIPSTACK*3];
-GLint glClipStackPos = 0;
-
 GLvoid glTransposeMatrix(GLdouble *m) {
   GLdouble t[4*4];
   memcpy(t,m,sizeof(t));
@@ -1008,109 +1004,101 @@ GLvoid glWorldSpaceClipPlanes() {
   }
 }
 
-GLvoid glPutOnClipStack(glVertex *v0,glVertex *v1,glVertex *v2) {
-  if (glClipStackPos == -1) glClipStackPos=0;
-  if (glClipStackPos >= GLMAXVERTEXCLIPSTACK*3) return;
-  glClipStack[glClipStackPos+0] = *v0;
-  glClipStack[glClipStackPos+1] = *v1;
-  glClipStack[glClipStackPos+2] = *v2;
-  glClipStackPos += 3;
-}
-
 #define CLIPNULL(__v0__,__v1__,__d__) ((__v1__)==0?((__v0__)==0?0:(__d__)):(__v0__)/(__v1__))
 
-GLint glProceedClip(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble *plane) {
-//  const GLdouble *matrix = context->matrixForMode[GL_MODELVIEW & 1];
-  glVertex *v[3];
-  v[0] = v0; v[1] = v1; v[2] = v2;
-  GLdouble x[3],y[3],z[3],w[3],clip[3];
-  GLint clipFlags = 0;
-  for (GLint j = 0; j < 3; j++) {
-//    x[j] = v[j]->vertexX * matrix[0*4+0] + v[j]->vertexY * matrix[1*4+0] + v[j]->vertexZ * matrix[2*4+0] + v[j]->vertexW * matrix[3*4+0];
-//    y[j] = v[j]->vertexX * matrix[0*4+1] + v[j]->vertexY * matrix[1*4+1] + v[j]->vertexZ * matrix[2*4+1] + v[j]->vertexW * matrix[3*4+1];
-//    z[j] = v[j]->vertexX * matrix[0*4+2] + v[j]->vertexY * matrix[1*4+2] + v[j]->vertexZ * matrix[2*4+2] + v[j]->vertexW * matrix[3*4+2];
-//    w[j] = v[j]->vertexX * matrix[0*4+3] + v[j]->vertexY * matrix[1*4+3] + v[j]->vertexZ * matrix[2*4+3] + v[j]->vertexW * matrix[3*4+3];
-    x[j] =  v[j]->vertexX;
-    y[j] =  v[j]->vertexY;
-    z[j] =  v[j]->vertexZ;
-    w[j] =  v[j]->vertexW;
-    if (w[j]!=0) {
-      x[j]/=w[j];
-      y[j]/=w[j];
-      z[j]/=w[j];
-      w[j]/=w[j];
-    }
-    clip[j] = x[j]*plane[0]+y[j]*plane[1]+z[j]*plane[2]+plane[3];
-    clipFlags |= (clip[j]>=0.0)?(1<<j):0;
-  }
-  if (clipFlags == 0) return 0; // not visible
-  if (clipFlags == (1|2|4)) return 1; // all visible
+#define CLIPPOLYMAX (3+GLMAXCLIPPLANES*1)
+glVertex glClipPoly[CLIPPOLYMAX];
+GLint glClipPolySize = 0;
+static double clip[CLIPPOLYMAX];
+static glVertex cPoly[CLIPPOLYMAX];
 
-  glVertex poly[8];
+GLvoid glClipOnPlane(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble *plane) {
+  if(glClipPolySize == -1) {
+    glClipPolySize = 3;
+    glClipPoly[0] = *v0;
+    glClipPoly[1] = *v1;
+    glClipPoly[2] = *v2;
+  }
+
+  bool allIn = true;
+  bool allOut = true;
+
+  for (GLint j = 0; j < glClipPolySize; j++) {
+    double x =  glClipPoly[j].vertexX;
+    double y =  glClipPoly[j].vertexY;
+    double z =  glClipPoly[j].vertexZ;
+    double w =  glClipPoly[j].vertexW;
+    if (w!=0) {
+      x/=w;
+      y/=w;
+      z/=w;
+      w/=w;
+    }
+    clip[j] = x*plane[0]+y*plane[1]+z*plane[2]+plane[3];
+    if (clip[j]>=0.0) 
+      allOut=false;
+    else
+      allIn=false;
+  }
+
+  if (allOut) {
+    glClipPolySize = 0;
+    return;
+  }
+
+  if (allIn) {
+    return;
+  }
+
   GLint count = 0;
-  const GLint vertexCount = 3;
+  const GLint vertexCount = glClipPolySize;
   for(GLint i = 0; i < vertexCount; i++) {
-    glVertex *v0 = v[i];
-    glVertex *v1 = v[(i+1) % vertexCount];
+    glVertex *v0 = &glClipPoly[i];
+    glVertex *v1 = &glClipPoly[(i+1) % vertexCount];
     GLdouble ci0 = clip[i];
     GLdouble ci1 = clip[(i+1) % vertexCount];
     GLboolean currentInside = (ci0>=0.0) ? GL_TRUE : GL_FALSE;
     GLboolean nextInside = (ci1>=0.0) ? GL_TRUE : GL_FALSE;
     if (currentInside && nextInside) {
-      poly[count]=*v0;
-      glTransformVertex(context,&poly[count],GL_FALSE);
-      glLightVertex(context,&poly[count]);
+      cPoly[count]=*v0;
+      glTransformVertex(context,&cPoly[count],GL_FALSE);
+      glLightVertex(context,&cPoly[count]);
       count++;
     } else
     if(currentInside && (!nextInside)) {
-      poly[count]=*v0;
-      glTransformVertex(context,&poly[count],GL_FALSE);
-      glLightVertex(context,&poly[count]);
+      cPoly[count]=*v0;
+      glTransformVertex(context,&cPoly[count],GL_FALSE);
+      glLightVertex(context,&cPoly[count]);
       count++;
       GLdouble f = CLIPNULL((ci0) , (ci0-ci1), 1.0);
-      interpolateVertex(&poly[count],v0,v1,f);
-      glTransformVertex(context,&poly[count],GL_FALSE);
-      glLightVertex(context,&poly[count]);
+      interpolateVertex(&cPoly[count],v0,v1,f);
+      glTransformVertex(context,&cPoly[count],GL_FALSE);
+      glLightVertex(context,&cPoly[count]);
       count++;
     } else 
     if((!currentInside) && nextInside) {
       GLdouble f = CLIPNULL((ci0) , (ci0-ci1), 1.0);
-      interpolateVertex(&poly[count],v0,v1,f);
-      glTransformVertex(context,&poly[count],GL_FALSE);
-      glLightVertex(context,&poly[count]);
+      interpolateVertex(&cPoly[count],v0,v1,f);
+      glTransformVertex(context,&cPoly[count],GL_FALSE);
+      glLightVertex(context,&cPoly[count]);
       count++;
     }
   }
-  for(GLint k = 1; k < count-1; k++) glPutOnClipStack(&poly[0],&poly[k],&poly[k+1]);
-
-  return 2; // partially visible
-}
-
-GLvoid glClipOnPlane(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,GLdouble *plane) {
-  if(glClipStackPos == -1) glPutOnClipStack(v0,v1,v2);
-  for (GLint i = glClipStackPos-3; i >= 0 ; i -= 3) {
-    GLint clipped = glProceedClip(context,&glClipStack[i+0],&glClipStack[i+1],&glClipStack[i+2],plane);
-    switch(clipped) {
-    case 2: // partially visible the current one needs also to be deleted
-    case 0: {for (GLint j=i+3;j<glClipStackPos;j++) glClipStack[j-3]=glClipStack[j];glClipStackPos -= 3;} break; // not visible
-    case 1: break; // fully visible
-    }
-  } 
+  
+  glClipPolySize = count;
+  memcpy(glClipPoly,cPoly,sizeof(glVertex)*glClipPolySize);
 }
 
 GLvoid glClipPlaneTriangle(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
-  glClipStackPos=-1;
+  glClipPolySize=-1;
   for (GLint i = 0; i < GLMAXCLIPPLANES; i++) {
     if (glIsEnabled2(context, GL_CLIP_PLANE0+i)) glClipOnPlane(context,v0,v1,v2,glWorldClipPlanes[i]);//context->clipPlanes[i]);
   }
-  if (glClipStackPos==-1)
+  if (glClipPolySize==-1)
     glDrawTriangle(context,v0,v1,v2);
   else {
-    glVertex *v = glClipStack;
-    for (int i = 0; i < glClipStackPos/3; i++) {
-      glDrawTriangle(context,&v[0],&v[1],&v[2]);
-      v+=3;
-    }
+    glVertex *v = glClipPoly;
+    for(GLint k = 1; k < glClipPolySize-1; k++) glDrawTriangle(context,&v[0],&v[k],&v[k+1]);
   }
 }
 
