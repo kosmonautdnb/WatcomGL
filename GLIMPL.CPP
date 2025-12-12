@@ -6307,8 +6307,8 @@ GLvoid glSetPalette(GLint index, GLuint color) {
 
 GLvoid glSetHiColorPalette() {
   GLint i;
-  for (i = 0; i < 64; i++) glSetPalette(i,glToColor(0,i*4+3,0));
-  for (i = 0; i < 16*8; i++) glSetPalette(i+128,glToColor((i/8)*16+15,0,(i & 7)*32+31));
+  for (i = 0; i < 64; i++) glSetPalette(i,glToColor(0,i*255/63,0));
+  for (i = 0; i < 16*8; i++) glSetPalette(i+128,glToColor((i/8)*255/15,0,(i & 7)*255/7));
 }
 
 GLvoid glSetModeX() {
