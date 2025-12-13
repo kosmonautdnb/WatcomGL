@@ -391,6 +391,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 //GL_COLOR_MATERIAL 0x0B57 (0x57)
 //GL_TEXTURE_GEN_S 0x0c60 (0x60)
 //GL_TEXTURE_GEN_T 0x0c61 (0x61)
+//GL_POINT_SPRITE (0x8861+1) (0x62)
 //GL_FOG 0x0B64 (0x64)
 //GL_DEPTH_TEST 0x0B71 (0x71)
 //GL_STENCIL_TEST 0x0B90 (0x90)
@@ -866,6 +867,10 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_COLOR_TABLE_ALPHA_SIZE_EXT 0x80DD
 #define GL_COLOR_TABLE_LUMINANCE_SIZE_EXT 0x80DE
 #define GL_COLOR_TABLE_INTENSITY_SIZE_EXT 0x80DF
+#define GL_POINT_SPRITE_COORD_ORIGIN 0x8CA0
+#define GL_LOWER_LEFT 0x8CA1
+#define GL_UPPER_LEFT 0x8CA2
+#define GL_POINT_SPRITE (0x8861+1)
 
 // ------------------------
 // ------------------------
