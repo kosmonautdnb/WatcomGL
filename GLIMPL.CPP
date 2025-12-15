@@ -1659,6 +1659,10 @@ GLvoid glActiveTexture(GLenum texture) {
   glContext.matrixForMode[2] = glContext.textureMatrix[glContext.activeTexture];
 }              
 
+GLvoid glAdditionalPointSpriteXStretch(GLfloat widthStretch) {
+  additionalPointSpriteXStretch = widthStretch;
+}
+
 GLvoid glAlphaFunc(GLenum func, GLclampf ref) {
   glContext.alphaFunc = func;
   glContext.alphaFuncRef = ref;
@@ -2226,7 +2230,7 @@ GLvoid glEnableClientState(GLenum array) {
 }
 
 GLvoid glEnd() {
-  glContext.beginMode = 0;
+  glContext.beginMode = GL_INVALID_ENUM;
 }
 
 GLvoid glFinish() {
