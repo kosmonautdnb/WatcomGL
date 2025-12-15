@@ -10,6 +10,7 @@
 // - In ultra rare cases polygons may have seams. (DJGPP no -Ofast,-ffast-math), maybe add 0.001 to the coordinates
 // - Better take public domain PModeW for 256MB of memory.
 // - On problems with Vesa on DOS, maybe UniVBE (or similar) may help. Not tested that, though.
+// - The fogging (and GL_SEPARATE_SPECULAR) stage is applied before blending.
 // --
 #define WATCOMGLAPI
 #include "GL.H"
