@@ -5178,6 +5178,17 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     }
   }
 
+  bool nullAlphaIsTransparent = false;
+  if (alphaTest) {
+    switch(alphaFunction) {
+    case GL_NEVER: {nullAlphaIsTransparent = GL_TRUE;} break;
+    case GL_EQUAL: {nullAlphaIsTransparent = (alphaRef != 0) ? GL_TRUE : GL_FALSE;} break;
+    case GL_GREATER: {nullAlphaIsTransparent = (alphaRef >= 0) ? GL_TRUE : GL_FALSE;} break;
+    case GL_GEQUAL: {nullAlphaIsTransparent = (alphaRef > 0) ? GL_TRUE : GL_FALSE;} break;
+    case GL_NOTEQUAL: {nullAlphaIsTransparent = (alphaRef == 0) ? GL_TRUE : GL_FALSE;} break;
+    }
+  }
+
   iw = 1.0/v0w; // for constantW
   const GLboolean constantW = (v0w == v1w) && (v1w == v2w);
   const GLboolean wValue = ((textured || interpolateColor || interpolateSpecular || fogging) && (!constantW)) ? GL_TRUE : GL_FALSE;
@@ -5185,7 +5196,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   const GLboolean preMultipliedAlpha = (blendFuncS == GL_ONE && blendFuncD == GL_ONE_MINUS_SRC_ALPHA && blendEquation == GL_FUNC_ADD) ? GL_TRUE : GL_FALSE;
   const GLboolean normalAlphaBlendingOrPreMultipliedAlpha = (normalAlphaBlending || preMultipliedAlpha) ? GL_TRUE : GL_FALSE;
   const GLboolean useExplicitAlpha = (context->useExplicitAlpha) ? GL_TRUE : GL_FALSE;
-  const GLboolean alphaSolelyOpacity = (blending && (normalAlphaBlending || (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE && blendEquation == GL_FUNC_ADD))) ? GL_TRUE : GL_FALSE;
+  const GLboolean alphaSolelyOpacity = ((blending && (normalAlphaBlending || (blendFuncS == GL_SRC_ALPHA && blendFuncD == GL_ONE && blendEquation == GL_FUNC_ADD))) ? GL_TRUE : GL_FALSE) || nullAlphaIsTransparent;
   const GLboolean colorSolelyPossible = ((texEnvMode == GL_MODULATE) || (texEnvMode == GL_ADD) || (texEnvMode == GL_REPLACE)) ? GL_TRUE : GL_FALSE;
   const GLboolean colorSolelyOpacity = (colorSolelyPossible && blending && (blendFuncS == GL_ONE && blendFuncD == GL_ONE && blendEquation == GL_FUNC_ADD)) ? GL_TRUE : GL_FALSE;
 
