@@ -133,12 +133,18 @@ GLubyte *glStencilBuffer0 = NULL;
 #ifndef __GLDISABLEDOSFUNCTIONS__ 
 #ifdef __WATCOMC__
 
+#pragma aux glCLI="cli" modify[]
+#pragma aux glSTI="sti" modify[]
+
 GLubyte glCmosRead(GLubyte reg, GLboolean maskNMI) {
+  glCLI();
   outp(0x70, reg | (maskNMI?0x80:00));
-  return (GLubyte)inp(0x71);
+  GLubyte r = (GLubyte)inp(0x71);
+  glSTI();
+  return r;
 }
 
-volatile GLubyte glCmosUpdateInProgress() {
+GLubyte glCmosUpdateInProgress() {
   return (GLubyte)(glCmosRead(0x0a, GL_TRUE) & 0x80);
 }
 
