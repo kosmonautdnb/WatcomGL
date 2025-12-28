@@ -33,7 +33,8 @@ Files:
 - You find example compiles of these samples (.exe) in the main folder.
 
 Repositories:  
-- WatcomGL **demo game**: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
+- WatcomGL **demo game A**: https://github.com/kosmonautdnb/NorasWorkday
+- WatcomGL **demo game B**: https://github.com/kosmonautdnb/WatcomGL_Demo_Game   
 - WatcomC library collection with e.g. **dear ImGui**: https://github.com/kosmonautdnb/WatcomLibs 
 
 ## Other software OpenGL options
