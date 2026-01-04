@@ -478,15 +478,32 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_VK_INSERT (82*256)
 #define GL_VK_DELETE GL_VK_ENTF
 #define GL_VK_BACKSPACE 8
+#define GL_VK_A_CTRL 1
+#define GL_VK_B_CTRL 2
 #define GL_VK_C_CTRL 3
-#define GL_VK_P_CTRL 16
-#define GL_VK_V_CTRL 22
-#define GL_VK_S_CTRL 19
-#define GL_VK_L_CTRL 12
+#define GL_VK_D_CTRL 4
+#define GL_VK_E_CTRL 5
 #define GL_VK_F_CTRL 6
 #define GL_VK_G_CTRL 7
+#define GL_VK_H_CTRL 8 // same as GL_VK_BACKSPACE
+#define GL_VK_I_CTRL 9 // same as GL_VK_TAB
+#define GL_VK_J_CTRL 10
+#define GL_VK_K_CTRL 11
+#define GL_VK_L_CTRL 12
+#define GL_VK_M_CTRL 13 // same as GL_VK_ENTER
+#define GL_VK_N_CTRL 14
+#define GL_VK_O_CTRL 15
+#define GL_VK_P_CTRL 16
+#define GL_VK_Q_CTRL 17
+#define GL_VK_R_CTRL 18
+#define GL_VK_S_CTRL 19
+#define GL_VK_T_CTRL 20
 #define GL_VK_U_CTRL 21
+#define GL_VK_V_CTRL 22
+#define GL_VK_W_CTRL 23
 #define GL_VK_X_CTRL 24
+#define GL_VK_Y_CTRL 25
+#define GL_VK_Z_CTRL 26
 #define GL_VK_PLUS_CTRL 29
 #define GL_FRAMEBUFFER 0x8f64
 #define GL_FRAMEBUFFER_COMPLETE 0x8cd5
