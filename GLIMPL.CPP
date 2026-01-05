@@ -5789,24 +5789,41 @@ GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLubyte *stencilBu
   glDirectBlit = GL_TRUE;
   return GL_TRUE;
 }
+
+// --------------------------------------
+
+static GLSecondsCallback glSecondsCallback = NULL;
+static GLSetTimeCallback glSetTimeCallback = NULL;
+static GLNextKeyCallback glNextKeyCallback = NULL;
+static GLNextMouseDeltaCallback glNextMouseDeltaCallback = NULL;
+static GLMouseButtonsCallback glMouseButtonsCallback = NULL;
+static GLSpecialKeysCallback glSpecialKeysCallback = NULL;
+
+GLvoid glSetSecondsCallback(GLSecondsCallback callback) {glSecondsCallback = callback;}
+GLvoid glSetSetTimeCallback(GLSetTimeCallback callback) {glSetTimeCallback = callback;}
+GLvoid glSetNextKeyCallback(GLNextKeyCallback callback) {glNextKeyCallback = callback;}
+GLvoid glSetNextMouseDeltaCallback(GLNextMouseDeltaCallback callback) {glNextMouseDeltaCallback = callback;}
+GLvoid glSetMouseButtonsCallback(GLMouseButtonsCallback callback) {glMouseButtonsCallback = callback;}
+GLvoid glSetSpecialKeysCallback(GLSpecialKeysCallback callback) {glSpecialKeysCallback = callback;}
+
 // --------------------------------------
 
 // --------------------------------------
 #ifdef __GLDISABLEDOSFUNCTIONS__
 // --------------------------------------
-GLdouble glSeconds() {return 0;}
-GLvoid glSetTime(GLdouble seconds) {;}
-GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey) {;}
+GLdouble glSeconds() {if (glSecondsCallback != NULL) return glSecondsCallback(); return 0;}
+GLvoid glSetTime(GLdouble seconds) {if (glSetTimeCallback != NULL) glSetTimeCallback(seconds);}
+GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey) {if (glSpecialKeysCallback != NULL) glSpecialKeysCallback(shiftKey, ctrlKey, altKey);}
 GLvoid glSetupMouse() {;}
-GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {;}
-GLushort glMouseButtons() {return 0;}
-GLvoid glSetMousePos(GLint x, GLint y) {;}
-GLushort glNextKey() {return 0;}
+GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {if (glNextMouseDeltaCallback != NULL) glNextMouseDeltaCallback(mouseX, mouseY);}
+GLushort glMouseButtons() {if (glMouseButtonsCallback != NULL) return glMouseButtonsCallback(); return 0;}
+GLvoid glSetMousePos(GLint x, GLint y) {__UNUSED(x);__UNUSED(y);}
+GLushort glNextKey() {if (glNextKeyCallback != NULL) return glNextKeyCallback(); return 0;}
 GLvoid glDone() {;}
 GLvoid glRefresh() {;}
 GLboolean glVGA() {return GL_FALSE;}
-GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {return GL_FALSE;}
-GLvoid glDebug(GLuint color) {;}
+GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {__UNUSED(xRes); __UNUSED(yRes); __UNUSED(bPP); return GL_FALSE;}
+GLvoid glDebug(GLuint color) {__UNUSED(color);}
 // --------------------------------------
 #else // __GLDISABLEDOSFUNCTIONS__
 // --------------------------------------
@@ -6564,6 +6581,7 @@ GLvoid glDone() {
 }
 
 GLushort glNextKey() {
+  if (glNextKeyCallback != NULL) return glNextKeyCallback();
   union REGS regs;
   memset(&regs,0,sizeof(regs));
   regs.w.ax = 0x0600;
@@ -6590,6 +6608,7 @@ GLvoid glSetMousePos(GLint x, GLint y) {
 }
 
 GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {
+  if (glNextMouseDeltaCallback != NULL) {glNextMouseDeltaCallback(mouseX, mouseY); return;}
   union REGS regs;
   memset(&regs,0,sizeof(regs));
   regs.w.ax = 0x03;
@@ -6609,6 +6628,7 @@ GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {
 
 
 GLushort glMouseButtons() {
+  if (glMouseButtonsCallback != NULL) return glMouseButtonsCallback();
   union REGS regs;
   memset(&regs,0,sizeof(regs));
   regs.w.ax = 0x03;
@@ -6636,6 +6656,7 @@ GLvoid glSetupMouse() {
 }
 
 GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey) {
+  if (glSpecialKeysCallback != NULL) {glSpecialKeysCallback(shiftKey, ctrlKey, altKey); return;}
 #ifdef __WATCOMC__
   uint8_t keyState = *((uint8_t *)0x417);
 #endif // __WATCOMC__
@@ -6653,9 +6674,11 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
   typedef unsigned long long int uint64_t;
   int64_t glStartClock = 0;
   GLdouble glSeconds() {
+    if (glSecondsCallback != NULL) return glSecondsCallback();
     return (GLdouble)(uclock() - glStartClock) / UCLOCKS_PER_SEC;
   }
   GLvoid glSetTime(GLdouble seconds) {
+    if (glSetTimeCallback != NULL) {glSetTimeCallback(seconds); return;}
     glStartClock = uclock() - (int64_t)(seconds * UCLOCKS_PER_SEC);
   }
 #endif // __DJGPP__
@@ -6663,6 +6686,7 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
 #ifdef __WATCOMC__
   GLdouble glStartClock = 0;
   GLdouble glSeconds() {
+    if (glSecondsCallback != NULL) return glSecondsCallback();
     if (glHasTSC) {
       return glReadTscDouble()-glTscStartValue;
     }
@@ -6670,6 +6694,7 @@ GLvoid glSpecialKeys(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey)
     return (GLdouble)(clock() - glStartClock) / CLOCKS_PER_SEC;
   }
   GLvoid glSetTime(GLdouble seconds) {
+    if (glSetTimeCallback != NULL) {glSetTimeCallback(seconds); return;}
     glStartClock = clock() - seconds * CLOCKS_PER_SEC;
     if (glHasTSC) {
       glTscStartValue = glReadTscDouble()-seconds;

@@ -1126,6 +1126,23 @@ GLvoid glSetTriangleDrawer(TriangleDrawer drawer);
 // ------------------------
 // ------------------------
 
+typedef GLdouble (*GLSecondsCallback)();
+typedef GLvoid (*GLSetTimeCallback)(GLdouble seconds);
+typedef GLushort (*GLNextKeyCallback)();
+typedef GLvoid (*GLNextMouseDeltaCallback)(GLdouble *deltaX, GLdouble *deltaY);
+typedef GLushort (*GLMouseButtonsCallback)();
+typedef GLvoid (*GLSpecialKeysCallback)(GLboolean *shiftKey, GLboolean *ctrlKey, GLboolean *altKey);
+
+GLvoid glSetSecondsCallback(GLSecondsCallback callback);
+GLvoid glSetSetTimeCallback(GLSetTimeCallback callback);
+GLvoid glSetNextKeyCallback(GLNextKeyCallback callback);
+GLvoid glSetNextMouseDeltaCallback(GLNextMouseDeltaCallback callback);
+GLvoid glSetMouseButtonsCallback(GLMouseButtonsCallback callback);
+GLvoid glSetSpecialKeysCallback(GLSpecialKeysCallback callback);
+
+// ------------------------
+// ------------------------
+
 #endif // WATCOMGLAPI
 
 // ------------------------
