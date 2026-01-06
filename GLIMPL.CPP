@@ -5798,6 +5798,8 @@ static GLNextKeyCallback glNextKeyCallback = NULL;
 static GLNextMouseDeltaCallback glNextMouseDeltaCallback = NULL;
 static GLMouseButtonsCallback glMouseButtonsCallback = NULL;
 static GLSpecialKeysCallback glSpecialKeysCallback = NULL;
+static GLRefreshNotification glRefreshNotification = NULL;
+static GLDoneNotification glDoneNotification = NULL;
 
 GLvoid glSetSecondsCallback(GLSecondsCallback callback) {glSecondsCallback = callback;}
 GLvoid glSetSetTimeCallback(GLSetTimeCallback callback) {glSetTimeCallback = callback;}
@@ -5805,6 +5807,8 @@ GLvoid glSetNextKeyCallback(GLNextKeyCallback callback) {glNextKeyCallback = cal
 GLvoid glSetNextMouseDeltaCallback(GLNextMouseDeltaCallback callback) {glNextMouseDeltaCallback = callback;}
 GLvoid glSetMouseButtonsCallback(GLMouseButtonsCallback callback) {glMouseButtonsCallback = callback;}
 GLvoid glSetSpecialKeysCallback(GLSpecialKeysCallback callback) {glSpecialKeysCallback = callback;}
+GLvoid glSetRefreshNotification(GLRefreshNotification notification) {glRefreshNotification = notification;}
+GLvoid glSetDoneNotification(GLDoneNotification notification) {glDoneNotification = notification;}
 
 // --------------------------------------
 
@@ -5819,8 +5823,8 @@ GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {if (glNextMouseDelt
 GLushort glMouseButtons() {if (glMouseButtonsCallback != NULL) return glMouseButtonsCallback(); return 0;}
 GLvoid glSetMousePos(GLint x, GLint y) {__UNUSED(x);__UNUSED(y);}
 GLushort glNextKey() {if (glNextKeyCallback != NULL) return glNextKeyCallback(); return 0;}
-GLvoid glDone() {;}
-GLvoid glRefresh() {;}
+GLvoid glDone() {if (glDoneNotification != NULL) glDoneNotification();}
+GLvoid glRefresh() {if (glRefreshNotification != NULL) glRefreshNotification();}
 GLboolean glVGA() {return GL_FALSE;}
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {__UNUSED(xRes); __UNUSED(yRes); __UNUSED(bPP); return GL_FALSE;}
 GLvoid glDebug(GLuint color) {__UNUSED(color);}
@@ -6448,9 +6452,12 @@ GLvoid glFlattenMultiSample() {
 }
 
 GLvoid glRefresh() {
-  glDrawnTrianglesFrame = 0;
 
   glFlattenMultiSample();
+
+  if (glRefreshNotification != NULL) glRefreshNotification();
+
+  glDrawnTrianglesFrame = 0;
 
   if (glFrameBuffer0 != glFrameBuffer)
     return;
@@ -6551,6 +6558,8 @@ GLvoid glRefresh() {
 }
 
 GLvoid glDone() {
+
+  if (glDoneNotification != NULL) glDoneNotification();
 
   if (!glDirectBlit) { // glDirect?
 
