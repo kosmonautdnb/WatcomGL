@@ -161,7 +161,7 @@ GLuint glReadTscHi(); // a tiny tiny tiny bit "unsafe"
 GLuint glHasTsc_();
 #pragma aux glReadTscHi="rdtsc""shr edx,16" value[edx] modify[eax edx]
 #pragma aux glReadTsc="rdtsc""shr eax,16""shl edx,16""or eax,edx" value[eax] modify[eax edx]
-#pragma aux glHasTsc_="push ebx""mov eax,0x80000000""cpuid""cmp eax,0x80000001""jb maybe_no_tsc""mov eax,0x80000001""cpuid""test edx,0x00000010""jnz tsc_available""maybe_no_tsc:""mov eax,0x80000000""cpuid""cmp eax,0x80000007""jb no_tsc""mov eax,0x80000007""cpuid""test edx,0x00000100""jnz tsc_available""no_tsc:""xor eax,eax""jmp end_check""tsc_available:""mov eax,1""end_check:""pop ebx"value[eax] modify[eax edx ecx]
+#pragma aux glHasTsc_="push ebx""mov eax,0x80000000""cpuid""cmp eax,0x80000001""jb maybe_no_tsc""mov eax,0x80000001""cpuid""test edx,0x00000010""jnz tsc_available""maybe_no_tsc:""mov eax,0x80000000""cpuid""cmp eax,0x80000007""jb no_tsc""mov eax,0x80000007""cpuid""test edx,0x00000100""jnz tsc_available""no_tsc:""xor eax,eax""jmp end_check""tsc_available:""mov eax,1""end_check:""pop ebx"value[eax] modify[eax edx ecx ebx]
 GLdouble glReadTscDouble() {return (GLdouble)(glReadTsc())/glTscFrequency+(GLdouble)(glReadTscHi())*65536.0/glTscFrequency*65536.0;} // maybe unsafe? (WatcomC has broken 64bit int support)
 
 GLvoid glInitTSC() {
