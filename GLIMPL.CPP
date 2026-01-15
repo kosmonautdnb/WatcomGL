@@ -1027,8 +1027,8 @@ GLvoid glClipOnPlane(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,
     glClipPoly[2] = *v2;
   }
 
-  bool allIn = true;
-  bool allOut = true;
+  GLboolean allIn = GL_TRUE;
+  GLboolean allOut = GL_TRUE;
 
   for (GLint j = 0; j < glClipPolySize; j++) {
     double x =  glClipPoly[j].vertexX;
@@ -1043,9 +1043,9 @@ GLvoid glClipOnPlane(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2,
     }
     clip[j] = x*plane[0]+y*plane[1]+z*plane[2]+plane[3];
     if (clip[j]>=0.0) 
-      allOut=false;
+      allOut=GL_FALSE;
     else
-      allIn=false;
+      allIn=GL_FALSE;
   }
 
   if (allOut) {
@@ -5184,7 +5184,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
     }
   }
 
-  bool nullAlphaIsTransparent = false;
+  GLboolean nullAlphaIsTransparent = GL_FALSE;
   if (alphaTest) {
     switch(alphaFunction) {
     case GL_NEVER: {nullAlphaIsTransparent = GL_TRUE;} break;
@@ -6173,9 +6173,8 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glCleanSetup(xRes, yRes, frameBuffer, depthBuffer, stencilBuffer);
       glSetupMouse();
 
-      glFrameBufferDedicated = (GLuint*)glMapPhysicalToLinear(modeInfo.linearFrameBuffer,4096*1024-1);
-      memset(glFrameBufferDedicated,0,xRes*yRes*sizeof(GLuint));
-
+      glFrameBufferDedicated = (GLuint*)glMapPhysicalToLinear(modeInfo.linearFrameBuffer,xRes*yRes*(bPP/8));
+      // call glRefresh directly after that
       return GL_TRUE;
     }
     v++;
@@ -6296,15 +6295,14 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glSetupMouse();
 
       // linear framebuffer mapping to vesasel not glFrameBufferDedicated
-      glLinearFrameBufferStruct.size = 4096*1024-1;
+      glLinearFrameBufferStruct.size = xRes*yRes*(bPP/8);
       glLinearFrameBufferStruct.address = modeInfo.linearFrameBuffer;
       __dpmi_physical_address_mapping(&glLinearFrameBufferStruct);
       glVesasel = __dpmi_allocate_ldt_descriptors(1);
       __dpmi_set_segment_base_address(glVesasel,glLinearFrameBufferStruct.address);
       __dpmi_set_segment_limit(glVesasel,glLinearFrameBufferStruct.size-1);
-      for (GLint i = 0; i < xRes*yRes; i++) _farpokel(glVesasel,i<<2,0);
       glFrameBufferDedicated = (GLuint*)0x10101010; // not NULL so glDone calls unmap
-
+      // call glRefresh() directly after that.
       return GL_TRUE;
     }
     v++;
