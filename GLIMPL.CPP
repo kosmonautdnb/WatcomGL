@@ -6295,13 +6295,20 @@ GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {
       glSetupMouse();
 
       // linear framebuffer mapping to vesasel not glFrameBufferDedicated
-      glLinearFrameBufferStruct.size = xRes*yRes*(bPP/8);
       glLinearFrameBufferStruct.address = modeInfo.linearFrameBuffer;
-      __dpmi_physical_address_mapping(&glLinearFrameBufferStruct);
+      glLinearFrameBufferStruct.size = xRes*yRes*(bPP/8);
+      if (__dpmi_physical_address_mapping(&glLinearFrameBufferStruct) != 0) {
+        glDone();
+        return GL_FALSE;
+      }
+      glFrameBufferDedicated = (GLuint*)0x10101010; // not NULL so glDone calls unmap
       glVesasel = __dpmi_allocate_ldt_descriptors(1);
+      if (glVesasel < 0) {
+        glDone();
+        return GL_FALSE;
+      }
       __dpmi_set_segment_base_address(glVesasel,glLinearFrameBufferStruct.address);
       __dpmi_set_segment_limit(glVesasel,glLinearFrameBufferStruct.size-1);
-      glFrameBufferDedicated = (GLuint*)0x10101010; // not NULL so glDone calls unmap
       // call glRefresh() directly after that.
       return GL_TRUE;
     }
