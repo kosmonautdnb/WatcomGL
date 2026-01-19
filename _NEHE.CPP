@@ -357,7 +357,7 @@ void NEHE8_Blending() {
   zrot += 0.4f;
 }
 
-int main(int argc, const char *argv[]) {
+int main() {
   
   //glWatcomPrecisionTimer(GL_TRUE);
   glConfigureAntiAlias();
@@ -391,10 +391,22 @@ int main(int argc, const char *argv[]) {
   unsigned char *textureData = (unsigned char *)malloc(256*256*3);
   for (int y = 0; y < 256; y++)
   for (int x = 0; x < 256; x++) {
-    unsigned int col = (int)(sin(x/100.0/5.0+y/33.0/5.0)*0xffffff)|0xff000000;
-    textureData[(x+y*256)*3+0] = col & 255;
-    textureData[(x+y*256)*3+1] = (col>>8) & 255;
-    textureData[(x+y*256)*3+2] = (col>>16) & 255;
+    double d = sqrt((x-128)*(x-128)+(y-128)*(y-128));
+    d = d * d / 128;
+    double a = atan2(y-128,x-128);
+    int r = (int)((sin(d/10.0+a*6)+sin(a*4+d/7.0))*63+128);
+    a += 0.125;
+    int g = (int)((sin(d/10.0+a*6)+sin(a*4+d/7.0))*63+128);
+    a += 0.125;
+    int b = (int)((sin(d/10.0+a*6)+sin(a*4+d/7.0))*63+128);
+    int k = ((x/8) ^ (y/8)) & 3;
+    r = r * k / 4;
+    g = g * k / 4;
+    b = b * k / 4;
+    textureData[(x+y*256)*3+0] = (unsigned char)r;
+    textureData[(x+y*256)*3+1] = (unsigned char)g;
+    textureData[(x+y*256)*3+2] = (unsigned char)b;
+    textureData[(x+y*256)*3+3] = 255;
   }
 
   glGenTextures(1, &texture[0]);
