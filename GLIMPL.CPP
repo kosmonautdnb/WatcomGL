@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 //#define __GLDISABLEDOSFUNCTIONS__ 1
-#define __NEARPOINTERVESA__ 1 // for DJGPP and glVesa()
+#define __NEARPOINTERVESA__ 1 // for DJGPP and glVesa(), enabled doesn't work with WindowsNT and Linux DOSEMU, but with it disabled many machines refuse to support a linear framebuffer.
 #if (!defined(__WATCOMC__))&&(!defined(__DJGPP__))
 #define __GLDISABLEDOSFUNCTIONS__ 1 // use glDirect()
 #endif
