@@ -12,7 +12,7 @@ If you have a fast machine like a newer Intel/AMD you got branchprediction, fast
 
 You can use this library as a general-purpose C software rasterizer; it's not limited to DOS or WatcomC.  
 
-**Don't use this with DosBOX or DosBOX-X, it is very slow there due to missing branch prediction and being just an emulation.**
+**Don't use this with DosBOX or DosBOX-X, it is very slow there due to missing branch prediction and being just an emulation. WatcomGL uses floating point arithmetics a lot.**
 
 # Quirks
 
