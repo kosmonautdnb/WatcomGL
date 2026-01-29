@@ -5687,8 +5687,8 @@ GLboolean glPixel(GLboolean newXYZ, GLfloat xp, GLfloat yp, GLfloat zp, GLint x,
     v.vertexZ = zp;
     v.vertexW = 1;
     glPixelLastValid = (glTransformVertex(&glContext, &v, GL_TRUE) == 0);
-    glPixelLastSX = (GLfloat)v.sx;
-    glPixelLastSY = (GLfloat)v.sy;
+    glPixelLastSX = (GLfloat)(v.sx-glPixelCenterX+0.5); // rounding
+    glPixelLastSY = (GLfloat)(v.sy-glPixelCenterY+0.5); // rounding
   }
   if (glPixelLastValid)
   {
