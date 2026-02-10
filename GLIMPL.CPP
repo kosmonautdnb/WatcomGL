@@ -2310,6 +2310,15 @@ GLvoid glGenTextures (GLsizei n, GLuint *textures) {
   }
 }
 
+GLint glGetMatrixMode() {
+  switch(glContext.matrixModeNr) {
+    case (GL_PROJECTION & 1): return GL_PROJECTION;
+    case (GL_MODELVIEW & 1): return GL_MODELVIEW;
+    case 2: return GL_TEXTURE;
+  }
+  return 0;
+}
+
 GLvoid glGetBooleanv(GLenum pname, GLboolean *params) {
   GLint i;
   switch(pname) {
@@ -2344,7 +2353,7 @@ GLvoid glGetBooleanv(GLenum pname, GLboolean *params) {
   case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=(GLboolean)(GLint)floor(glContext.lineWidth);} break;
-  case GL_MATRIX_MODE: {*params=(GLboolean)glContext.matrixModeNr;} break;
+  case GL_MATRIX_MODE: {*params=(GLboolean)glGetMatrixMode();} break;
   case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i < 16;i++) params[i]= (GLboolean)glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
@@ -2402,7 +2411,7 @@ GLvoid glGetDoublev(GLenum pname, GLdouble *params) {
   case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=glContext.lineWidth;} break;
-  case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
+  case GL_MATRIX_MODE: {*params=glGetMatrixMode();} break;
   case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i < 16;i++) params[i]=glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
@@ -2460,7 +2469,7 @@ GLvoid glGetFloatv(GLenum pname, GLfloat *params) {
   case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=glContext.lineWidth;} break;
-  case GL_MATRIX_MODE: {*params= (GLfloat)glContext.matrixModeNr;} break;
+  case GL_MATRIX_MODE: {*params= (GLfloat)glGetMatrixMode();} break;
   case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i < 16;i++) params[i]= (GLfloat)glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
@@ -2518,7 +2527,7 @@ GLvoid glGetIntegerv(GLenum pname, GLint *params) {
   case GL_LIGHT1: {*params=glIsEnabled(GL_LIGHT1);} break;
   case GL_LIGHTING: {*params=glIsEnabled(GL_LIGHTING);} break;
   case GL_LINE_WIDTH: {*params=(GLint)floor(glContext.lineWidth);} break;
-  case GL_MATRIX_MODE: {*params=glContext.matrixModeNr;} break;
+  case GL_MATRIX_MODE: {*params=glGetMatrixMode();} break;
   case GL_MAX_LIGHTS: {*params=GLMAXLIGHTS;} break;
   case GL_MAX_MODELVIEW_STACK_DEPTH: {*params=__MATRIX_STACK_SIZE__;} break;
   case GL_MODELVIEW_MATRIX: {for (i=0;i < 16;i++) params[i]= (GLint)glContext.matrixForMode[GL_MODELVIEW&1][i];} break;
