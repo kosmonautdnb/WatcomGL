@@ -126,6 +126,9 @@ GLint glDrawnTrianglesFrame = 0;
 
 GLubyte *glStencilBuffer = NULL; // strange, by placing these pointers not above it gets a lot faster (maybe be pack alignment?)
 GLubyte *glStencilBuffer0 = NULL;
+GLuint *glFrameBufferMasked = NULL;
+GLint glFrameBufferMaskedWidth = 0;
+GLint glFrameBufferMaskedHeight = 0;
 
 // -----
 // WatcomC++ high precision timer. DJGPP already has a high precision timer.
@@ -1679,7 +1682,7 @@ GLboolean glTextureMatrixIsSet[GLMAXTEXTUREUNITS];
 
 GLvoid glBegin(GLenum mode) {
   //if (glContext.beginMode != 0) {glDone();exit(0);}
-  for (int i = 0; i < GLMAXTEXTUREUNITS; i++) glTextureMatrixIsSet[i] = memcmp(glContext.textureMatrix[i],identityMatrix,4*4*sizeof(GLdouble))==0?GL_FALSE:GL_TRUE;
+  for (GLint i = 0; i < GLMAXTEXTUREUNITS; i++) glTextureMatrixIsSet[i] = memcmp(glContext.textureMatrix[i],identityMatrix,4*4*sizeof(GLdouble))==0?GL_FALSE:GL_TRUE;
   glWorldSpaceClipPlanes();
   glContext.beginMode = mode;
   glCurrentVertexElement = 0;
@@ -5835,6 +5838,7 @@ GLvoid glSetMousePos(GLint x, GLint y) {__UNUSED(x);__UNUSED(y);}
 GLushort glNextKey() {if (glNextKeyCallback != NULL) return glNextKeyCallback(); return 0;}
 GLvoid glDone() {if (glDoneNotification != NULL) glDoneNotification();}
 GLvoid glRefresh() {if (glRefreshNotification != NULL) glRefreshNotification();}
+GLvoid glRefreshMasked() {if (glRefreshNotification != NULL) glRefreshNotification();}
 GLboolean glVGA() {return GL_FALSE;}
 GLboolean glVesa(GLint xRes,GLint yRes, GLint bPP) {__UNUSED(xRes); __UNUSED(yRes); __UNUSED(bPP); return GL_FALSE;}
 GLvoid glDebug(GLuint color) {__UNUSED(color);}
@@ -6480,7 +6484,7 @@ GLvoid glWaitVerticalRetrace() {
 
 GLvoid glFlattenMultiSample() {
   if (glFrameBufferMultiSample==2) {
-    for (int i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) {
+    for (GLint i = 0; i < glFrameBufferWidth*glFrameBufferHeight; i++) {
       glFrameBuffer[i]=((glFrameBuffer[i] & 0xfefefefe)+(glFrameBuffer[i+glFrameBufferWidth*glFrameBufferHeight] & 0xfefefefe))>>1;
     }
   }
@@ -6620,11 +6624,176 @@ GLvoid glRefresh() {
   DJGPPWRITECOLORNEARPOINTEROFF
 }
 
+GLvoid glRefreshMasked() {
+
+  glFlattenMultiSample();
+
+  if (glRefreshNotification != NULL) glRefreshNotification();
+
+  glDrawnTrianglesFrame = 0;
+
+  if (glFrameBuffer0 != glFrameBuffer)
+    return;
+  
+  if (glDirectBlit) 
+    return;
+  
+  if (glWaitVSync) 
+    glWaitVerticalRetrace();
+  
+  if (glHiColor) {
+    glRefreshHiColor();
+    return;
+  }
+
+
+  if (glFrameBufferMasked == NULL || glFrameBufferMaskedWidth != glFrameBufferWidth0 || glFrameBufferMaskedHeight != glFrameBufferHeight0) {
+    if (glFrameBufferMasked != NULL) __FREEALIGNED(glFrameBufferMasked); glFrameBufferMasked = NULL;
+    glFrameBufferMaskedWidth = glFrameBufferWidth0;
+    glFrameBufferMaskedHeight = glFrameBufferHeight0;
+    glFrameBufferMasked = (GLuint*)__MALLOCALIGNED(glFrameBufferMaskedWidth * glFrameBufferMaskedHeight * sizeof(GLuint));
+    for (GLint i = 0; i < glFrameBufferMaskedWidth*glFrameBufferMaskedHeight; i++) glFrameBufferMasked[i]=0x01020304;
+  }
+
+  DJGPPWRITECOLORNEARPOINTERON
+
+  if (glBits == 32) {
+    // 32bit
+    GLuint *read = &glFrameBuffer0[0];
+    GLuint *mask = &glFrameBufferMasked[0];
+    const GLint k = glFrameBufferWidth0*glFrameBufferHeight0;
+    if (glVesaBGRA) {
+      for (GLint i = 0; i < k; i++) {
+        const GLuint rgba = *read++;
+        if (rgba == *mask) {
+          mask++; continue;
+        }
+        *mask++ = rgba;
+#ifdef __DJGPP__
+#ifndef __NEARPOINTERVESA__
+        _farpokel(glVesasel,i<<2,(rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16));
+#else // __NEARPOINTERVESA__
+        DJGPPWRITECOLOR32(i,(rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16));
+#endif // __NEARPOINTERVESA__
+#else // __DJGPP__
+        glFrameBufferDedicated[i] = (rgba & 0xff00ff00)|((rgba&0x00ff00ff)>>16)|((rgba&0x00ff00ff)<<16);
+#endif // __DJGPP__
+      }
+    } else {
+      for (GLint i = 0; i < k; i++) {
+        const GLuint rgba = *read++;
+        if (rgba == *mask) {
+          mask++; continue;
+        }
+        *mask++ = rgba;
+#ifdef __DJGPP__
+#ifndef __NEARPOINTERVESA__
+        _farpokel(glVesasel,i<<2,rgba);
+#else // __NEARPOINTERVESA__
+        DJGPPWRITECOLOR32(i,rgba);
+#endif // __NEARPOINTERVESA__
+#else // __DJGPP__
+        glFrameBufferDedicated[i] = rgba;
+#endif // __DJGPP__
+      }
+    }
+  } 
+
+  if (glBits == 24) { // very slow (no mask stuff here, yet)
+    //24bit
+    GLuint *read = &glFrameBuffer0[0];
+    const GLint k = glFrameBufferWidth0*glFrameBufferHeight0*3;
+#ifndef __DJGPP__
+    GLubyte *dedicated = (GLubyte*)glFrameBufferDedicated;
+#endif // __DJGPP__
+    if (glVesaBGRA) {
+      for (GLint i = 0; i < k; i += 3) {
+        const GLuint rgba = *read++;
+#ifdef __DJGPP__
+#ifndef __NEARPOINTERVESA__
+        _farpokeb(glVesasel,i,(rgba>>16) & 0xff);
+        _farpokeb(glVesasel,i+1,(rgba>>8) & 0xff);
+        _farpokeb(glVesasel,i+2,rgba & 0xff);
+#else // __NEARPOINTERVESA__
+        DJGPPWRITECOLOR8(i,(rgba>>16) & 0xff);
+        DJGPPWRITECOLOR8(i+1,(rgba>>8) & 0xff);
+        DJGPPWRITECOLOR8(i+2,(rgba) & 0xff);
+#endif // __NEARPOINTERVESA__
+#else // __DJGPP__
+        dedicated[0] = (GLubyte)((rgba>>16) & 0xff);
+        dedicated[1] = (GLubyte)((rgba>>8) & 0xff);
+        dedicated[2] = (GLubyte)(rgba & 0xff);
+        dedicated += 3;
+#endif // __DJGPP__
+      }
+    } else {
+      for (GLint i = 0; i < k; i += 3) {
+        const GLuint rgba = *read++;
+#ifdef __DJGPP__
+#ifndef __NEARPOINTERVESA__
+        _farpokeb(glVesasel,i,rgba & 0xff);
+        _farpokeb(glVesasel,i+1,(rgba>>8) & 0xff);
+        _farpokeb(glVesasel,i+2,(rgba>>16) & 0xff);
+#else // __NEARPOINTERVESA__
+        DJGPPWRITECOLOR8(i,(rgba) & 0xff);
+        DJGPPWRITECOLOR8(i+1,(rgba>>8) & 0xff);
+        DJGPPWRITECOLOR8(i+2,(rgba>>16) & 0xff);
+#endif // __NEARPOINTERVESA__
+#else // __DJGPP__
+        dedicated[0] = (GLubyte)(rgba & 0xff);
+        dedicated[1] = (GLubyte)((rgba>>8) & 0xff);
+        dedicated[2] = (GLubyte)((rgba>>16) & 0xff);
+        dedicated += 3;
+#endif // __DJGPP__
+      }
+    }
+  }
+
+  if (glBits == 15 || glBits == 16) {
+    //16bit
+    GLuint *read = &glFrameBuffer0[0];
+    GLuint *mask = &glFrameBufferMasked[0];
+    const GLint k = glFrameBufferWidth0*glFrameBufferHeight0;
+#ifndef __DJGPP__
+    GLuint *dedicated = (GLuint*)glFrameBufferDedicated;
+#endif // __DJGPP__
+    for (GLint i = 0; i < k-1; i+=2) {
+      const GLuint rgba = *read++;
+      const GLuint in16 = (GLuint)(glHiColorTableR[rgba&0xff]|glHiColorTableG[(rgba>>8)&0xff]|glHiColorTableB[(rgba>>16)&0xff]);
+      const GLuint rgba2 = *read++;
+      const GLuint in162 = (GLuint)(glHiColorTableR[rgba2&0xff]|glHiColorTableG[(rgba2>>8)&0xff]|glHiColorTableB[(rgba2>>16)&0xff]);
+      const GLuint _rgba = in16|(in162<<16);
+      if (_rgba == *mask) {
+#ifndef __DJGPP__
+        dedicated++;
+#endif
+        mask++; continue;
+      }
+      *mask++ = _rgba;
+#ifdef __DJGPP__
+#ifndef __NEARPOINTERVESA__
+      _farpokel(glVesasel,i<<1,_rgba);
+#else // __NEARPOINTERVESA__
+        DJGPPWRITECOLOR32(i>>1,_rgba);
+#endif // __NEARPOINTERVESA__
+#else // __DJGPP__
+      *dedicated++ = _rgba;
+#endif // __DJGPP__
+    }
+  }
+
+  DJGPPWRITECOLORNEARPOINTEROFF
+}
+
 GLvoid glDone() {
 
   if (glDoneNotification != NULL) glDoneNotification();
 
   if (!glDirectBlit) { // glDirect?
+
+    if (glFrameBufferMasked != NULL) {
+      __FREEALIGNED(glFrameBufferMasked); glFrameBufferMasked = NULL;
+    }
 
     if (glFrameBuffer0 != NULL) {
       __FREEALIGNED(glFrameBuffer0); glFrameBuffer0 = NULL; glFrameBuffer = NULL;

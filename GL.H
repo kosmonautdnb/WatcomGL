@@ -22,6 +22,7 @@ int main(int argc, const char **argv) {
   if (!glVesa(640,480,32))
     glVGA(); // This modus is safe for all VGA cards. It doesn't involve reprogramming of VGA timings.
   glRefresh();
+    //glWatcomPrecisionTimer(GL_TRUE); // use this for more fluid WatcomC glSeconds()
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -47,7 +48,7 @@ int main(int argc, const char **argv) {
     glTexCoord2f(0,1); glColor4f(0,0,1,1); glVertex3f(-1,-1,-1);
     glTexCoord2f(1,1); glColor4f(1,0,1,1); glVertex3f(1,-1,-1);
     glEnd();
-      glRefresh();
+      glRefresh(); // or glRefreshMasked() for a speedup with slow videoram graphics cards (here it's from 40fps to 100fps with this)
   }
 
   glDone();
@@ -91,6 +92,7 @@ GLboolean glVGA(); // 320x200 with 6 bit green, 3 bit blue, 4 bit red, actually 
 GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLubyte *stencilBuffer, GLuint width, GLuint height); // setup direct rendering to a framebuffer+depthbuffer // look also at glSetRenderTarget() // you need to delete the buffers yourself // antialiasing needs buffers twice as big
 
 GLvoid glRefresh(); // copies the framebuffer to the actual screen and updates per frame stuff
+GLvoid glRefreshMasked(); // same as glRefresh, but uses an internal mask (more memory) to update the vram just where it's needed (should be faster with very slow vram)
 
 GLvoid glDone(); // close the Vesa/VGA mode and clean up OpenGL again
 
