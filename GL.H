@@ -94,7 +94,7 @@ GLboolean glDirect(GLuint *frameBuffer, GLfloat *depthBuffer, GLubyte *stencilBu
 GLvoid glRefresh(); // copies the framebuffer to the actual screen and updates per frame stuff
 GLvoid glRefreshMasked(); // same as glRefresh, but uses an internal mask (more memory) to update the vram just where it's needed (should be faster with very slow vram)
 
-GLvoid glDone(); // close the Vesa/VGA mode and clean up OpenGL again
+GLvoid glDone(); // close the Vesa/VGA mode and clean up OpenGL again (this doesn't delete Textures)
 
 // ------------------------
 // ------------------------

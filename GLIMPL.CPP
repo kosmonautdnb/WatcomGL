@@ -238,6 +238,10 @@ INLINE GLint glMaxi(GLint a, GLint x) {
   return a > x ? a : x;
 }
 
+INLINE GLdouble glSign(GLdouble a) {return a < 0 ? -1 : a == 0 ? 0 : 1;}
+INLINE GLdouble glAbs(GLdouble a) {return a < 0 ? -a : a;}
+#define GLPOW(__a__,__b__) ((__b__)==0?1.0:glSign(__a__)*pow(glAbs(__a__),__b__)) // (WatcomC 11 has problems with pow this is a fix for that)
+
 GLvoid glSetError(GLenum error) {
   glError = error;
 }
@@ -900,7 +904,7 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
           GLdouble spotAngleDot = lVecX*spotDirectionX+lVecY*spotDirectionY+lVecZ*spotDirectionZ;
           if (spotAngleDot > spotCutOff) { // spotCutOff goes from 1(0degrees) to -1(180degrees)
             const GLdouble spotExponent = context->spotExponent[i];
-            const GLdouble d = pow(spotAngleDot < 0 ? 0 : spotAngleDot,spotExponent);
+            const GLdouble d = GLPOW(spotAngleDot < 0 ? 0 : spotAngleDot,spotExponent);
             diffuse *= d;
             specular *= d;
           } else {
@@ -918,7 +922,7 @@ GLvoid glLightVertex(_GLContext *context, glVertex *v) {
         diffuseBlue += (GLfloat)(materialDiffuseBlue*lightDiffuseBlue*diffuse);
         GLdouble shininess = materialShininessRed;
         if (shininess < 0.001) shininess = 0.001;
-        specular = pow(specular,shininess) * attenuation;
+        specular = GLPOW(specular,shininess) * attenuation;
         specularRed += (GLfloat)(materialSpecularRed*lightSpecularRed*specular);
         specularGreen += (GLfloat)(materialSpecularGreen*lightSpecularGreen*specular);
         specularBlue += (GLfloat)(materialSpecularBlue*lightSpecularBlue*specular);
@@ -5836,7 +5840,7 @@ GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {if (glNextMouseDelt
 GLushort glMouseButtons() {if (glMouseButtonsCallback != NULL) return glMouseButtonsCallback(); return 0;}
 GLvoid glSetMousePos(GLint x, GLint y) {__UNUSED(x);__UNUSED(y);}
 GLushort glNextKey() {if (glNextKeyCallback != NULL) return glNextKeyCallback(); return 0;}
-GLvoid glDone() {if (glDoneNotification != NULL) glDoneNotification();}
+GLvoid glDone(bool freeTexturesToo) {if (glDoneNotification != NULL) glDoneNotification();}
 GLvoid glRefresh() {if (glRefreshNotification != NULL) glRefreshNotification();}
 GLvoid glRefreshMasked() {if (glRefreshNotification != NULL) glRefreshNotification();}
 GLboolean glVGA() {return GL_FALSE;}
