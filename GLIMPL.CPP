@@ -5840,7 +5840,7 @@ GLvoid glNextMouseDelta(GLdouble *mouseX, GLdouble *mouseY) {if (glNextMouseDelt
 GLushort glMouseButtons() {if (glMouseButtonsCallback != NULL) return glMouseButtonsCallback(); return 0;}
 GLvoid glSetMousePos(GLint x, GLint y) {__UNUSED(x);__UNUSED(y);}
 GLushort glNextKey() {if (glNextKeyCallback != NULL) return glNextKeyCallback(); return 0;}
-GLvoid glDone(bool freeTexturesToo) {if (glDoneNotification != NULL) glDoneNotification();}
+GLvoid glDone() {if (glDoneNotification != NULL) glDoneNotification();}
 GLvoid glRefresh() {if (glRefreshNotification != NULL) glRefreshNotification();}
 GLvoid glRefreshMasked() {if (glRefreshNotification != NULL) glRefreshNotification();}
 GLboolean glVGA() {return GL_FALSE;}
