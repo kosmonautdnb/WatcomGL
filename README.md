@@ -41,6 +41,10 @@ Repositories:
 
 ## Other software OpenGL options
 
+## PortableGL
+https://github.com/rswinkle/PortableGL  
+A full implementation of OpenGL3.x. Maybe it is not compiling with WatcomC++11.0.
+
 ## DJGPP Mesa
 OSMesa is providing the original software based OpenGL. It was maintained for DOS until around 2007.
   
