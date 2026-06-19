@@ -32,6 +32,7 @@ Files:
 - **Yellow Rose of Texas** is a 4K demo by **FIT/BANDWAGON** (_YELLOW.CPP)    
 - **Neon Helium Tutorials** found on the net (_NEHE.CPP)  
 - **GLFW Amiga Boing Ball** found in an old **GLFW** repository (_GLFWBNG.CPP)
+- **Direct** shows the usage in non-Dos environments
 - You find example compiles of these samples (.exe) in the main folder.
 
 Repositories:  
