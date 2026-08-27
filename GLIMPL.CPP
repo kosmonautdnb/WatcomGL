@@ -205,6 +205,11 @@ GLboolean glWatcomPrecisionTimer(GLboolean enable) {
 #endif // __WATCOMC__
 }
 #endif //__GLDISABLEDOSFUNCTIONS__ 
+
+#ifdef __GLDISABLEDOSFUNCTIONS__
+GLboolean glWatcomPrecisionTimer(GLboolean enable) {__UNUSED(enable);return GL_FALSE;}
+#endif //__GLDISABLEDOSFUNCTIONS__
+
 // -----
 // WatcomC++ high precision timer.
 // -----
