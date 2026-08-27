@@ -67,6 +67,13 @@
 #define __FASTTEXTURING__ 1
 #endif // INLINE
 
+#if defined(__WATCOMC__) || defined(__DJGPP__)
+#define GLuintptr_t GLuint
+#else // defined(__WATCOMC__) || defined(__DJGPP__)
+#include <stdint.h> // sorry
+#define GLuintptr_t uintptr_t // not tested (I am on DOS, and these few functions using it aren't tested in other "environments", yet)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -404,14 +411,14 @@ GLvoid _GLContext_init() {
   for (i = 0; i < 2; i++) {
     glContext.colorMaterial[i] = GL_AMBIENT_AND_DIFFUSE;
     // ambient
-    glContext.materialRed[i][0] = 0.2;
-    glContext.materialGreen[i][0] = 0.2;
-    glContext.materialBlue[i][0] = 0.2;
+    glContext.materialRed[i][0] = 0.2f;
+    glContext.materialGreen[i][0] = 0.2f;
+    glContext.materialBlue[i][0] = 0.2f;
     glContext.materialAlpha[i][0] = 1;
     // diffuse
-    glContext.materialRed[i][1] = 0.8;
-    glContext.materialGreen[i][1] = 0.8;
-    glContext.materialBlue[i][1] = 0.8;
+    glContext.materialRed[i][1] = 0.8f;
+    glContext.materialGreen[i][1] = 0.8f;
+    glContext.materialBlue[i][1] = 0.8f;
     glContext.materialAlpha[i][1] = 1;
     // specular
     glContext.materialRed[i][2] = 0;
@@ -1782,9 +1789,9 @@ GLvoid glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GL
     return;
   }
   if (data != NULL) 
-    memcpy((GLvoid*)((GLuint)c->data+offset),data,size);
+    memcpy((GLvoid*)((GLuintptr_t)c->data+offset),data,size);
   else
-    memset((GLvoid*)((GLuint)c->data+offset),0,size);
+    memset((GLvoid*)((GLuintptr_t)c->data+offset),0,size);
 }
 
 GLenum glCheckFramebufferStatus(GLuint buffer) {
@@ -2131,7 +2138,7 @@ GLvoid glGetDoubles(GLdouble *dest,GLsizei size, GLenum type,GLsizei stride,cons
     stride = siz*size;
   }
   GLBuffer *c = glGetCurrentBuffer();
-  GLuint ptr = (GLuint)pointer + (GLuint)c->data;
+  GLuintptr_t ptr = (GLuintptr_t)pointer + (GLuintptr_t)c->data;
   if (ptr < 256) {*dest = 0; return;} // pointer sanity check (this can not happen in sane environments)
   pointer = (const GLvoid*)(ptr + index*stride); // c->data may be NULL
   for (GLint i = 0; i < size; i++) {
@@ -2149,7 +2156,7 @@ GLvoid glGetDoubles(GLdouble *dest,GLsizei size, GLenum type,GLsizei stride,cons
       case GL_4_BYTES: break;
       case GL_DOUBLE: a = (GLdouble)(*((GLdouble*)pointer)); break;
     }
-    pointer = (const GLvoid*)((GLuint)pointer + siz);
+    pointer = (const GLvoid*)((GLuintptr_t)pointer + siz);
     dest[i] = a;
   }
 }
@@ -2211,9 +2218,9 @@ GLvoid glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *ind
   case GL_UNSIGNED_INT: siz = 4; break;
   }
   GLBuffer *c = glGetCurrentElementBuffer();
-  GLuint cdata = (GLuint)c->data; // c->data may be NULL
+  GLuintptr_t cdata = (GLuintptr_t)c->data; // c->data may be NULL
   if (!glContext.indexEnabledBuffer) cdata = 0;
-  indices = (const GLvoid*)((GLuint)indices + cdata);
+  indices = (const GLvoid*)((GLuintptr_t)indices + cdata);
   glBegin(mode);
   for (GLint i = 0; i < count; i++) {
     GLint a = 0;
@@ -2224,7 +2231,7 @@ GLvoid glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *ind
       case GL_UNSIGNED_INT: a = (GLint)(*((GLuint*)indices)); break;
     }
     glBufferedVertex(a);
-    indices = (const GLvoid*)((GLuint)indices + siz);
+    indices = (const GLvoid*)((GLuintptr_t)indices + siz);
   }
   glEnd();
 }
@@ -4641,7 +4648,7 @@ GLdouble glPolygonOffset_(_GLContext *context,glVertex *v0,glVertex *v1,glVertex
     m = __max__(dzdx, dzdy);
   }
   // units
-  GLfloat zf = __max__(__max__(fabs(v0z), fabs(v1z)), fabs(v2z));
+  GLfloat zf = (GLfloat)(__max__(__max__(fabs(v0z), fabs(v1z)), fabs(v2z)));
   GLint *zi = (GLint*)&zf;
   GLuint *zui = (GLuint*)&zf;
   *zui &= 0xff << 23;
