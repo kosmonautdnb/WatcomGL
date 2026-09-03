@@ -19,6 +19,7 @@
 #include <stdlib.h>
 
 //#define __GLDISABLEDOSFUNCTIONS__ 1
+//#define __GLSOMEDEPTHPASSED__ 1
 #define __NEARPOINTERVESA__ 1 // for DJGPP and glVesa(), enabled doesn't work with WindowsNT and Linux DOSEMU, but with it disabled many machines refuse to support a linear framebuffer.
 #if (!defined(__WATCOMC__))&&(!defined(__DJGPP__))
 #define __GLDISABLEDOSFUNCTIONS__ 1 // use glDirect()
@@ -130,6 +131,7 @@ GLdouble additionalPointSpriteXStretch = 1.0;
 TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
 GLenum glError = GL_NO_ERROR;
 GLint glDrawnTrianglesFrame = 0;
+GLboolean glSomeDepthPassed = GL_FALSE;
 
 GLubyte *glStencilBuffer = NULL; // strange, by placing these pointers not above it gets a lot faster (maybe be pack alignment?)
 GLubyte *glStencilBuffer0 = NULL;
@@ -5351,6 +5353,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
           }
         }
         if ((!depthTest) || glCheckDepthFunction(*zDest,(GLfloat)zp,depthFunction)) {
+#ifdef __GLSOMEDEPTHPASSED__
+            glSomeDepthPassed = GL_TRUE;
+#endif // __GLSOMEDEPTHPASSED__
           if (wValue) iw = (GLraster)(1.0/(__BARY0__B(v0w)+__BARY1__B(v1w)+__BARY2__B(v2w)));
           writePixel = GL_TRUE;
           writePixel2 = fullyMasked ? GL_FALSE : GL_TRUE;

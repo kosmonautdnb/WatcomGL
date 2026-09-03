@@ -118,6 +118,7 @@ extern GLboolean glWaitVSync; // to achieve better "double buffer" enable this. 
 extern GLint glFastTextureSpanWidth;
 extern GLenum glError;
 extern GLint glDrawnTrianglesFrame;
+extern GLboolean glSomeDepthPassed; // you may use this in connection with __GLSOMEDEPTHPASSED__ to check for occluded triangles in a scene (you have to set it to GL_FALSE before painting)
 
 // ------------------------
 // ------------------------
