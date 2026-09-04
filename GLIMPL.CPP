@@ -132,6 +132,7 @@ TriangleDrawer glDrawTriangle = glDrawTrianglePrecise;
 GLenum glError = GL_NO_ERROR;
 GLint glDrawnTrianglesFrame = 0;
 GLboolean glSomeDepthPassed = GL_FALSE;
+GLboolean glBreakOnSomeDepthPassed = GL_FALSE;
 
 GLubyte *glStencilBuffer = NULL; // strange, by placing these pointers not above it gets a lot faster (maybe be pack alignment?)
 GLubyte *glStencilBuffer0 = NULL;
@@ -1374,6 +1375,9 @@ GLvoid glQuadStripVertices() {
 }
 
 GLvoid glEmitVertex() {
+#ifdef __GLSOMEDEPTHPASSED__
+  if (glBreakOnSomeDepthPassed && glSomeDepthPassed) return; // !!! (this can only happen after a complete primitive was emitted, so no new polygons are rendered after that complete one
+#endif // __GLSOMEDEPTHPASSED__
   glVertex *v = &glVertices[glCurrentVertexElement];
   _GLContext *w = &glContext;
   v->colorRed = w->colorRed;
@@ -4840,6 +4844,10 @@ static GLboolean fogging;
 GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVertex *v2) {
   forceWrapRepeat = GL_FALSE;
 
+#ifdef __GLSOMEDEPTHPASSED__
+  if (glBreakOnSomeDepthPassed && glSomeDepthPassed) return; // !!!
+#endif // __GLSOMEDEPTHPASSED__
+
   if (isBackFaceCulled3(context,v0,v1,v2)) return;
   if (isAreaZero3(context,v0,v1,v2)) return;
 
@@ -5355,6 +5363,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
         if ((!depthTest) || glCheckDepthFunction(*zDest,(GLfloat)zp,depthFunction)) {
 #ifdef __GLSOMEDEPTHPASSED__
             glSomeDepthPassed = GL_TRUE;
+            if (glBreakOnSomeDepthPassed) return; // !!!
 #endif // __GLSOMEDEPTHPASSED__
           if (wValue) iw = (GLraster)(1.0/(__BARY0__B(v0w)+__BARY1__B(v1w)+__BARY2__B(v2w)));
           writePixel = GL_TRUE;

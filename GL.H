@@ -119,6 +119,7 @@ extern GLint glFastTextureSpanWidth;
 extern GLenum glError;
 extern GLint glDrawnTrianglesFrame;
 extern GLboolean glSomeDepthPassed; // you may use this in connection with __GLSOMEDEPTHPASSED__ to check for occluded triangles in a scene (you have to set it to GL_FALSE before painting)
+extern GLboolean glBreakOnSomeDepthPassed; // if this GL_TRUE then do not render any further if glSomeDepthPassed got GL_TRUE
 
 // ------------------------
 // ------------------------
