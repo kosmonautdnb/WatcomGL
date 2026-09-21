@@ -102,6 +102,7 @@ TinyGL also emulates OpenGL in software.
 - Texture Matrices
 - User Definable Clip Planes (glClipPlane)
 - Stencil Buffer
+- Occlusion Queries / Occlusion Culling (through a simple boolean)
 
 # WatcomGL Drawbacks
 - No MultiThreading
