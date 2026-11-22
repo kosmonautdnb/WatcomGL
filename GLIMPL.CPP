@@ -4756,6 +4756,7 @@ static GLdouble v1z;
 static GLdouble v2z;
 static GLboolean textured;
 static GLboolean filtering;
+static GLboolean hexagon;
 static GLfloat tx0,ty0,tz0,tw0;
 static GLfloat tx1,ty1,tz1,tw1;
 static GLfloat tx2,ty2,tz2,tw2;
@@ -4896,6 +4897,7 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
   glTexture *t = &glTextures[context->boundTextures[context->activeTexture]];
   textured = (glIsEnabled2(context,GL_TEXTURE_2D) && t->data != NULL && t->name != 0) ? GL_TRUE : GL_FALSE;
   filtering = ((t->magFilter != GL_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_NEAREST) && (t->magFilter != GL_NEAREST_MIPMAP_LINEAR)) ? GL_TRUE : GL_FALSE;
+  hexagon = (filtering && (t->magFilter == GL_HEXAGON)) ? GL_TRUE : GL_FALSE;
   tdata0 = NULL;
   borderColor = 0xff000000;
   // texture
@@ -5370,82 +5372,180 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
           writePixel2 = fullyMasked ? GL_FALSE : GL_TRUE;
           if (textured) {
             if (filtering) {
+              if (hexagon) { // in memoriam of demoscene programer Mr.Pet (Peter Cukierski)
+                // Mr.Pets hexagonal lookup/filtering algorithm only uses 3 texture lookups per pixel
 #ifdef __FASTTEXTURING__
-              if (fastTexturing) {
-                if (fastApprox == 0 || fastX != x) {
-                  fastApprox=glFastTextureSpanWidth;
-                  iw2=iw*0x10000;
-                  tpx = (GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw2);
-                  tpy = (GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw2);
-                  if (wValue) iw2 = (1.0/(__BARY0PADD__B(v0w,v2w)+__BARY1PADD__B(v1w,v2w)+__BARY2PADD__B(v2w,v2w)))*0x10000;
-                  k = glFastTextureSpanWidth;
-                  tpxa = ((GLint)FLOOR((__BARY0PADD__B(tx0,tx2)+__BARY1PADD__B(tx1,tx2)+__BARY2PADD__B(tx2,tx2))*iw2)-tpx)/k;
-                  tpya = ((GLint)FLOOR((__BARY0PADD__B(ty0,ty2)+__BARY1PADD__B(ty1,ty2)+__BARY2PADD__B(ty2,ty2))*iw2)-tpy)/k;
-                  if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
+                if (fastTexturing) {
+                  if (fastApprox == 0 || fastX != x) {
+                    fastApprox=glFastTextureSpanWidth;
+                    iw2=iw*0x10000;
+                    tpx = (GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw2);
+                    tpy = (GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw2);
+                    if (wValue) iw2 = (1.0/(__BARY0PADD__B(v0w,v2w)+__BARY1PADD__B(v1w,v2w)+__BARY2PADD__B(v2w,v2w)))*0x10000;
+                    k = glFastTextureSpanWidth;
+                    tpxa = ((GLint)FLOOR((__BARY0PADD__B(tx0,tx2)+__BARY1PADD__B(tx1,tx2)+__BARY2PADD__B(tx2,tx2))*iw2)-tpx)/k;
+                    tpya = ((GLint)FLOOR((__BARY0PADD__B(ty0,ty2)+__BARY1PADD__B(ty1,ty2)+__BARY2PADD__B(ty2,ty2))*iw2)-tpy)/k;
+                    if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
+                  }
+                  fastX=x+1;
+                  const GLint kx = tpx>>16;
+                  const GLint ky = tpy>>16;
+                  tix0 = textureWrap(kx, twidth0, wrapS);
+                  tiy0 = textureWrap(ky, theight0, wrapT);
+                  const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
+                  tiy1 = textureWrap(ky+1, theight0, wrapT);
+                  const GLint txf = (tpx>>8)&255;
+                  const GLint tyf = (tpy>>8)&255;
+                  tiy0 *= twidth0;
+                  tiy1 *= twidth0;
+                  if (txf < tyf) {
+                    const GLint txyf = tyf - txf;
+                    const GLint tyf2 = 255-tyf;
+                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+                    const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
+                    const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                    rgba = (((rgba00 & 0x00ff00ff) * tyf2)>>8) & 0x00ff00ff;
+                    rgba += (((rgba00>>8) & 0x00ff00ff) * tyf2) & 0xff00ff00;
+                    rgba += (((rgba01 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba01>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                    rgba += (((rgba11 & 0x00ff00ff) * txf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba11>>8) & 0x00ff00ff) * txf) & 0xff00ff00;
+                  } else {
+                    const GLint txyf = txf - tyf;
+                    const GLint txf2 = 255-txf;
+                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+                    const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                    const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                    rgba = (((rgba00 & 0x00ff00ff) * txf2)>>8) & 0x00ff00ff;
+                    rgba += (((rgba00>>8) & 0x00ff00ff) * txf2) & 0xff00ff00;
+                    rgba += (((rgba10 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba10>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                    rgba += (((rgba11 & 0x00ff00ff) * tyf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba11>>8) & 0x00ff00ff) * tyf) & 0xff00ff00;
+                  }
+                  tpx+=tpxa;
+                  tpy+=tpya;
+                  fastApprox--;
+                } else {
+#endif // __FASTTEXTURING__
+                  const GLint tx = (GLint)((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*256.0*iw);
+                  const GLint ty = (GLint)((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*256.0*iw);
+                  const GLint kx = tx>>8;
+                  const GLint ky = ty>>8;
+                  const GLint tix0 = textureWrap(kx, twidth0, wrapS);
+                  const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
+                  GLint tiy0 = textureWrap(ky, theight0, wrapT);
+                  tiy1 = textureWrap(ky+1, theight0, wrapT);
+                  const GLint txf = tx & 255;
+                  const GLint tyf = ty & 255;
+                  tiy0 *= twidth0;
+                  tiy1 *= twidth0;
+                  if (txf < tyf) {
+                    const GLint txyf = tyf - txf;
+                    const GLint tyf2 = 255-tyf;
+                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+                    const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
+                    const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                    rgba = (((rgba00 & 0x00ff00ff) * tyf2)>>8) & 0x00ff00ff;
+                    rgba += (((rgba00>>8) & 0x00ff00ff) * tyf2) & 0xff00ff00;
+                    rgba += (((rgba01 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba01>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                    rgba += (((rgba11 & 0x00ff00ff) * txf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba11>>8) & 0x00ff00ff) * txf) & 0xff00ff00;
+                  } else {
+                    const GLint txyf = txf - tyf;
+                    const GLint txf2 = 255-txf;
+                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+                    const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                    const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                    rgba = (((rgba00 & 0x00ff00ff) * txf2)>>8) & 0x00ff00ff;
+                    rgba += (((rgba00>>8) & 0x00ff00ff) * txf2) & 0xff00ff00;
+                    rgba += (((rgba10 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba10>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                    rgba += (((rgba11 & 0x00ff00ff) * tyf)>>8) & 0x00ff00ff;
+                    rgba += (((rgba11>>8) & 0x00ff00ff) * tyf) & 0xff00ff00;
+                  }
+#ifdef __FASTTEXTURING__
                 }
-                fastX=x+1;
-                const GLint kx = tpx>>16;
-                const GLint ky = tpy>>16;
-                tix0 = textureWrap(kx, twidth0, wrapS);
-                tiy0 = textureWrap(ky, theight0, wrapT);
-                const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
-                tiy1 = textureWrap(ky+1, theight0, wrapT);
-                const GLint txf = (tpx>>8)&255;
-                const GLint tyf = (tpy>>8)&255;
-                const GLint p1v = ((256-txf)*(256-tyf))>>8; 
-                const GLint p2v = ((txf)*(256-tyf))>>8; 
-                const GLint p3v = ((txf)*(tyf))>>8; 
-                const GLint p4v = ((256-txf)*(tyf))>>8;
-                tiy0 *= twidth0;
-                tiy1 *= twidth0;
-                const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
-                const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
-                const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
-                const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
-                rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
-                rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
-                rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
-                rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
-                rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
-                rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
-                rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
-                rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
-                tpx+=tpxa;
-                tpy+=tpya;
-                fastApprox--;
+#endif // __FASTTEXTURING__
               } else {
-#endif // __FASTTEXTURING__
-                const GLint tx = (GLint)((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*256.0*iw);
-                const GLint ty = (GLint)((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*256.0*iw);
-                const GLint kx = tx>>8;
-                const GLint ky = ty>>8;
-                const GLint tix0 = textureWrap(kx, twidth0, wrapS);
-                const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
-                GLint tiy0 = textureWrap(ky, theight0, wrapT);
-                tiy1 = textureWrap(ky+1, theight0, wrapT);
-                txf = tx & 255;
-                tyf = ty & 255;
-                const GLint p1v = ((256-txf)*(256-tyf))>>8; 
-                const GLint p2v = ((txf)*(256-tyf))>>8; 
-                const GLint p3v = ((txf)*(tyf))>>8; 
-                const GLint p4v = ((256-txf)*(tyf))>>8;
-                tiy0 *= twidth0;
-                tiy1 *= twidth0;
-                const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
-                const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
-                const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
-                const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
-                rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
-                rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
-                rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
-                rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
-                rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
-                rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
-                rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
-                rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
 #ifdef __FASTTEXTURING__
-              }
+                if (fastTexturing) {
+                  if (fastApprox == 0 || fastX != x) {
+                    fastApprox=glFastTextureSpanWidth;
+                    iw2=iw*0x10000;
+                    tpx = (GLint)FLOOR((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*iw2);
+                    tpy = (GLint)FLOOR((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*iw2);
+                    if (wValue) iw2 = (1.0/(__BARY0PADD__B(v0w,v2w)+__BARY1PADD__B(v1w,v2w)+__BARY2PADD__B(v2w,v2w)))*0x10000;
+                    k = glFastTextureSpanWidth;
+                    tpxa = ((GLint)FLOOR((__BARY0PADD__B(tx0,tx2)+__BARY1PADD__B(tx1,tx2)+__BARY2PADD__B(tx2,tx2))*iw2)-tpx)/k;
+                    tpya = ((GLint)FLOOR((__BARY0PADD__B(ty0,ty2)+__BARY1PADD__B(ty1,ty2)+__BARY2PADD__B(ty2,ty2))*iw2)-tpy)/k;
+                    if (k+x >= dmaxx) fastTexturing = GL_FALSE; // this is maybe not the triangle edge
+                  }
+                  fastX=x+1;
+                  const GLint kx = tpx>>16;
+                  const GLint ky = tpy>>16;
+                  tix0 = textureWrap(kx, twidth0, wrapS);
+                  tiy0 = textureWrap(ky, theight0, wrapT);
+                  const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
+                  tiy1 = textureWrap(ky+1, theight0, wrapT);
+                  const GLint txf = (tpx>>8)&255;
+                  const GLint tyf = (tpy>>8)&255;
+                  const GLint p1v = ((256-txf)*(256-tyf))>>8; 
+                  const GLint p2v = ((txf)*(256-tyf))>>8; 
+                  const GLint p3v = ((txf)*(tyf))>>8; 
+                  const GLint p4v = ((256-txf)*(tyf))>>8;
+                  tiy0 *= twidth0;
+                  tiy1 *= twidth0;
+                  const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+                  const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                  const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                  const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
+                  rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
+                  rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
+                  rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
+                  rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
+                  rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
+                  rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
+                  rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
+                  rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
+                  tpx+=tpxa;
+                  tpy+=tpya;
+                  fastApprox--;
+                } else {
 #endif // __FASTTEXTURING__
+                  const GLint tx = (GLint)((__BARY0__B(tx0)+__BARY1__B(tx1)+__BARY2__B(tx2))*256.0*iw);
+                  const GLint ty = (GLint)((__BARY0__B(ty0)+__BARY1__B(ty1)+__BARY2__B(ty2))*256.0*iw);
+                  const GLint kx = tx>>8;
+                  const GLint ky = ty>>8;
+                  const GLint tix0 = textureWrap(kx, twidth0, wrapS);
+                  const GLint tix1 = textureWrap(kx+1, twidth0, wrapS);
+                  GLint tiy0 = textureWrap(ky, theight0, wrapT);
+                  tiy1 = textureWrap(ky+1, theight0, wrapT);
+                  txf = tx & 255;
+                  tyf = ty & 255;
+                  const GLint p1v = ((256-txf)*(256-tyf))>>8; 
+                  const GLint p2v = ((txf)*(256-tyf))>>8; 
+                  const GLint p3v = ((txf)*(tyf))>>8; 
+                  const GLint p4v = ((256-txf)*(tyf))>>8;
+                  tiy0 *= twidth0;
+                  tiy1 *= twidth0;
+                  const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+                  const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                  const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                  const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
+                  rgba = (((rgba00>>8) & 0x00ff00ff)*p1v)&0xff00ff00;
+                  rgba += (((rgba10>>8) & 0x00ff00ff)*p2v)&0xff00ff00;
+                  rgba += (((rgba11>>8) & 0x00ff00ff)*p3v)&0xff00ff00;
+                  rgba += (((rgba01>>8) & 0x00ff00ff)*p4v)&0xff00ff00;
+                  rgba += (((rgba00 & 0x00ff00ff)*p1v)>>8)&0x00ff00ff;
+                  rgba += (((rgba10 & 0x00ff00ff)*p2v)>>8)&0x00ff00ff;
+                  rgba += (((rgba11 & 0x00ff00ff)*p3v)>>8)&0x00ff00ff;
+                  rgba += (((rgba01 & 0x00ff00ff)*p4v)>>8)&0x00ff00ff;
+#ifdef __FASTTEXTURING__
+                }
+#endif // __FASTTEXTURING__
+              } // hexagon
             } else {
 #ifdef __FASTTEXTURING__
               if (fastTexturing) {

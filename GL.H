@@ -838,6 +838,7 @@ GLint gluProjectx(GLdouble objX, GLdouble objY, GLdouble objZ, GLdouble *model, 
 #define GL_TEXTURE_ENV 0x2300
 #define GL_NEAREST 0x2600
 #define GL_LINEAR 0x2601
+#define GL_HEXAGON 0x2602 // non standard
 #define GL_NEAREST_MIPMAP_NEAREST 0x2700
 #define GL_LINEAR_MIPMAP_NEAREST 0x2701
 #define GL_NEAREST_MIPMAP_LINEAR 0x2702
