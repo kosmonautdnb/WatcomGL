@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define __ADVANCEDHEXAGON__ // Mr.Pets algorithm with switchable diagonal by alpha
 //#define __GLDISABLEDOSFUNCTIONS__ 1
 //#define __GLSOMEDEPTHPASSED__ 1
 #define __NEARPOINTERVESA__ 1 // for DJGPP and glVesa(), enabled doesn't work with WindowsNT and Linux DOSEMU, but with it disabled many machines refuse to support a linear framebuffer.
@@ -5398,10 +5399,38 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   const GLint tyf = (tpy>>8)&255;
                   tiy0 *= twidth0;
                   tiy1 *= twidth0;
+                  const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+#ifdef __ADVANCEDHEXAGON__
+                  if (rgba00 & 0x01000000) {
+                    if (255-txf < tyf) {
+                      const GLint txf2 = 255-txf;
+                      const GLint tyf2 = 255-tyf;
+                      const GLint txyf = tyf - txf2;
+                      const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor; // sadly this here needs "4" lookups here again
+                      const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                      const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                      rgba = (((rgba01 & 0x00ff00ff) * txf2)>>8) & 0x00ff00ff;
+                      rgba += (((rgba01>>8) & 0x00ff00ff) * txf2) & 0xff00ff00;
+                      rgba += (((rgba11 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba11>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                      rgba += (((rgba10 & 0x00ff00ff) * tyf2)>>8) & 0x00ff00ff;
+                      rgba += (((rgba10>>8) & 0x00ff00ff) * tyf2) & 0xff00ff00;
+                    } else {
+                      const GLint txyf = (255-txf) - tyf;
+                      const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
+                      const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                      rgba = (((rgba01 & 0x00ff00ff) * tyf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba01>>8) & 0x00ff00ff) * tyf) & 0xff00ff00;
+                      rgba += (((rgba00 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba00>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                      rgba += (((rgba10 & 0x00ff00ff) * txf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba10>>8) & 0x00ff00ff) * txf) & 0xff00ff00;
+                    }
+                  } else {
+#endif
                   if (txf < tyf) {
                     const GLint txyf = tyf - txf;
                     const GLint tyf2 = 255-tyf;
-                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
                     const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
                     const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
                     rgba = (((rgba00 & 0x00ff00ff) * tyf2)>>8) & 0x00ff00ff;
@@ -5413,7 +5442,6 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   } else {
                     const GLint txyf = txf - tyf;
                     const GLint txf2 = 255-txf;
-                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
                     const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
                     const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
                     rgba = (((rgba00 & 0x00ff00ff) * txf2)>>8) & 0x00ff00ff;
@@ -5423,6 +5451,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                     rgba += (((rgba11 & 0x00ff00ff) * tyf)>>8) & 0x00ff00ff;
                     rgba += (((rgba11>>8) & 0x00ff00ff) * tyf) & 0xff00ff00;
                   }
+#ifdef __ADVANCEDHEXAGON__
+                  }
+#endif
                   tpx+=tpxa;
                   tpy+=tpya;
                   fastApprox--;
@@ -5440,10 +5471,38 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   const GLint tyf = ty & 255;
                   tiy0 *= twidth0;
                   tiy1 *= twidth0;
+                  const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
+#ifdef __ADVANCEDHEXAGON__
+                  if (rgba00 & 0x01000000) {
+                    if (255-txf < tyf) {
+                      const GLint txf2 = 255-txf;
+                      const GLint tyf2 = 255-tyf;
+                      const GLint txyf = tyf - txf2;
+                      const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor; // sadly this here needs "4" lookups here again
+                      const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
+                      const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                      rgba = (((rgba01 & 0x00ff00ff) * txf2)>>8) & 0x00ff00ff;
+                      rgba += (((rgba01>>8) & 0x00ff00ff) * txf2) & 0xff00ff00;
+                      rgba += (((rgba11 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba11>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                      rgba += (((rgba10 & 0x00ff00ff) * tyf2)>>8) & 0x00ff00ff;
+                      rgba += (((rgba10>>8) & 0x00ff00ff) * tyf2) & 0xff00ff00;
+                    } else {
+                      const GLint txyf = (255-txf) - tyf;
+                      const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
+                      const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
+                      rgba = (((rgba01 & 0x00ff00ff) * tyf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba01>>8) & 0x00ff00ff) * tyf) & 0xff00ff00;
+                      rgba += (((rgba00 & 0x00ff00ff) * txyf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba00>>8) & 0x00ff00ff) * txyf) & 0xff00ff00;
+                      rgba += (((rgba10 & 0x00ff00ff) * txf)>>8) & 0x00ff00ff;
+                      rgba += (((rgba10>>8) & 0x00ff00ff) * txf) & 0xff00ff00;
+                    }
+                  } else {
+#endif
                   if (txf < tyf) {
                     const GLint txyf = tyf - txf;
                     const GLint tyf2 = 255-tyf;
-                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
                     const GLuint rgba01 = (tix0|tiy1) >= 0 ? tdata0[tix0+tiy1] : borderColor;
                     const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
                     rgba = (((rgba00 & 0x00ff00ff) * tyf2)>>8) & 0x00ff00ff;
@@ -5455,7 +5514,6 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                   } else {
                     const GLint txyf = txf - tyf;
                     const GLint txf2 = 255-txf;
-                    const GLuint rgba00 = (tix0|tiy0) >= 0 ? tdata0[tix0+tiy0] : borderColor;
                     const GLuint rgba10 = (tix1|tiy0) >= 0 ? tdata0[tix1+tiy0] : borderColor;
                     const GLuint rgba11 = (tix1|tiy1) >= 0 ? tdata0[tix1+tiy1] : borderColor;
                     rgba = (((rgba00 & 0x00ff00ff) * txf2)>>8) & 0x00ff00ff;
@@ -5465,6 +5523,9 @@ GLvoid glDrawTrianglePrecise(_GLContext *context,glVertex *v0,glVertex *v1,glVer
                     rgba += (((rgba11 & 0x00ff00ff) * tyf)>>8) & 0x00ff00ff;
                     rgba += (((rgba11>>8) & 0x00ff00ff) * tyf) & 0xff00ff00;
                   }
+#ifdef __ADVANCEDHEXAGON__
+                  }
+#endif
 #ifdef __FASTTEXTURING__
                 }
 #endif // __FASTTEXTURING__
